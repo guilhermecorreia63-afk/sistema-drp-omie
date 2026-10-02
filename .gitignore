@@ -1,0 +1,72 @@
+# ==========================================
+# ARQUIVOS SENSÍVEIS E CREDENCIAIS (NÃO SUBIR)
+# ==========================================
+.env
+.env.*
+!.env.example
+secrets.toml
+*.pem
+*.key
+
+# ==========================================
+# AMBIENTES VIRTUAIS E CACHE DE PYTHON
+# ==========================================
+.venv/
+.venv_new/
+venv/
+env/
+ENV/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# ==========================================
+# PASTA DE SCRATCH E SCRIPTS TEMPORÁRIOS
+# ==========================================
+scratch/
+static_legacy/
+
+# ==========================================
+# BANCOS DE DADOS E CACHES LOCAIS
+# ==========================================
+*.db
+*.sqlite
+*.sqlite3
+data/*.db
+data/remessas_cache.json
+data/ultimo_alerta_email.html
+
+# ==========================================
+# RELATÓRIOS PDF, PLANILHAS E DUMMY JSON
+# ==========================================
+*.pdf
+*.xlsx
+*.xls
+*.csv
+ConsultarCliente.json
+IncluirNotaEnt.json
+IncluirRemessa.json
+ListarPedidos.json
+ListarProdutos.json
+PosicaoEstoque.json
+README1.md
+README2.md
+README3.md
+Conexão Rápida.py
+instrument.md
+
+# ==========================================
+# CONFIGURAÇÕES DE IDE E DEPLOY
+# ==========================================
+.idea/
+.vscode/
+.netlify/
+.netlify-build/
+*.log
+*.swp
+*.swo
+~*

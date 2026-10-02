@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DRP Omie ERP - Controle de Reposição & Produção</title>
+    <!-- Google Fonts & Font Awesome Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- jsPDF para Geração de PDFs no Navegador -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container" id="app-container">
+        <!-- Sidebar lateral recolhível -->
+        <aside class="sidebar" id="sidebar">
+            <div class="brand">
+                <div class="brand-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
+                <div class="brand-text">
+                    <h2>DRP Omie</h2>
+                    <span>Matriz & CD_SP | Netlify</span>
+                </div>
+                <button class="btn-icon sidebar-collapse-btn" id="btn-close-sidebar" title="Recolher Menu">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+            </div>
+
+            <nav class="nav-tabs">
+                <button class="nav-tab active" data-tab="tab-cd-sp">
+                    <i class="fa-solid fa-truck-ramp-box"></i>
+                    <span>1. Reposição CD_SP</span>
+                </button>
+                <button class="nav-tab" data-tab="tab-matriz">
+                    <i class="fa-solid fa-industry"></i>
+                    <span>2. Estoque & Produção Matriz</span>
+                </button>
+                <button class="nav-tab" data-tab="tab-remessas">
+                    <i class="fa-solid fa-boxes-packing"></i>
+                    <span>3. Remessas & Trânsito CD_SP</span>
+                </button>
+                <button class="nav-tab" data-tab="tab-analise-matriz">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>4. Análise Matriz (BCG)</span>
+                </button>
+                <button class="nav-tab" data-tab="tab-depositos-matriz">
+                    <i class="fa-solid fa-warehouse"></i>
+                    <span>5. Depósitos da Matriz</span>
+                </button>
+                <button class="nav-tab" data-tab="tab-combos-kit">
+                    <i class="fa-solid fa-boxes-packing" style="color: #f59e0b;"></i>
+                    <span>6. Gestão de Combos & Kits</span>
+                </button>
+            </nav>
+
+            <div class="filter-section">
+                <h3><i class="fa-solid fa-sliders"></i> Parâmetros DRP</h3>
+                
+                <div class="form-group">
+                    <label for="select-periodo"><i class="fa-regular fa-calendar-days"></i> Histórico de Vendas</label>
+                    <select id="select-periodo" class="form-control">
+                        <option value="30" selected>Últimos 30 Dias</option>
+                        <option value="60">Últimos 60 Dias</option>
+                        <option value="90">Últimos 90 Dias</option>
+                        <option value="180">Últimos 180 Dias</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="range-abastecimento">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Cobertura Desejada: 
+                        <strong id="val-abastecimento">30</strong> dias
+                    </label>
+                    <input type="range" id="range-abastecimento" min="7" max="120" value="30" step="5" class="form-range">
+                </div>
+
+                <div class="form-group">
+                    <label for="search-input"><i class="fa-solid fa-magnifying-glass"></i> Buscar Produto</label>
+                    <input type="text" id="search-input" placeholder="Buscar por SKU ou Nome..." class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fa-solid fa-filter"></i> Ocultar Famílias</label>
+                    <div id="family-checkboxes" class="checkbox-list">
+                        <!-- Gerado via JS -->
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <button id="btn-velas-ferias-modal" class="btn btn-secondary w-100" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3);">
+                        <i class="fa-solid fa-candle-holder"></i> Velas Férias Discipulado 🕯️
+                    </button>
+                </div>
+
+                <div class="form-group">
+                    <button id="btn-leadtime-modal" class="btn btn-secondary w-100">
+                        <i class="fa-solid fa-business-time"></i> Lead Time por Família ⚙️
+                    </button>
+                </div>
+
+                <div class="form-group">
+                    <button id="btn-sync-sidebar" class="btn btn-primary w-100" style="background: linear-gradient(135deg, #00d4b1, #009688); color: white; border: none; font-weight: bold; margin-bottom: 5px;">
+                        <i class="fa-solid fa-rotate"></i> Sincronizar / Recarregar Dados 🔄
+                    </button>
+                </div>
+
+                <div class="form-group">
+                    <button id="btn-email-alert-modal" class="btn btn-secondary w-100" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3);">
+                        <i class="fa-solid fa-envelope"></i> Alertas por E-mail & Agendador 📧
+                    </button>
+                </div>
+
+                <div class="form-group">
+                    <button id="btn-blacklist-modal" class="btn btn-secondary w-100">
+                        <i class="fa-solid fa-user-slash"></i> Ver Blacklist (<span id="count-blacklist">0</span>)
+                    </button>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="status-indicator">
+                    <span class="dot online"></span> Turso DB: 3.412 produtos
+                </div>
+                <small>Ambiente Netlify Dev Local</small>
+            </div>
+        </aside>
+
+        <!-- Conteúdo Principal -->
+        <main class="main-content" id="main-content">
+            <!-- Header Topo com Botão para Expandir/Recolher Sidebar -->
+            <header class="top-header">
+                <div class="header-left">
+                    <button class="btn-toggle-sidebar" id="btn-toggle-sidebar" title="Ocultar / Mostrar Menu Lateral">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <div class="header-title">
+                        <h1 id="page-heading">🚚 Reposição de Estoque CD_SP</h1>
+                        <p id="page-subheading">Vendas <strong>Sul e Sudeste</strong> | Estoque Alvo: (Demanda × (Dias + LeadTime)) + 20% Seg.</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button id="btn-sync-db" class="btn btn-primary">
+                        <i class="fa-solid fa-rotate"></i> Sincronizar / Recarregar Dados 🔄
+                    </button>
+                </div>
+            </header>
+
+            <!-- ABA 1: REPOSIÇÃO CD_SP -->
+            <section id="tab-cd-sp" class="tab-content active">
+                <!-- Cards de Métricas Clicáveis -->
+                <div class="metrics-grid">
+                    <div class="metric-card card-ruptura clickable-card" data-status-filter="Ruptura" title="Clique para filtrar apenas Rupturas">
+                        <div class="metric-icon"><i class="fa-solid fa-circle-exclamation"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-val" id="metric-cd-ruptura">0</span>
+                            <span class="metric-lbl">🔴 Ruptura CD_SP</span>
+                        </div>
+                    </div>
+                    <div class="metric-card card-alerta clickable-card" data-status-filter="Alerta" title="Clique para filtrar apenas Alertas">
+                        <div class="metric-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-val" id="metric-cd-alerta">0</span>
+                            <span class="metric-lbl">🟡 Alerta CD_SP</span>
+                        </div>
+                    </div>
+                    <div class="metric-card card-estavel clickable-card" data-status-filter="Estável" title="Clique para filtrar apenas Estáveis">
+                        <div class="metric-icon"><i class="fa-solid fa-circle-check"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-val" id="metric-cd-estavel">0</span>
+                            <span class="metric-lbl">🟢 Estável CD_SP</span>
+                        </div>
+                    </div>
+                    <div class="metric-card card-excesso clickable-card" data-status-filter="Excesso" title="Clique para filtrar apenas Excessos">
+                        <div class="metric-icon"><i class="fa-solid fa-circle-arrow-up"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-val" id="metric-cd-excesso">0</span>
+                            <span class="metric-lbl">🔵 Excesso CD_SP</span>
+                        </div>
+                    </div>
+                    <div class="metric-card card-producao clickable-card" data-status-filter="Em Produção" title="Clique para filtrar apenas Em Produção / Compra">
+                        <div class="metric-icon"><i class="fa-solid fa-gear"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-val" id="metric-cd-producao">0</span>
+                            <span class="metric-lbl">🟣 Em Produção / Compra</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Barra de Status de Filtro Ativo -->
+                <div id="status-filter-banner-cd" class="status-filter-banner" style="display: none;">
+                    <span>Filtrando apenas produtos com status: <strong id="current-status-filter-name">Nenhum</strong></span>
+                    <button id="btn-clear-status-filter" class="btn btn-sm btn-secondary"><i class="fa-solid fa-xmark"></i> Mostrar Todos os Status</button>
+                </div>
+
+                <!-- Tabela de Produtos CD_SP -->
+                <div class="table-container">
+                    <div class="table-header">
+                        <h2>Produtos para Transferência Matriz → CD_SP</h2>
+                        <div class="table-controls">
+                            <span>Exibindo </span>
+                            <select id="select-limit-cd" class="form-control inline">
+                                <option value="25">25</option>
+                                <option value="50" selected>50</option>
+                                <option value="100">100</option>
+                                <option value="300">300</option>
+                                <option value="3500">Todos com Movimento</option>
+                            </select>
+                            <span> produtos com demanda</span>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table class="drp-table">
+                            <thead>
+                                <tr>
+                                    <th width="40"><input type="checkbox" id="chk-select-all-cd" title="Selecionar Todos"></th>
+                                    <th>SKU / Produto</th>
+                                    <th>Marca</th>
+                                    <th>Família</th>
+                                    <th>Estoque CD_SP</th>
+                                    <th>Em Trânsito 🚚</th>
+                                    <th>Estoque Matriz</th>
+                                    <th>Estoque Alvo (+20%)</th>
+                                    <th>Necessidade</th>
+                                    <th>Status CD</th>
+                                    <th>Qtd a Enviar</th>
+                                </tr>
+                                <tr class="filter-header-row">
+                                    <td></td>
+                                    <td><input type="text" id="col-filter-prod-cd" placeholder="Filtrar Produto..." class="table-col-filter"></td>
+                                    <td><select id="col-filter-marca-cd" class="table-col-filter"><option value="">Todas Marcas</option></select></td>
+                                    <td><select id="col-filter-fam-cd" class="table-col-filter"><option value="">Todas Famílias</option></select></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td>
+                                        <select id="col-filter-status-cd" class="table-col-filter">
+                                            <option value="">Todos Status (Padrão)</option>
+                                            <option value="SORT_SEVERITY_ASC">⬆️ Maior p/ Menor (Ruptura → Excesso)</option>
+                                            <option value="SORT_SEVERITY_DESC">⬇️ Menor p/ Maior (Excesso → Ruptura)</option>
+                                            <option value="Ruptura">Ruptura</option>
+                                            <option value="Alerta">Alerta</option>
+                                            <option value="Estável">Estável</option>
+                                            <option value="Excesso">Excesso</option>
+                                            <option value="Em Produção">Em Produção / Compra</option>
+                                            <option value="Sem Estoque Discipulado">Sem Estoque Discipulado</option>
+                                        </select>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-cd-sp">
+                                <!-- Preenchido via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Seção de Fechamento de Remessa & Frete -->
+                <div class="shipping-panel">
+                    <div class="shipping-info">
+                        <h3><i class="fa-solid fa-file-invoice-dollar"></i> Remessa Fiscal de Transferência</h3>
+                        <p>CFOP 6152 | Remessa Transferência entre CD | Transportadora TRANSLATINO | Frete CIF (Tipo 0)</p>
+                        
+                        <div class="shipping-stats">
+                            <div class="stat-box">
+                                <span>Itens Selecionados</span>
+                                <strong id="ship-count">0</strong>
+                            </div>
+                            <div class="stat-box">
+                                <span>Peso Bruto Total</span>
+                                <strong id="ship-weight">0.00 kg</strong>
+                            </div>
+                            <div class="stat-box">
+                                <span>Volumes (Caixas até 16kg)</span>
+                                <strong id="ship-boxes">0 VOLUMES</strong>
+                            </div>
+                            <div class="stat-box highlight">
+                                <span>Frete Estimado (Fortaleza)</span>
+                                <strong id="ship-freight">R$ 0,00</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="shipping-actions" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <button id="btn-add-blacklist-checked-cd" class="btn btn-secondary btn-lg" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border-color: rgba(239, 68, 68, 0.4);">
+                            <i class="fa-solid fa-ban"></i> Mover Selecionados p/ Blacklist 🚫
+                        </button>
+                        <button id="btn-generate-transfer" class="btn btn-success btn-lg">
+                            <i class="fa-solid fa-file-csv"></i> Gerar JSON / Remessa Omie
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA 2: ESTOQUE & PRODUÇÃO MATRIZ -->
+            <section id="tab-matriz" class="tab-content">
+                <!-- Cards de Métricas Matriz Clicáveis -->
+                <div class="metrics-grid">
+                    <div class="metric-card card-ruptura clickable-card" data-status-filter-matriz="Ruptura" title="Filtrar Ruptura Matriz">
+                        <div class="metric-icon"><i class="fa-solid fa-circle-exclamation"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-val" id="metric-mat-ruptura">0</span>
+                            <span class="metric-lbl">🔴 Ruptura Matriz</span>
+                        </div>
+                    </div>
+                    <div class="metric-card card-alerta clickable-card" data-status-filter-matriz="Alerta" title="Filtrar Alerta Matriz">
+                        <div class="metric-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-val" id="metric-mat-alerta">0</span>
+                            <span class="metric-lbl">🟡 Alerta Matriz</span>
+                        </div>
+                    </div>
+                    <div class="metric-card card-estavel clickable-card" data-status-filter-matriz="Estável" title="Filtrar Estável Matriz">
+                        <div class="metric-icon"><i class="fa-solid fa-circle-check"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-val" id="metric-mat-estavel">0</span>
+                            <span class="metric-lbl">🟢 Estável Matriz</span>
+                        </div>
+                    </div>
+                    <div class="metric-card card-excesso clickable-card" data-status-filter-matriz="Excesso" title="Filtrar Excesso Matriz">
+                        <div class="metric-icon"><i class="fa-solid fa-circle-arrow-up"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-val" id="metric-mat-excesso">0</span>
+                            <span class="metric-lbl">🔵 Excesso Matriz</span>
+                        </div>
+                    </div>
+                    <div class="metric-card card-producao clickable-card" data-status-filter-matriz="Em Produção" title="Filtrar Em Produção / Compra Matriz">
+                        <div class="metric-icon"><i class="fa-solid fa-gear"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-val" id="metric-mat-producao">0</span>
+                            <span class="metric-lbl">🟣 Em Produção / Compra</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Barra de Status de Filtro Ativo Matriz -->
+                <div id="status-filter-banner-matriz" class="status-filter-banner" style="display: none;">
+                    <span>Filtrando apenas Matriz com status: <strong id="current-status-filter-matriz-name">Nenhum</strong></span>
+                    <button id="btn-clear-status-filter-matriz" class="btn btn-sm btn-secondary"><i class="fa-solid fa-xmark"></i> Mostrar Todos os Status</button>
+                </div>
+
+                <!-- Tabela Matriz -->
+                <div class="table-container">
+                    <div class="table-header">
+                        <h2>Estoque & Ordem de Produção da Matriz (Demanda Nacional)</h2>
+                        <div class="table-controls">
+                            <button id="btn-requisicao-compra-matriz" class="btn btn-primary">
+                                <i class="fa-solid fa-cart-shopping"></i> Gerar Requisição de Compra Omie 🛍️
+                            </button>
+                            <button class="btn btn-secondary" onclick="tirarSelecionadosProducao()" title="Tirar produtos selecionados (ou todos) do status Em Produção / Compra" style="background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.4); color: #c084fc;">
+                                <i class="fa-solid fa-broom"></i> Tirar Selecionados da Produção/Compra
+                            </button>
+                            <button id="btn-add-blacklist-selected-matriz" class="btn btn-danger">
+                                <i class="fa-solid fa-ban"></i> Mover Selecionados para Blacklist (<span id="count-selected-blacklist-matriz">0</span>)
+                            </button>
+                            <span>Exibindo os primeiros </span>
+                            <select id="select-limit-matriz" class="form-control inline">
+                                <option value="25">25</option>
+                                <option value="50" selected>50</option>
+                                <option value="100">100</option>
+                                <option value="300">300</option>
+                                <option value="3500">Todos com Movimento</option>
+                            </select>
+                            <span> produtos</span>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table class="drp-table">
+                            <thead>
+                                <tr>
+                                    <th width="40"><input type="checkbox" id="chk-select-all-matriz" title="Selecionar Todos"></th>
+                                    <th>SKU / Produto</th>
+                                    <th>Marca</th>
+                                    <th>Família</th>
+                                    <th>Estoque Matriz</th>
+                                    <th>Estoque Alvo (+20%)</th>
+                                    <th>Duração (Dias)</th>
+                                    <th>Status Matriz</th>
+                                    <th>Em Produção / Compra 🟣</th>
+                                    <th>Sazonal ❄️</th>
+                                </tr>
+                                <tr class="filter-header-row">
+                                    <td></td>
+                                    <td><input type="text" id="col-filter-prod-matriz" placeholder="Filtrar Produto..." class="table-col-filter"></td>
+                                    <td><select id="col-filter-marca-matriz" class="table-col-filter"><option value="">Todas Marcas</option></select></td>
+                                    <td><select id="col-filter-fam-matriz" class="table-col-filter"><option value="">Todas Famílias</option></select></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td>
+                                        <select id="col-filter-status-matriz" class="table-col-filter">
+                                            <option value="">Todos Status (Padrão)</option>
+                                            <option value="SORT_SEVERITY_ASC">⬆️ Maior p/ Menor (Ruptura → Excesso)</option>
+                                            <option value="SORT_SEVERITY_DESC">⬇️ Menor p/ Maior (Excesso → Ruptura)</option>
+                                            <option value="Ruptura">Ruptura</option>
+                                            <option value="Alerta">Alerta</option>
+                                            <option value="Estável">Estável</option>
+                                            <option value="Excesso">Excesso</option>
+                                            <option value="Em Produção">Em Produção</option>
+                                            <option value="Sem Estoque Discipulado">Sem Estoque Discipulado</option>
+                                        </select>
+                                    </td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-matriz">
+                                <!-- Preenchido via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="shipping-panel" style="margin-top: 20px;">
+                        <div class="shipping-info">
+                            <h3><i class="fa-solid fa-industry"></i> Ações Matriz & Blacklist</h3>
+                            <p>Selecione produtos na tabela acima para mover para a Blacklist ou gerar requisição de compra no Omie</p>
+                        </div>
+                        <div class="shipping-actions" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <button id="btn-add-blacklist-checked-matriz" class="btn btn-secondary btn-lg" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border-color: rgba(239, 68, 68, 0.4);">
+                                <i class="fa-solid fa-ban"></i> Mover Selecionados p/ Blacklist 🚫
+                            </button>
+                            <button id="btn-requisicao-compra-matriz-footer" class="btn btn-success btn-lg">
+                                <i class="fa-solid fa-cart-shopping"></i> Gerar Requisição Omie Matriz 🛍️
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA 3: GESTÃO DE REMESSAS & TRÂNSITO CD_SP -->
+            <section id="tab-remessas" class="tab-content">
+                <div class="card">
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h3><i class="fa-solid fa-boxes-packing"></i> Remessas de Transferência Registradas (Matriz → CD_SP)</h3>
+                            <p style="margin:0; font-size:0.85rem; color:var(--text-muted);">
+                                Consulte, acompanhe o status de faturamento, altere e confirme a entrada de produtos no estoque do CD_SP
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button id="btn-atualizar-remessas-list" class="btn btn-secondary">
+                                <i class="fa-solid fa-arrows-rotate"></i> Recarregar Remessas Omie
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive" style="margin-top: 15px;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Cód. Remessa</th>
+                                    <th>Obs / Descrição</th>
+                                    <th>Data Previsão</th>
+                                    <th>Status Faturamento</th>
+                                    <th>Total da Nota</th>
+                                    <th>Situação Trânsito CD_SP</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-remessas">
+                                <tr>
+                                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 25px;">
+                                        <i class="fa-solid fa-spinner fa-spin"></i> Carregando remessas do Omie ERP...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA 4: ANÁLISE DE PRODUTOS DA MATRIZ (MATRIZ BCG) -->
+            <section id="tab-analise-matriz" class="tab-content">
+                <div class="card mb-4">
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h3><i class="fa-solid fa-chart-pie"></i> Aba 4 — Análise de Produtos da Matriz (Matriz BCG)</h3>
+                            <p style="margin:0; font-size:0.85rem; color:var(--text-muted);">
+                                Classificação de produtos em Estrela, Vaca Leiteira, Interrogação e Abacaxi com base no volume e crescimento de vendas em períodos comparáveis.
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <label style="font-size: 0.85rem; color: var(--text-muted);">Período Comparável:</label>
+                            <select id="select-bcg-window" class="form-control" style="width: auto; font-size: 0.85rem; padding: 4px 10px;">
+                                <option value="30_30" selected>Recente (30d) vs Anterior (30d)</option>
+                                <option value="60_60">Recente (60d) vs Anterior (60d)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Explicação dos Critérios BCG -->
+                    <div class="bcg-criteria-box" style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px 16px; margin-top: 15px;">
+                        <div style="font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; color: var(--primary); display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-circle-info"></i> Critérios de Classificação BCG Utilizados:
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 0.8rem; color: var(--text-muted);">
+                            <div>⭐ <b>Estrela</b>: Volume Alto (≥ Mediana) & Crescimento Alto (≥ 0%)</div>
+                            <div>🐮 <b>Vaca Leiteira</b>: Volume Alto (≥ Mediana) & Crescimento Baixo (< 0%)</div>
+                            <div>❓ <b>Interrogação</b>: Volume Baixo (< Mediana) & Crescimento Alto (≥ 0%)</div>
+                            <div>🍍 <b>Abacaxi</b>: Volume Baixo (< Mediana) & Crescimento Baixo (< 0%)</div>
+                            <div>⚠️ <b>Dados Insuficientes</b>: Histórico nulo ou sem vendas suficientes para comparar.</div>
+                        </div>
+                    </div>
+
+                    <!-- KPI Cards Summary -->
+                    <div class="kpi-grid" style="margin-top: 20px;">
+                        <div class="kpi-card clickable-card" data-bcg-filter="ESTRELA" style="border-top: 3px solid #eab308; cursor: pointer;">
+                            <div class="kpi-title">⭐ Estrelas</div>
+                            <div class="kpi-value" id="kpi-count-estrela">0</div>
+                            <div class="kpi-sub">Alto Vol | Alto Cresc</div>
+                        </div>
+                        <div class="kpi-card clickable-card" data-bcg-filter="VACA_LEITEIRA" style="border-top: 3px solid #10b981; cursor: pointer;">
+                            <div class="kpi-title">🐮 Vacas Leiteiras</div>
+                            <div class="kpi-value" id="kpi-count-vaca">0</div>
+                            <div class="kpi-sub">Alto Vol | Baixo Cresc</div>
+                        </div>
+                        <div class="kpi-card clickable-card" data-bcg-filter="INTERROGACAO" style="border-top: 3px solid #3b82f6; cursor: pointer;">
+                            <div class="kpi-title">❓ Interrogações</div>
+                            <div class="kpi-value" id="kpi-count-interrogacao">0</div>
+                            <div class="kpi-sub">Baixo Vol | Alto Cresc</div>
+                        </div>
+                        <div class="kpi-card clickable-card" data-bcg-filter="ABACAXI" style="border-top: 3px solid #ef4444; cursor: pointer;">
+                            <div class="kpi-title">🍍 Abacaxis</div>
+                            <div class="kpi-value" id="kpi-count-abacaxi">0</div>
+                            <div class="kpi-sub">Baixo Vol | Baixo Cresc</div>
+                        </div>
+                        <div class="kpi-card clickable-card" data-bcg-filter="DADOS_INSUFICIENTES" style="border-top: 3px solid #64748b; cursor: pointer;">
+                            <div class="kpi-title">⚠️ Dados Insuficientes</div>
+                            <div class="kpi-value" id="kpi-count-insuficiente">0</div>
+                            <div class="kpi-sub">Histórico nulo</div>
+                        </div>
+                    </div>
+
+                    <!-- Filtros -->
+                    <div class="filter-bar" style="display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <input type="text" id="search-analise-matriz" class="form-control" placeholder="🔍 Buscar SKU ou Nome do Produto...">
+                        </div>
+                        <div style="width: 220px;">
+                            <select id="filter-categoria-bcg" class="form-control">
+                                <option value="TODOS" selected>Todas as Categorias</option>
+                                <option value="ESTRELA">⭐ Estrela</option>
+                                <option value="VACA_LEITEIRA">🐮 Vaca leiteira</option>
+                                <option value="INTERROGACAO">❓ Interrogação</option>
+                                <option value="ABACAXI">🍍 Abacaxi</option>
+                                <option value="DADOS_INSUFICIENTES">⚠️ Dados insuficientes</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Tabela de Produtos -->
+                    <div class="table-responsive" style="margin-top: 15px;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>SKU</th>
+                                    <th>Produto (Matriz)</th>
+                                    <th>Família / Marca</th>
+                                    <th>Vendas Recentes</th>
+                                    <th>Vendas Anteriores</th>
+                                    <th>Variação %</th>
+                                    <th>Estoque Matriz</th>
+                                    <th>Classificação BCG</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-analise-matriz">
+                                <tr>
+                                    <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 25px;">
+                                        <i class="fa-solid fa-spinner fa-spin"></i> Analisando produtos da Matriz...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA 5: DEPÓSITOS DA MATRIZ & SUB-LOCAIS -->
+            <section id="tab-depositos-matriz" class="tab-content">
+                <div class="card mb-4">
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h3><i class="fa-solid fa-warehouse"></i> Aba 5 — Depósitos da Matriz (Sub-locais & Reabastecimento)</h3>
+                            <p style="margin:0; font-size:0.85rem; color:var(--text-muted);">
+                                Controle de sub-locais (Fracionado, Depósito 1, Depósito 2) e cálculo automático do saldo <b>A localizar</b>.
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button id="btn-sync-estoque-omie" class="btn btn-secondary" onclick="sincronizarEstoqueOmieDepositos()" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #10b981; font-weight: 600;">
+                                <i class="fa-solid fa-rotate"></i> Sincronizar Estoque Omie (Ativos)
+                            </button>
+                            <button id="btn-abrir-historico-transferencias" class="btn btn-secondary" onclick="abrirHistoricoTransferencias()">
+                                <i class="fa-solid fa-clock-rotate-left"></i> Histórico de Transferências
+                            </button>
+                            <button id="btn-recarregar-depositos" class="btn btn-secondary" onclick="recarregarDepositosCompletos()">
+                                <i class="fa-solid fa-arrows-rotate"></i> Recarregar Depósitos
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Summary Cards Depósitos -->
+                    <div class="kpi-grid" style="margin-top: 20px;">
+                        <div class="kpi-card" style="border-top: 3px solid #00cba9;">
+                            <div class="kpi-title">TOTAL MATRIZ (REAL)</div>
+                            <div class="kpi-value" id="kpi-dep-total-matriz">0</div>
+                            <div class="kpi-sub">Estoque Total Omie</div>
+                        </div>
+                        <div class="kpi-card" style="border-top: 3px solid #f59e0b;">
+                            <div class="kpi-title">FRACIONADO (PICKING)</div>
+                            <div class="kpi-value" id="kpi-dep-fracionado">0</div>
+                            <div class="kpi-sub">Pronto p/ expedição</div>
+                        </div>
+                        <div class="kpi-card" style="border-top: 3px solid #3b82f6;">
+                            <div class="kpi-title">DEPÓSITO 1</div>
+                            <div class="kpi-value" id="kpi-dep-deposito1">0</div>
+                            <div class="kpi-sub">Estoque Armazenado</div>
+                        </div>
+                        <div class="kpi-card" style="border-top: 3px solid #8b5cf6;">
+                            <div class="kpi-title">DEPÓSITO 2</div>
+                            <div class="kpi-value" id="kpi-dep-deposito2">0</div>
+                            <div class="kpi-sub">Contagem Inicial</div>
+                        </div>
+                        <div class="kpi-card" style="border-top: 3px solid #a855f7;">
+                            <div class="kpi-title">A LOCALIZAR (PENDENTE)</div>
+                            <div class="kpi-value" id="kpi-dep-alocalizar">0</div>
+                            <div class="kpi-sub">Total - Locais Contados</div>
+                        </div>
+                    </div>
+
+                    <!-- Caixas de Alerta de Divergência e Picking -->
+                    <div id="container-alertas-depositos" style="margin-top: 15px;"></div>
+
+                    <!-- Filtros e Ordenação -->
+                    <div class="filter-bar" style="display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; align-items: center;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <input type="text" id="search-depositos-matriz" class="form-control" placeholder="🔍 Buscar SKU ou Nome do Produto..." oninput="renderizarAbaDepositosMatriz()">
+                        </div>
+                        <div style="width: 220px;">
+                            <select id="filter-status-deposito" class="form-control" onchange="renderizarAbaDepositosMatriz()">
+                                <option value="TODOS" selected>Todos os Estados</option>
+                                <option value="DIVERGENCIA">⚠️ Divergência (Saldo Negativo)</option>
+                                <option value="ALERTA_PICKING">📦 Fracionado Necessita Busca</option>
+                                <option value="LOCALIZADO">✅ 100% Localizado</option>
+                                <option value="PENDENTE">🔍 Saldo A Localizar > 0</option>
+                            </select>
+                        </div>
+                        <div style="width: 250px;">
+                            <select id="sort-deposito-matriz" class="form-control" onchange="alterarOrdenacaoDepositosSelect(this.value)">
+                                <option value="deposito2_desc" selected>📊 Depósito 2 (Maior → Menor)</option>
+                                <option value="deposito2_asc">📊 Depósito 2 (Menor → Maior)</option>
+                                <option value="totalMatriz_desc">📦 Total Matriz (Maior → Menor)</option>
+                                <option value="totalMatriz_asc">📦 Total Matriz (Menor → Maior)</option>
+                                <option value="fracionado_desc">🛒 Fracionado (Maior → Menor)</option>
+                                <option value="deposito1_desc">🏭 Depósito 1 (Maior → Menor)</option>
+                                <option value="aLocalizar_desc">🔍 A Localizar (Maior → Menor)</option>
+                                <option value="sku_asc">🔤 SKU (A → Z)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Tabela de Depósitos -->
+                    <div class="table-responsive" style="margin-top: 15px;">
+                        <table class="data-table">
+                            <thead>
+                                <tr style="user-select: none;">
+                                    <th onclick="ordenarPorColunaDeposito('sku')" style="cursor:pointer;" title="Clique para ordenar por SKU">SKU <span id="sort-icon-sku"></span></th>
+                                    <th onclick="ordenarPorColunaDeposito('nome')" style="cursor:pointer;" title="Clique para ordenar por Nome">Produto (Matriz) <span id="sort-icon-nome"></span></th>
+                                    <th onclick="ordenarPorColunaDeposito('totalMatriz')" style="cursor:pointer; text-align:center;" title="Clique para ordenar por Total Matriz">Total Matriz <span id="sort-icon-totalMatriz"></span></th>
+                                    <th onclick="ordenarPorColunaDeposito('fracionado')" style="cursor:pointer; text-align:center;" title="Clique para ordenar por Fracionado">Fracionado <span id="sort-icon-fracionado"></span></th>
+                                    <th onclick="ordenarPorColunaDeposito('deposito1')" style="cursor:pointer; text-align:center;" title="Clique para ordenar por Depósito 1">Depósito 1 <span id="sort-icon-deposito1"></span></th>
+                                    <th onclick="ordenarPorColunaDeposito('deposito2')" style="cursor:pointer; text-align:center;" title="Clique para ordenar por Depósito 2">Depósito 2 <span id="sort-icon-deposito2">⬇️</span></th>
+                                    <th onclick="ordenarPorColunaDeposito('aLocalizar')" style="cursor:pointer; text-align:center;" title="Clique para ordenar por A Localizar">A Localizar <span id="sort-icon-aLocalizar"></span></th>
+                                    <th style="text-align:center;">Alerta / Assistência de Busca</th>
+                                    <th style="text-align:center;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-depositos-matriz">
+                                <tr>
+                                    <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 25px;">
+                                        <i class="fa-solid fa-spinner fa-spin"></i> Carregando sub-locais da Matriz...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA 6: GESTÃO DE COMBOS & KITS (OMIE ERP) -->
+            <section id="tab-combos-kit" class="tab-content">
+                <div class="card mb-4" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.95)); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 12px; padding: 22px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.35);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 14px; margin-bottom: 16px;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="width: 46px; height: 46px; border-radius: 10px; background: rgba(245, 158, 11, 0.2); display: flex; align-items: center; justify-content: center; font-size: 1.35rem; color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4);">
+                                <i class="fa-solid fa-boxes-packing"></i>
+                            </div>
+                            <div>
+                                <h3 style="margin: 0; font-size: 1.2rem; color: #f8fafc; font-weight: 700; display: flex; align-items: center; gap: 10px;">
+                                    Gestão de Combo & Alertas do Kit 
+                                    <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); font-size: 0.85rem; padding: 4px 10px;">SKU 000223</span>
+                                </h3>
+                                <small style="color: var(--text-muted); font-size: 0.85rem;">Monitoramento automático de componentes e redefinição de valor de venda padrão no Omie ERP</small>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="text-align: right; background: rgba(15, 23, 42, 0.7); padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+                                <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">Valor de Venda Atual Omie</span>
+                                <strong id="combo-preco-atual" style="font-size: 1.25rem; color: #34d399;">R$ 89,90</strong>
+                            </div>
+                            <button class="btn btn-sm" onclick="redefinirPrecoCombo()" style="background: rgba(52, 211, 153, 0.15); border: 1px solid rgba(52, 211, 153, 0.4); color: #34d399; font-weight: 600; padding: 10px 16px; font-size: 0.9rem;" title="Forçar redefinição do valor de venda para R$ 89,90 no Omie ERP">
+                                <i class="fa-solid fa-dollar-sign"></i> Fixar R$ 89,90 no Omie
+                            </button>
+                            <button class="btn btn-secondary" onclick="carregarDetalhesCombo()" title="Atualizar dados do combo" style="padding: 10px 14px;">
+                                <i class="fa-solid fa-arrows-rotate"></i> Recarregar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Banner de Alertas Globais do Combo -->
+                    <div id="combo-alert-banner" style="display: none; margin-bottom: 16px;"></div>
+
+                    <!-- Tabela de Componentes Ativos -->
+                    <div class="table-responsive" style="border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                        <table class="data-table" style="margin: 0; font-size: 0.9rem;">
+                            <thead>
+                                <tr style="background: rgba(15, 23, 42, 0.9); color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase;">
+                                    <th style="padding: 12px 16px;">SKU Componente</th>
+                                    <th style="padding: 12px 16px;">Descrição do Item</th>
+                                    <th style="text-align: center; padding: 12px 16px;">Estoque Matriz</th>
+                                    <th style="text-align: center; padding: 12px 16px;">Status do Nível</th>
+                                    <th style="text-align: right; padding: 12px 16px;">Ação Automática Omie</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-componentes-combo">
+                                <tr><td colspan="5" style="text-align:center; padding: 25px; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Carregando componentes do combo...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal Transferência de Depósito -->
+    <div id="modal-transferencia-deposito" class="modal-backdrop">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-arrow-right-arrow-left"></i> Registrar Transferência Física entre Locais</h3>
+                <button class="modal-close" id="btn-close-transferencia">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.85rem; color: var(--text-muted);">Transferir saldo físico entre os sub-locais da Matriz (sem descontar a venda duas vezes):</p>
+                <form id="form-transferencia-deposito" style="margin-top: 12px;">
+                    <input type="hidden" id="transf-sku">
+                    <div class="form-group">
+                        <label><b>Produto:</b></label>
+                        <input type="text" id="transf-produto-nome" class="form-control" readonly style="background: rgba(15, 23, 42, 0.8);">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-group">
+                            <label><b>Origem:</b></label>
+                            <select id="transf-origem" class="form-control" required>
+                                <option value="A_LOCALIZAR">A Localizar (Pendente)</option>
+                                <option value="DEP_2" selected>Depósito 2</option>
+                                <option value="DEP_1">Depósito 1</option>
+                                <option value="FRACIONADO">Fracionado</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label><b>Destino:</b></label>
+                            <select id="transf-destino" class="form-control" required>
+                                <option value="FRACIONADO" selected>Fracionado (Picking)</option>
+                                <option value="DEP_1">Depósito 1</option>
+                                <option value="DEP_2">Depósito 2</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label><b>Quantidade a Transferir:</b></label>
+                        <input type="number" id="transf-quantidade" class="form-control" min="1" value="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label><b>Observação / Motivo (Opcional):</b></label>
+                        <input type="text" id="transf-obs" class="form-control" placeholder="Ex: Reabastecimento para expedição">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: space-between;">
+                <button class="btn btn-secondary" id="btn-cancel-transferencia">Cancelar</button>
+                <button class="btn btn-primary" id="btn-confirm-transferencia"><i class="fa-solid fa-check"></i> Confirmar Transferência</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Histórico de Transferências -->
+    <div id="modal-historico-transferencias" class="modal-backdrop">
+        <div class="modal-box modal-lg">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-clock-rotate-left"></i> Histórico de Transferências de Depósito</h3>
+                <button class="modal-close" id="btn-close-historico-transferencias">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Data/Hora</th>
+                                <th>SKU</th>
+                                <th>Produto</th>
+                                <th>Origem</th>
+                                <th>Destino</th>
+                                <th>Qtd</th>
+                                <th>Obs</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-historico-transferencias">
+                            <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Carregando histórico...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="btn-fechar-historico-transferencias">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Endereço de Armazenamento -->
+    <div id="modal-editar-endereco" class="modal-backdrop">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-location-dot" style="color:#f59e0b;"></i> Endereço de Armazenamento (Omie ERP)</h3>
+                <button class="modal-close" onclick="fecharModalEndereco()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+                    Altere ou inclua os endereços de Fracionado e Depósito 1. As alterações serão salvas no sistema e sincronizadas com a característica <b>"Endereço"</b> no Omie ERP.
+                </p>
+                <form id="form-editar-endereco" onsubmit="event.preventDefault(); confirmarSalvarEndereco();">
+                    <input type="hidden" id="end-sku">
+                    <input type="hidden" id="end-id-produto">
+                    
+                    <div class="form-group mb-3">
+                        <label><b>Produto:</b></label>
+                        <input type="text" id="end-produto-nome" class="form-control" readonly style="background: rgba(15, 23, 42, 0.8); font-weight: 600;">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-group">
+                            <label><b>📍 Fracionado (Picking):</b></label>
+                            <input type="text" id="end-fracionado" class="form-control" placeholder="Ex: C3N5, A1N1, E-N2..." style="text-transform: uppercase;">
+                            <small style="font-size:0.75rem; color:var(--text-muted);">Prateleira A1..H1 | Nível N1..N9</small>
+                        </div>
+                        <div class="form-group">
+                            <label><b>🏭 Depósito 1 (Armazenado):</b></label>
+                            <input type="text" id="end-deposito1" class="form-control" placeholder="Ex: D1N1, D1N2, D4N4..." style="text-transform: uppercase;">
+                            <small style="font-size:0.75rem; color:var(--text-muted);">Prateleira D1..D4 | Nível N1..N4</small>
+                        </div>
+                    </div>
+
+                    <div id="end-status-omie" style="margin-top: 10px; font-size: 0.8rem; display: none;"></div>
+
+                    <div class="modal-footer" style="margin-top: 18px; padding: 0;">
+                        <button type="button" class="btn btn-secondary" onclick="fecharModalEndereco()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="btn-salvar-endereco-omie">
+                            <i class="fa-solid fa-floppy-disk"></i> Salvar no Omie ERP & DRP
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+        </main>
+    </div>
+
+    <!-- Modal Configuração de Lead Time por Família -->
+    <div id="modal-leadtime" class="modal-backdrop">
+        <div class="modal-box modal-lg">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-business-time"></i> Ajuste de Lead Time por Família (Dias)</h3>
+                <button class="modal-close" id="btn-close-leadtime">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Configure os dias de lead time de produção e transporte para cada família de produtos (CD_SP vs Matriz/CE):</p>
+                <div id="leadtime-families-list" class="leadtime-list-container">
+                    <!-- Preenchido via JS -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="btn-save-leadtime">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Blacklist -->
+    <div id="modal-blacklist" class="modal-backdrop">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-user-slash"></i> Gerenciar Blacklist de Produtos</h3>
+                <button class="modal-close" id="btn-close-blacklist">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Produtos selecionados na blacklist serão ocultados nas análises do CD_SP e Matriz.</p>
+                <div class="form-group">
+                    <input type="text" id="blacklist-search" placeholder="Filtrar por SKU ou Nome..." class="form-control">
+                </div>
+                <div id="blacklist-items-list" class="blacklist-items-container">
+                    <!-- Preenchido via JS -->
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                <button class="btn btn-primary" id="btn-export-blacklist-txt"><i class="fa-solid fa-file-export"></i> Baixar Lista de Itens (.txt)</button>
+                <button class="btn btn-secondary" id="btn-cancel-blacklist">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Texto Fiscal -->
+    <div id="modal-fiscal" class="modal-backdrop">
+        <div class="modal-box modal-lg">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-code"></i> Prévia do Documento Fiscal de Remessa</h3>
+                <button class="modal-close" id="btn-close-fiscal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <pre id="fiscal-text-content" class="code-preview"></pre>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="btn-copy-fiscal"><i class="fa-regular fa-copy"></i> Copiar Texto</button>
+                <button class="btn btn-primary" id="btn-modal-close-fiscal">Ok</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detalhes da Remessa -->
+    <div id="modal-detalhes-remessa" class="modal-backdrop">
+        <div class="modal-box modal-lg">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-boxes-packing"></i> Itens da Remessa <span id="detalhes-remessa-num">#</span></h3>
+                <button class="modal-close" id="btn-close-detalhes-remessa">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="detalhes-remessa-header-info" style="margin-bottom: 15px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px;"></div>
+                <div class="table-wrapper">
+                    <table class="drp-table">
+                        <thead>
+                            <tr>
+                                <th>SKU</th>
+                                <th>Descrição do Produto</th>
+                                <th>Qtd Enviada</th>
+                                <th>Valor Unit.</th>
+                                <th>Valor Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-detalhes-remessa-itens">
+                            <!-- Preenchido via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="btn-cancel-detalhes-remessa">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Modal Grade de Tamanhos de Camisas (PP a 3G/XGG) -->
+    <div id="modal-grade-camisas" class="modal-backdrop">
+        <div class="modal-box modal-lg">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-shirt"></i> Grade de Tamanhos do Modelo (PP ao 3G/XGG)</h3>
+                <button class="modal-close" id="btn-close-grade-camisas">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h4 id="grade-modelo-nome" style="color: var(--primary); margin-bottom: 12px;">Modelo: -</h4>
+                <p>Analise a disponibilidade de estoque da grade. Rupturas isoladas em um tamanho (ex: G) não indicam falta total do modelo. Solicite a requisição da grade completa:</p>
+                <div class="table-wrapper">
+                    <table class="drp-table">
+                        <thead>
+                            <tr>
+                                <th>SKU</th>
+                                <th>Tamanho</th>
+                                <th>Estoque Matriz</th>
+                                <th>Estoque Alvo (+20%)</th>
+                                <th>Status Matriz</th>
+                                <th>Em Produção 🟣</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-grade-camisas">
+                            <!-- Preenchido via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="btn-gerar-requisicao-grade-camisas"><i class="fa-solid fa-cart-shopping"></i> Gerar Requisição da Grade Completa Omie 🛍️</button>
+                <button class="btn btn-secondary" id="btn-save-grade-camisas">Fechar & Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Projeção de Velas Férias Discipulado (15/09 a 05/10 - 20 Dias) -->
+    <div id="modal-velas-ferias" class="modal-backdrop">
+        <div class="modal-box modal-lg">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-candle-holder"></i> Projeção de Velas - Férias Discipulado (15/Set a 05/Out) 🕯️</h3>
+                <button class="modal-close" id="btn-close-velas-ferias">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>O Discipulado estará de férias entre <strong>15/09 e 05/10 (20 dias)</strong>. Cole abaixo a lista enviada pelo Discipulado ou selecione diretamente na tabela (combos/kits foram ignorados):</p>
+                
+                <details id="details-importar-velas" open style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px;">
+                    <summary style="font-weight: 600; color: #fbbf24; cursor: pointer; user-select: none; font-size: 0.92rem;">
+                        <i class="fa-solid fa-file-lines"></i> Importar / Colar Lista de Velas do Discipulado (Clique para recolher/expandir) 📝
+                    </summary>
+                    <div style="margin-top: 10px;">
+                        <textarea id="txt-velas-discipulado" class="input-text" rows="2" style="width: 100%; resize: vertical; font-family: monospace; font-size: 0.85rem; padding: 8px; background: #0f172a; color: #f8fafc; border: 1px solid #334155; border-radius: 6px;" placeholder="Cole aqui o texto com a lista de velas enviada pelo Discipulado...&#10;Exemplo:&#10;10 VELA SANTO AGOSTINHO&#10;5 VELA LITÚRGICA 5CM&#10;12 VELA MANUSCRITA RAINHA DA PAZ"></textarea>
+                        <div style="display: flex; gap: 10px; margin-top: 8px; align-items: center; flex-wrap: wrap;">
+                            <button class="btn btn-secondary" id="btn-processar-texto-velas" style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: rgba(59, 130, 246, 0.4);">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Reconhecer Velas e Validar 🔍
+                            </button>
+                            <button class="btn btn-secondary" id="btn-limpar-texto-velas" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border-color: rgba(239, 68, 68, 0.3);">
+                                <i class="fa-solid fa-trash-can"></i> Limpar Lista
+                            </button>
+                            <span style="font-size: 0.8rem; color: #94a3b8;">(Salvo automaticamente)</span>
+                        </div>
+                    </div>
+                </details>
+
+                <div id="div-resultado-reconhecimento" style="margin-bottom: 10px;"></div>
+
+                <div class="table-wrapper">
+                    <table class="drp-table">
+                        <thead>
+                            <tr>
+                                <th width="40"><input type="checkbox" id="chk-select-all-velas" title="Selecionar Todas"></th>
+                                <th>SKU</th>
+                                <th>Descrição da Vela</th>
+                                <th>Catálogo Discipulado</th>
+                                <th>Est. Discipulado (Texto)</th>
+                                <th>Estoque Matriz</th>
+                                <th>Vendas / Dia</th>
+                                <th>Demanda 20 Dias</th>
+                                <th>Qtd a Produzir / Comprar</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-velas-ferias">
+                            <!-- Preenchido via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <button class="btn btn-secondary" id="btn-pdf-velas-ferias"><i class="fa-solid fa-file-pdf"></i> Gerar PDF das Velas Selecionadas 📄</button>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-primary" id="btn-gerar-requisicao-velas"><i class="fa-solid fa-cart-shopping"></i> Gerar Requisição Omie para Velas Selecionadas 🛍️</button>
+                    <button class="btn btn-secondary" id="btn-close-velas-ferias-footer">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Requisição / Pedido de Compra Omie ERP -->
+    <div id="modal-requisicao-compra" class="modal-backdrop">
+        <div class="modal-box modal-lg">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-cart-shopping"></i> Requisição de Compra / Pedido Omie ERP (Aba 2)</h3>
+                <button class="modal-close" id="btn-close-requisicao-compra">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Produtos selecionados em <strong>Ruptura ou Alerta</strong> para geração de Pedido de Compra no Omie ERP:</p>
+                <div class="table-wrapper" style="margin-bottom: 14px;">
+                    <table class="drp-table">
+                        <thead>
+                            <tr>
+                                <th>SKU</th>
+                                <th>Produto</th>
+                                <th>Estoque Matriz</th>
+                                <th>Necessidade</th>
+                                <th>Qtd Solicitada</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-requisicao-compra">
+                            <!-- Preenchido via JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <details style="margin-top: 10px; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px 12px; background: rgba(15, 23, 42, 0.6);">
+                    <summary style="cursor: pointer; font-weight: 500; color: var(--text-muted); font-size: 0.85rem;">Ver Payload JSON Omie API (IncluirReq)</summary>
+                    <pre id="json-requisicao-compra" class="code-preview" style="max-height: 180px; margin-top: 8px;"></pre>
+                </details>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <button class="btn btn-secondary" id="btn-pdf-requisicao-compra"><i class="fa-solid fa-file-pdf"></i> Gerar PDF do Pedido 📄</button>
+                    <button class="btn btn-secondary" id="btn-copy-json-compra"><i class="fa-regular fa-copy"></i> Copiar Payload JSON</button>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-primary" id="btn-confirm-compra-omie"><i class="fa-solid fa-paper-plane"></i> Confirmar & Enviar Pedido para Omie ERP 🚀</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Alertas por E-mail & Agendamento -->
+    <div id="modal-email-alert" class="modal-backdrop">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-envelope"></i> Alertas por E-mail & Agendamento Automático</h3>
+                <button class="modal-close" id="btn-close-email-alert">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Envie relatórios sintéticos de rupturas e alertas do CD_SP e Matriz ou configure agendamentos automáticos:</p>
+                <div class="form-group">
+                    <label for="input-email-destinatarios"><i class="fa-solid fa-at"></i> E-mails Destinatários (separados por vírgula)</label>
+                    <input type="text" id="input-email-destinatarios" value="faturamentoedicoes@comshalom.org, comprasedicoes@comshalom.org" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label><i class="fa-regular fa-clock"></i> Horários de Agendamento Automático</label>
+                    <ul style="font-size: 0.85rem; color: var(--text-muted); margin-left: 18px; margin-top: 4px;">
+                        <li><strong>CD_SP:</strong> Toda Segunda-feira e Sexta-feira às 08:00</li>
+                        <li><strong>Matriz:</strong> Diariamente às 07:30 (Contabilização do Estoque Matriz)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary w-100" id="btn-send-email-alert-now">
+                    <i class="fa-solid fa-paper-plane"></i> Disparar Alerta por E-mail Agora 📧
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Sincronização Seletiva & Recarregar Dados Omie ERP -->
+    <div id="modal-sync-seletivo" class="modal-backdrop">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-rotate"></i> Sincronização Seletiva & Recarregar Dados Omie ERP</h3>
+                <button class="modal-close" id="btn-close-sync-seletivo">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Escolha qual conjunto de dados deseja atualizar no painel DRP:</p>
+                <div class="form-group">
+                    <label for="select-tipo-sync"><i class="fa-solid fa-filter"></i> Opção de Atualização</label>
+                    <select id="select-tipo-sync" class="form-control">
+                        <option value="TUDO" selected>⚡ 1. Sincronizar Tudo (Estoques + Vendas Matriz e CD_SP)</option>
+                        <option value="ESTOQUE_CD">📦 2. Puxar apenas Estoque Novo do CD_SP</option>
+                        <option value="ESTOQUE_MATRIZ">🏭 3. Puxar apenas Estoque Novo da Matriz</option>
+                        <option value="AMBOS_ESTOQUES">📦🏭 4. Puxar Ambos os Estoques (Matriz + CD_SP)</option>
+                        <option value="VENDAS_CD">🛒 5. Puxar apenas Vendas de SP (Sul/Sudeste)</option>
+                        <option value="VENDAS_MATRIZ">🌐 6. Puxar apenas Vendas Gerais (Nacional)</option>
+                        <option value="AMBAS_VENDAS">🛒🌐 7. Puxar Ambas as Vendas (Matriz + CD_SP)</option>
+                    </select>
+                </div>
+                <div id="sync-status-msg" style="font-size: 0.85rem; color: var(--primary); display: none; margin-top: 10px;">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Atualizando dados no servidor Omie ERP...
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="btn-cancel-sync-seletivo">Cancelar</button>
+                <button class="btn btn-primary" id="btn-execute-sync-seletivo">
+                    <i class="fa-solid fa-arrows-rotate"></i> Executar Sincronização
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Gerar / Mesclar Remessa -->
+    <div id="modal-gerar-remessa" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-truck-fast"></i> Opções de Remessa Omie</h3>
+                <button class="modal-close" id="btn-close-gerar-remessa">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Você deseja criar uma nova remessa ou adicionar os itens selecionados a uma remessa existente que ainda não foi faturada?</p>
+                
+                <div class="form-group" style="margin-top: 15px;">
+                    <label><input type="radio" name="tipo_remessa" value="NOVA" checked> <strong>Criar Nova Remessa</strong></label>
+                </div>
+                <div class="form-group" style="margin-top: 10px;">
+                    <label><input type="radio" name="tipo_remessa" value="EXISTENTE"> <strong>Adicionar à Remessa Existente</strong></label>
+                </div>
+
+                <div class="form-group" id="group-select-remessa" style="display: none; margin-top: 15px; margin-left: 25px;">
+                    <label for="select-remessa-existente">Selecione a Remessa Pendente:</label>
+                    <select id="select-remessa-existente" class="form-control">
+                        <option value="">Carregando remessas em aberto...</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="btn-cancel-gerar-remessa">Cancelar</button>
+                <button class="btn btn-primary" id="btn-confirm-gerar-remessa">
+                    <i class="fa-solid fa-check"></i> Prosseguir
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=20260915_15"></script>
+</body>
+
+
+</html>

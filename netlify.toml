@@ -1,0 +1,16 @@
+[build]
+  publish = "."
+
+[dev]
+  command = "python server.py"
+  targetPort = 8889
+  port = 8888
+  publish = "."
+  autoLaunch = false
+
+[[redirects]]
+  from = "/api/*"
+  to = "http://localhost:8889/api/:splat"
+  status = 200
+  force = true
+

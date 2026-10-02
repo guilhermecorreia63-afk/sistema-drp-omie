@@ -1,0 +1,112 @@
+[
+  {
+    "id": 11,
+    "sku": "PRD00227",
+    "nome_produto": "PRD00227 - Box Oração de Hoje",
+    "origem": "DEP_1",
+    "destino": "FRACIONADO",
+    "quantidade": 7,
+    "data_hora": "2026-10-02 11:05:12",
+    "observacao": ""
+  },
+  {
+    "id": 10,
+    "sku": "010019",
+    "nome_produto": "010019 - A CONFIANÇA DE TERESINHA - FREI PATRICIO SCIADINI",
+    "origem": "DEP_1",
+    "destino": "FRACIONADO",
+    "quantidade": 29,
+    "data_hora": "2026-10-01 11:37:23",
+    "observacao": ""
+  },
+  {
+    "id": 9,
+    "sku": "000135",
+    "nome_produto": "000135 - LUZ PARA OS MEUS PASSOS VOL I",
+    "origem": "DEP_1",
+    "destino": "FRACIONADO",
+    "quantidade": 10,
+    "data_hora": "2026-09-30 14:40:32",
+    "observacao": ""
+  },
+  {
+    "id": 8,
+    "sku": "PRD00856",
+    "nome_produto": "PRD00856 - I FIORETTI COMENTADO",
+    "origem": "DEP_1",
+    "destino": "FRACIONADO",
+    "quantidade": 20,
+    "data_hora": "2026-09-30 14:10:33",
+    "observacao": ""
+  },
+  {
+    "id": 7,
+    "sku": "002853",
+    "nome_produto": "002853 - LUZ PARA OS MEUS PASSOS VOL II",
+    "origem": "DEP_1",
+    "destino": "FRACIONADO",
+    "quantidade": 20,
+    "data_hora": "2026-09-30 14:09:47",
+    "observacao": ""
+  },
+  {
+    "id": 6,
+    "sku": "PRD00770",
+    "nome_produto": "PRD00770 - DOS VICIOS AS VIRTUDES",
+    "origem": "DEP_1",
+    "destino": "FRACIONADO",
+    "quantidade": 20,
+    "data_hora": "2026-09-30 12:00:27",
+    "observacao": ""
+  },
+  {
+    "id": 5,
+    "sku": "000135",
+    "nome_produto": "000135 - LUZ PARA OS MEUS PASSOS VOL I",
+    "origem": "DEP_1",
+    "destino": "FRACIONADO",
+    "quantidade": 20,
+    "data_hora": "2026-09-30 12:00:12",
+    "observacao": ""
+  },
+  {
+    "id": 4,
+    "sku": "002853",
+    "nome_produto": "002853 - LUZ PARA OS MEUS PASSOS VOL II",
+    "origem": "DEP_1",
+    "destino": "FRACIONADO",
+    "quantidade": 20,
+    "data_hora": "2026-09-30 11:59:54",
+    "observacao": ""
+  },
+  {
+    "id": 3,
+    "sku": "000135",
+    "nome_produto": "000135 - LUZ PARA OS MEUS PASSOS VOL I",
+    "origem": "DEP_2",
+    "destino": "FRACIONADO",
+    "quantidade": 20,
+    "data_hora": "2026-09-30 11:59:38",
+    "observacao": ""
+  },
+  {
+    "id": 2,
+    "sku": "PRD00770",
+    "nome_produto": "PRD00770 - DOS VICIOS AS VIRTUDES",
+    "origem": "DEP_2",
+    "destino": "FRACIONADO",
+    "quantidade": 20,
+    "data_hora": "2026-09-30 11:59:06",
+    "observacao": ""
+  },
+  {
+    "id": 1,
+    "sku": "009861",
+    "nome_produto": "ENVELOPES DE FIGURINHAS - SANTOS SHALOM",
+    "origem": "DEP_2",
+    "destino": "FRACIONADO",
+    "quantidade": 10,
+    "data_hora": "2026-09-28 12:14:04",
+    "observacao": "Teste de transferência inicial"
+  }
+]

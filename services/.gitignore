@@ -1,0 +1,40 @@
+# ================================
+# ARQUIVOS SENSIVEIS - NAO VERSIONAR
+# ================================
+.env
+secrets.toml
+*.db
+*.sqlite
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.env.local
+*.log
+temp_barcode.png
+
+# ================================
+# IDE / EDITOR
+# ================================
+.idea/
+.vscode/
+*.swp
+*.swo
+~*
+
+# ================================
+# NETLIFY
+# ================================
+.netlify/
+.netlify-build/
+
+# ================================
+# DATA FILES (nao versionar dados sensiveis)
+# ================================
+data/*.csv
+!data/.gitkeep
+

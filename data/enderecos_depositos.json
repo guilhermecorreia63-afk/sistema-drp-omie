@@ -1,0 +1,3330 @@
+{
+  "010561": {
+    "sku": "010561",
+    "id_produto": 1854755108,
+    "fracionado": "C3N5",
+    "deposito_1": "",
+    "raw": "C3N5",
+    "ultima_atualizacao": "2026-10-01 09:27:23"
+  },
+  "000135": {
+    "sku": "000135",
+    "id_produto": "1818184051",
+    "fracionado": "C1-N5",
+    "deposito_1": "D1.2-N3",
+    "raw": "C1-N5, D1.2-N3",
+    "ultima_atualizacao": "2026-10-02 11:12:37"
+  },
+  "010019": {
+    "sku": "010019",
+    "id_produto": null,
+    "fracionado": "B1-N2",
+    "deposito_1": "D1.2-N1",
+    "raw": "B1-N2, D1.2-N1",
+    "ultima_atualizacao": "2026-10-01 11:45:14"
+  },
+  "002766": {
+    "sku": "002766",
+    "id_produto": 1818183892,
+    "fracionado": "E-N2",
+    "deposito_1": "",
+    "raw": "E-N2",
+    "ultima_atualizacao": "2026-10-01 09:21:07"
+  },
+  "002767": {
+    "sku": "002767",
+    "id_produto": 1818183894,
+    "fracionado": "E-N7",
+    "deposito_1": "",
+    "raw": "E-N7",
+    "ultima_atualizacao": "2026-10-01 09:21:08"
+  },
+  "002914": {
+    "sku": "002914",
+    "id_produto": 1818183896,
+    "fracionado": "E-N6",
+    "deposito_1": "",
+    "raw": "E-N6",
+    "ultima_atualizacao": "2026-10-01 09:21:09"
+  },
+  "002770": {
+    "sku": "002770",
+    "id_produto": 1818183904,
+    "fracionado": "E-N3",
+    "deposito_1": "",
+    "raw": "E-N3",
+    "ultima_atualizacao": "2026-10-01 09:21:10"
+  },
+  "002768": {
+    "sku": "002768",
+    "id_produto": 1818183910,
+    "fracionado": "E-N5",
+    "deposito_1": "",
+    "raw": "E-N5",
+    "ultima_atualizacao": "2026-10-01 09:21:10"
+  },
+  "002769": {
+    "sku": "002769",
+    "id_produto": 1818183914,
+    "fracionado": "E-N5",
+    "deposito_1": "",
+    "raw": "E-N5",
+    "ultima_atualizacao": "2026-10-01 09:21:11"
+  },
+  "001151": {
+    "sku": "001151",
+    "id_produto": 1818183921,
+    "fracionado": "E-N4",
+    "deposito_1": "",
+    "raw": "E-N4",
+    "ultima_atualizacao": "2026-10-01 09:21:12"
+  },
+  "000203": {
+    "sku": "000203",
+    "id_produto": 1818183923,
+    "fracionado": "E-N3",
+    "deposito_1": "",
+    "raw": "E-N3",
+    "ultima_atualizacao": "2026-10-01 09:21:13"
+  },
+  "000158": {
+    "sku": "000158",
+    "id_produto": 1818183927,
+    "fracionado": "E-N6",
+    "deposito_1": "",
+    "raw": "E-N6",
+    "ultima_atualizacao": "2026-10-01 09:21:14"
+  },
+  "000156": {
+    "sku": "000156",
+    "id_produto": 1818183931,
+    "fracionado": "E-N5",
+    "deposito_1": "",
+    "raw": "E-N5",
+    "ultima_atualizacao": "2026-10-01 09:21:15"
+  },
+  "009630": {
+    "sku": "009630",
+    "id_produto": 1818183937,
+    "fracionado": "E-N7",
+    "deposito_1": "",
+    "raw": "E-N7",
+    "ultima_atualizacao": "2026-10-01 09:21:15"
+  },
+  "009631": {
+    "sku": "009631",
+    "id_produto": 1818183940,
+    "fracionado": "C3N2",
+    "deposito_1": "",
+    "raw": "C3N2",
+    "ultima_atualizacao": "2026-10-01 09:21:16"
+  },
+  "009023": {
+    "sku": "009023",
+    "id_produto": 1818183944,
+    "fracionado": "C3N6",
+    "deposito_1": "",
+    "raw": "C3N6",
+    "ultima_atualizacao": "2026-10-01 09:21:17"
+  },
+  "004264": {
+    "sku": "004264",
+    "id_produto": 1818183958,
+    "fracionado": "E-N7",
+    "deposito_1": "",
+    "raw": "E-N7",
+    "ultima_atualizacao": "2026-10-01 09:21:18"
+  },
+  "000566": {
+    "sku": "000566",
+    "id_produto": 1818184033,
+    "fracionado": "D4N4 1B2A",
+    "deposito_1": "",
+    "raw": "D4N4 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:21:19"
+  },
+  "004281": {
+    "sku": "004281",
+    "id_produto": 1818184645,
+    "fracionado": "F-N8",
+    "deposito_1": "",
+    "raw": "F-N8",
+    "ultima_atualizacao": "2026-10-01 09:21:39"
+  },
+  "007905": {
+    "sku": "007905",
+    "id_produto": 1818184650,
+    "fracionado": "F-N7",
+    "deposito_1": "",
+    "raw": "F-N7",
+    "ultima_atualizacao": "2026-10-01 09:21:40"
+  },
+  "004337": {
+    "sku": "004337",
+    "id_produto": 1818184654,
+    "fracionado": "F-N7",
+    "deposito_1": "",
+    "raw": "F-N7",
+    "ultima_atualizacao": "2026-10-01 09:21:41"
+  },
+  "005576": {
+    "sku": "005576",
+    "id_produto": 1818184656,
+    "fracionado": "F-N8",
+    "deposito_1": "",
+    "raw": "F-N8",
+    "ultima_atualizacao": "2026-10-01 09:21:42"
+  },
+  "004338": {
+    "sku": "004338",
+    "id_produto": 1818184659,
+    "fracionado": "F-N8",
+    "deposito_1": "",
+    "raw": "F-N8",
+    "ultima_atualizacao": "2026-10-01 09:21:43"
+  },
+  "002038": {
+    "sku": "002038",
+    "id_produto": 1818184664,
+    "fracionado": "E-N1",
+    "deposito_1": "",
+    "raw": "E-N1",
+    "ultima_atualizacao": "2026-10-01 09:21:43"
+  },
+  "002039": {
+    "sku": "002039",
+    "id_produto": 1818184666,
+    "fracionado": "E-N4",
+    "deposito_1": "",
+    "raw": "E-N4",
+    "ultima_atualizacao": "2026-10-01 09:21:44"
+  },
+  "002743": {
+    "sku": "002743",
+    "id_produto": 1818184668,
+    "fracionado": "F-N7",
+    "deposito_1": "",
+    "raw": "F-N7",
+    "ultima_atualizacao": "2026-10-01 09:21:45"
+  },
+  "003929": {
+    "sku": "003929",
+    "id_produto": 1818184672,
+    "fracionado": "F-N8",
+    "deposito_1": "",
+    "raw": "F-N8",
+    "ultima_atualizacao": "2026-10-01 09:21:46"
+  },
+  "002686": {
+    "sku": "002686",
+    "id_produto": 1818184674,
+    "fracionado": "F-N8",
+    "deposito_1": "",
+    "raw": "F-N8",
+    "ultima_atualizacao": "2026-10-01 09:21:47"
+  },
+  "004650": {
+    "sku": "004650",
+    "id_produto": 1818184676,
+    "fracionado": "F-N7",
+    "deposito_1": "",
+    "raw": "F-N7",
+    "ultima_atualizacao": "2026-10-01 09:21:48"
+  },
+  "002190": {
+    "sku": "002190",
+    "id_produto": 1818184678,
+    "fracionado": "F-N9",
+    "deposito_1": "",
+    "raw": "F-N9",
+    "ultima_atualizacao": "2026-10-01 09:21:49"
+  },
+  "005577": {
+    "sku": "005577",
+    "id_produto": 1818184687,
+    "fracionado": "F-N8",
+    "deposito_1": "",
+    "raw": "F-N8",
+    "ultima_atualizacao": "2026-10-01 09:21:50"
+  },
+  "001238": {
+    "sku": "001238",
+    "id_produto": 1818184692,
+    "fracionado": "F-N7",
+    "deposito_1": "",
+    "raw": "F-N7",
+    "ultima_atualizacao": "2026-10-01 09:21:51"
+  },
+  "003032": {
+    "sku": "003032",
+    "id_produto": 1818184703,
+    "fracionado": "G-N5",
+    "deposito_1": "",
+    "raw": "G-N5",
+    "ultima_atualizacao": "2026-10-01 09:21:52"
+  },
+  "002940": {
+    "sku": "002940",
+    "id_produto": 1818184728,
+    "fracionado": "D-N6 - 2C-N2",
+    "deposito_1": "",
+    "raw": "D-N6 - 2C-N2",
+    "ultima_atualizacao": "2026-10-01 09:21:52"
+  },
+  "007153": {
+    "sku": "007153",
+    "id_produto": 1818184732,
+    "fracionado": "C-N6 - 1C-N1",
+    "deposito_1": "",
+    "raw": "C-N6 - 1C-N1",
+    "ultima_atualizacao": "2026-10-01 09:21:53"
+  },
+  "003544": {
+    "sku": "003544",
+    "id_produto": 1818184740,
+    "fracionado": "C-N9 - 2C-N1",
+    "deposito_1": "",
+    "raw": "C-N9 - 2C-N1",
+    "ultima_atualizacao": "2026-10-01 09:21:54"
+  },
+  "008175": {
+    "sku": "008175",
+    "id_produto": 1818184768,
+    "fracionado": "B-N2 - 2C-N3",
+    "deposito_1": "",
+    "raw": "B-N2 - 2C-N3",
+    "ultima_atualizacao": "2026-10-01 09:21:55"
+  },
+  "008594": {
+    "sku": "008594",
+    "id_produto": 1818184771,
+    "fracionado": "B-N2 - 1D-N3",
+    "deposito_1": "",
+    "raw": "B-N2 - 1D-N3",
+    "ultima_atualizacao": "2026-10-01 09:21:56"
+  },
+  "009410": {
+    "sku": "009410",
+    "id_produto": 1818184780,
+    "fracionado": "F-N5",
+    "deposito_1": "",
+    "raw": "F-N5",
+    "ultima_atualizacao": "2026-10-01 09:21:57"
+  },
+  "009233": {
+    "sku": "009233",
+    "id_produto": 1818184783,
+    "fracionado": "G-N9",
+    "deposito_1": "",
+    "raw": "G-N9",
+    "ultima_atualizacao": "2026-10-01 09:21:57"
+  },
+  "005989": {
+    "sku": "005989",
+    "id_produto": 1818184794,
+    "fracionado": "G-N9",
+    "deposito_1": "",
+    "raw": "G-N9",
+    "ultima_atualizacao": "2026-10-01 09:21:58"
+  },
+  "009236": {
+    "sku": "009236",
+    "id_produto": 1818184800,
+    "fracionado": "G-N9",
+    "deposito_1": "",
+    "raw": "G-N9",
+    "ultima_atualizacao": "2026-10-01 09:21:59"
+  },
+  "009237": {
+    "sku": "009237",
+    "id_produto": 1818184803,
+    "fracionado": "F-N9",
+    "deposito_1": "",
+    "raw": "F-N9",
+    "ultima_atualizacao": "2026-10-01 09:22:00"
+  },
+  "006919": {
+    "sku": "006919",
+    "id_produto": 1818184806,
+    "fracionado": "F-N4",
+    "deposito_1": "",
+    "raw": "F-N4",
+    "ultima_atualizacao": "2026-10-01 09:22:01"
+  },
+  "009240": {
+    "sku": "009240",
+    "id_produto": 1818184830,
+    "fracionado": "G-N9",
+    "deposito_1": "",
+    "raw": "G-N9",
+    "ultima_atualizacao": "2026-10-01 09:22:02"
+  },
+  "009427": {
+    "sku": "009427",
+    "id_produto": 1818184845,
+    "fracionado": "G-N1",
+    "deposito_1": "",
+    "raw": "G-N1",
+    "ultima_atualizacao": "2026-10-01 09:22:03"
+  },
+  "008145": {
+    "sku": "008145",
+    "id_produto": 1818184849,
+    "fracionado": "C-N8",
+    "deposito_1": "",
+    "raw": "C-N8",
+    "ultima_atualizacao": "2026-10-01 09:22:04"
+  },
+  "009243": {
+    "sku": "009243",
+    "id_produto": 1818184851,
+    "fracionado": "A3N2",
+    "deposito_1": "",
+    "raw": "A3N2",
+    "ultima_atualizacao": "2026-10-01 09:22:05"
+  },
+  "004217": {
+    "sku": "004217",
+    "id_produto": 1818184860,
+    "fracionado": "C-N3",
+    "deposito_1": "",
+    "raw": "C-N3",
+    "ultima_atualizacao": "2026-10-01 09:22:05"
+  },
+  "009241": {
+    "sku": "009241",
+    "id_produto": 1818184862,
+    "fracionado": "F-N9",
+    "deposito_1": "",
+    "raw": "F-N9",
+    "ultima_atualizacao": "2026-10-01 09:22:06"
+  },
+  "007449": {
+    "sku": "007449",
+    "id_produto": 1818184870,
+    "fracionado": "F-N3",
+    "deposito_1": "",
+    "raw": "F-N3",
+    "ultima_atualizacao": "2026-10-01 09:22:07"
+  },
+  "007145": {
+    "sku": "007145",
+    "id_produto": 1818184876,
+    "fracionado": "F-N2",
+    "deposito_1": "",
+    "raw": "F-N2",
+    "ultima_atualizacao": "2026-10-01 09:22:08"
+  },
+  "008580": {
+    "sku": "008580",
+    "id_produto": 1818184878,
+    "fracionado": "F-N1",
+    "deposito_1": "",
+    "raw": "F-N1",
+    "ultima_atualizacao": "2026-10-01 09:22:09"
+  },
+  "008604": {
+    "sku": "008604",
+    "id_produto": 1818184888,
+    "fracionado": "D3N3",
+    "deposito_1": "",
+    "raw": "D3N3",
+    "ultima_atualizacao": "2026-10-01 09:22:10"
+  },
+  "000891": {
+    "sku": "000891",
+    "id_produto": 1818184892,
+    "fracionado": "F-N3",
+    "deposito_1": "",
+    "raw": "F-N3",
+    "ultima_atualizacao": "2026-10-01 09:22:11"
+  },
+  "000849": {
+    "sku": "000849",
+    "id_produto": 1818184894,
+    "fracionado": "G-N3",
+    "deposito_1": "",
+    "raw": "G-N3",
+    "ultima_atualizacao": "2026-10-01 09:22:12"
+  },
+  "009629": {
+    "sku": "009629",
+    "id_produto": 1818184902,
+    "fracionado": "F-N4",
+    "deposito_1": "",
+    "raw": "F-N4",
+    "ultima_atualizacao": "2026-10-01 09:22:12"
+  },
+  "009245": {
+    "sku": "009245",
+    "id_produto": 1818184918,
+    "fracionado": "G-N8",
+    "deposito_1": "",
+    "raw": "G-N8",
+    "ultima_atualizacao": "2026-10-01 09:22:13"
+  },
+  "006090": {
+    "sku": "006090",
+    "id_produto": 1818184923,
+    "fracionado": "D4N2 1B2A",
+    "deposito_1": "",
+    "raw": "D4N2 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:22:14"
+  },
+  "009297": {
+    "sku": "009297",
+    "id_produto": 1818184940,
+    "fracionado": "F-N6",
+    "deposito_1": "",
+    "raw": "F-N6",
+    "ultima_atualizacao": "2026-10-01 09:22:15"
+  },
+  "008583": {
+    "sku": "008583",
+    "id_produto": 1818184942,
+    "fracionado": "E1N3",
+    "deposito_1": "",
+    "raw": "E1N3",
+    "ultima_atualizacao": "2026-10-01 09:22:16"
+  },
+  "008514": {
+    "sku": "008514",
+    "id_produto": 1818184944,
+    "fracionado": "E1N6",
+    "deposito_1": "",
+    "raw": "E1N6",
+    "ultima_atualizacao": "2026-10-01 09:22:17"
+  },
+  "008500": {
+    "sku": "008500",
+    "id_produto": 1818184946,
+    "fracionado": "E1N6",
+    "deposito_1": "",
+    "raw": "E1N6",
+    "ultima_atualizacao": "2026-10-01 09:22:18"
+  },
+  "009746": {
+    "sku": "009746",
+    "id_produto": 1818184978,
+    "fracionado": "C-N2 - 5A-N1",
+    "deposito_1": "",
+    "raw": "C-N2 - 5A-N1",
+    "ultima_atualizacao": "2026-10-01 09:22:19"
+  },
+  "009247": {
+    "sku": "009247",
+    "id_produto": 1818184994,
+    "fracionado": "F-N2",
+    "deposito_1": "",
+    "raw": "F-N2",
+    "ultima_atualizacao": "2026-10-01 09:22:19"
+  },
+  "009244": {
+    "sku": "009244",
+    "id_produto": 1818185013,
+    "fracionado": "A4N5",
+    "deposito_1": "",
+    "raw": "A4N5",
+    "ultima_atualizacao": "2026-10-01 09:22:20"
+  },
+  "009618": {
+    "sku": "009618",
+    "id_produto": 1818185019,
+    "fracionado": "F-N5",
+    "deposito_1": "",
+    "raw": "F-N5",
+    "ultima_atualizacao": "2026-10-01 09:22:21"
+  },
+  "001343": {
+    "sku": "001343",
+    "id_produto": 1818185034,
+    "fracionado": "F-N5",
+    "deposito_1": "",
+    "raw": "F-N5",
+    "ultima_atualizacao": "2026-10-01 09:22:22"
+  },
+  "000556": {
+    "sku": "000556",
+    "id_produto": 1818185059,
+    "fracionado": "A-N3 - 2C-N1",
+    "deposito_1": "",
+    "raw": "A-N3 - 2C-N1",
+    "ultima_atualizacao": "2026-10-01 09:22:23"
+  },
+  "007407": {
+    "sku": "007407",
+    "id_produto": 1818185091,
+    "fracionado": "B-N4 - 4A-N1",
+    "deposito_1": "",
+    "raw": "B-N4 - 4A-N1",
+    "ultima_atualizacao": "2026-10-01 09:22:23"
+  },
+  "007824": {
+    "sku": "007824",
+    "id_produto": 1818185117,
+    "fracionado": "G-N5",
+    "deposito_1": "",
+    "raw": "G-N5",
+    "ultima_atualizacao": "2026-10-01 09:22:24"
+  },
+  "000137": {
+    "sku": "000137",
+    "id_produto": 1818185133,
+    "fracionado": "B-N3 - 5A-N2",
+    "deposito_1": "",
+    "raw": "B-N3 - 5A-N2",
+    "ultima_atualizacao": "2026-10-01 09:22:25"
+  },
+  "009409": {
+    "sku": "009409",
+    "id_produto": 1818185193,
+    "fracionado": "C3N4",
+    "deposito_1": "",
+    "raw": "C3N4",
+    "ultima_atualizacao": "2026-10-01 09:22:26"
+  },
+  "007533": {
+    "sku": "007533",
+    "id_produto": 1818185206,
+    "fracionado": "F-N3",
+    "deposito_1": "",
+    "raw": "F-N3",
+    "ultima_atualizacao": "2026-10-01 09:22:27"
+  },
+  "002710": {
+    "sku": "002710",
+    "id_produto": 1818185218,
+    "fracionado": "C-N9 - 2C-N1",
+    "deposito_1": "",
+    "raw": "C-N9 - 2C-N1",
+    "ultima_atualizacao": "2026-10-01 09:22:28"
+  },
+  "005704": {
+    "sku": "005704",
+    "id_produto": 1818185229,
+    "fracionado": "A4N6",
+    "deposito_1": "",
+    "raw": "A4N6",
+    "ultima_atualizacao": "2026-10-01 09:22:28"
+  },
+  "008612": {
+    "sku": "008612",
+    "id_produto": 1818185247,
+    "fracionado": "E2N2",
+    "deposito_1": "",
+    "raw": "E2N2",
+    "ultima_atualizacao": "2026-10-01 09:22:29"
+  },
+  "009300": {
+    "sku": "009300",
+    "id_produto": 1818185250,
+    "fracionado": "A4N3",
+    "deposito_1": "",
+    "raw": "A4N3",
+    "ultima_atualizacao": "2026-10-01 09:22:30"
+  },
+  "008582": {
+    "sku": "008582",
+    "id_produto": 1818185252,
+    "fracionado": "E1N2",
+    "deposito_1": "",
+    "raw": "E1N2",
+    "ultima_atualizacao": "2026-10-01 09:22:31"
+  },
+  "009428": {
+    "sku": "009428",
+    "id_produto": 1818185260,
+    "fracionado": "A4N2",
+    "deposito_1": "",
+    "raw": "A4N2",
+    "ultima_atualizacao": "2026-10-01 09:22:32"
+  },
+  "001215": {
+    "sku": "001215",
+    "id_produto": 1818185262,
+    "fracionado": "G-N6",
+    "deposito_1": "",
+    "raw": "G-N6",
+    "ultima_atualizacao": "2026-10-01 09:22:33"
+  },
+  "008584": {
+    "sku": "008584",
+    "id_produto": 1818185270,
+    "fracionado": "E1N2",
+    "deposito_1": "",
+    "raw": "E1N2",
+    "ultima_atualizacao": "2026-10-01 09:22:34"
+  },
+  "008694": {
+    "sku": "008694",
+    "id_produto": 1818185278,
+    "fracionado": "D-N2 - 2D-N1",
+    "deposito_1": "",
+    "raw": "D-N2 - 2D-N1",
+    "ultima_atualizacao": "2026-10-01 09:22:34"
+  },
+  "005573": {
+    "sku": "005573",
+    "id_produto": 1818185280,
+    "fracionado": "A4N6",
+    "deposito_1": "",
+    "raw": "A4N6",
+    "ultima_atualizacao": "2026-10-01 09:22:35"
+  },
+  "004008": {
+    "sku": "004008",
+    "id_produto": 1818185282,
+    "fracionado": "G-N2",
+    "deposito_1": "",
+    "raw": "G-N2",
+    "ultima_atualizacao": "2026-10-01 09:22:36"
+  },
+  "003942": {
+    "sku": "003942",
+    "id_produto": 1818185284,
+    "fracionado": "G-N8",
+    "deposito_1": "",
+    "raw": "G-N8",
+    "ultima_atualizacao": "2026-10-01 09:22:37"
+  },
+  "007713": {
+    "sku": "007713",
+    "id_produto": 1818185288,
+    "fracionado": "F-N6",
+    "deposito_1": "",
+    "raw": "F-N6",
+    "ultima_atualizacao": "2026-10-01 09:22:38"
+  },
+  "009481": {
+    "sku": "009481",
+    "id_produto": 1818185293,
+    "fracionado": "C3N6",
+    "deposito_1": "",
+    "raw": "C3N6",
+    "ultima_atualizacao": "2026-10-01 09:22:39"
+  },
+  "007716": {
+    "sku": "007716",
+    "id_produto": 1818185310,
+    "fracionado": "F-N3",
+    "deposito_1": "",
+    "raw": "F-N3",
+    "ultima_atualizacao": "2026-10-01 09:22:39"
+  },
+  "009430": {
+    "sku": "009430",
+    "id_produto": 1818185339,
+    "fracionado": "E1N2",
+    "deposito_1": "",
+    "raw": "E1N2",
+    "ultima_atualizacao": "2026-10-01 09:22:40"
+  },
+  "009249": {
+    "sku": "009249",
+    "id_produto": 1818185343,
+    "fracionado": "G-N1",
+    "deposito_1": "",
+    "raw": "G-N1",
+    "ultima_atualizacao": "2026-10-01 09:22:41"
+  },
+  "004218": {
+    "sku": "004218",
+    "id_produto": 1818185345,
+    "fracionado": "G-N6",
+    "deposito_1": "",
+    "raw": "G-N6",
+    "ultima_atualizacao": "2026-10-01 09:22:42"
+  },
+  "008324": {
+    "sku": "008324",
+    "id_produto": 1818185347,
+    "fracionado": "F-N4",
+    "deposito_1": "",
+    "raw": "F-N4",
+    "ultima_atualizacao": "2026-10-01 09:22:43"
+  },
+  "009408": {
+    "sku": "009408",
+    "id_produto": 1818185357,
+    "fracionado": "C3N5",
+    "deposito_1": "",
+    "raw": "C3N5",
+    "ultima_atualizacao": "2026-10-01 09:22:44"
+  },
+  "007408": {
+    "sku": "007408",
+    "id_produto": 1818185370,
+    "fracionado": "D-N3 - 2C-N4",
+    "deposito_1": "",
+    "raw": "D-N3 - 2C-N4",
+    "ultima_atualizacao": "2026-10-01 09:22:44"
+  },
+  "009432": {
+    "sku": "009432",
+    "id_produto": 1818185374,
+    "fracionado": "E2N3",
+    "deposito_1": "",
+    "raw": "E2N3",
+    "ultima_atualizacao": "2026-10-01 09:22:45"
+  },
+  "003175": {
+    "sku": "003175",
+    "id_produto": 1818185390,
+    "fracionado": "F-N3",
+    "deposito_1": "",
+    "raw": "F-N3",
+    "ultima_atualizacao": "2026-10-01 09:22:46"
+  },
+  "009431": {
+    "sku": "009431",
+    "id_produto": 1818185392,
+    "fracionado": "E2N4",
+    "deposito_1": "",
+    "raw": "E2N4",
+    "ultima_atualizacao": "2026-10-01 09:22:47"
+  },
+  "005267": {
+    "sku": "005267",
+    "id_produto": 1818185425,
+    "fracionado": "G-N5",
+    "deposito_1": "",
+    "raw": "G-N5",
+    "ultima_atualizacao": "2026-10-01 09:22:48"
+  },
+  "002037": {
+    "sku": "002037",
+    "id_produto": 1818185430,
+    "fracionado": "E-N8",
+    "deposito_1": "",
+    "raw": "E-N8",
+    "ultima_atualizacao": "2026-10-01 09:22:49"
+  },
+  "009429": {
+    "sku": "009429",
+    "id_produto": 1818185432,
+    "fracionado": "G-N8",
+    "deposito_1": "",
+    "raw": "G-N8",
+    "ultima_atualizacao": "2026-10-01 09:22:50"
+  },
+  "007146": {
+    "sku": "007146",
+    "id_produto": 1818185434,
+    "fracionado": "A4N5",
+    "deposito_1": "",
+    "raw": "A4N5",
+    "ultima_atualizacao": "2026-10-01 09:22:51"
+  },
+  "001210": {
+    "sku": "001210",
+    "id_produto": 1818185442,
+    "fracionado": "F-N4",
+    "deposito_1": "",
+    "raw": "F-N4",
+    "ultima_atualizacao": "2026-10-01 09:22:51"
+  },
+  "004262": {
+    "sku": "004262",
+    "id_produto": 1818185448,
+    "fracionado": "G-N4",
+    "deposito_1": "",
+    "raw": "G-N4",
+    "ultima_atualizacao": "2026-10-01 09:22:52"
+  },
+  "002543": {
+    "sku": "002543",
+    "id_produto": 1818185458,
+    "fracionado": "F-N6",
+    "deposito_1": "",
+    "raw": "F-N6",
+    "ultima_atualizacao": "2026-10-01 09:22:53"
+  },
+  "000204": {
+    "sku": "000204",
+    "id_produto": 1818185460,
+    "fracionado": "F-N6",
+    "deposito_1": "",
+    "raw": "F-N6",
+    "ultima_atualizacao": "2026-10-01 09:22:54"
+  },
+  "000564": {
+    "sku": "000564",
+    "id_produto": 1818185470,
+    "fracionado": "B-N2 - 1D-N2",
+    "deposito_1": "",
+    "raw": "B-N2 - 1D-N2",
+    "ultima_atualizacao": "2026-10-01 09:22:55"
+  },
+  "007723": {
+    "sku": "007723",
+    "id_produto": 1818185474,
+    "fracionado": "C-N2 - 1D-N1",
+    "deposito_1": "",
+    "raw": "C-N2 - 1D-N1",
+    "ultima_atualizacao": "2026-10-01 09:22:56"
+  },
+  "000578": {
+    "sku": "000578",
+    "id_produto": 1818185502,
+    "fracionado": "A3N4",
+    "deposito_1": "",
+    "raw": "A3N4",
+    "ultima_atualizacao": "2026-10-01 09:22:57"
+  },
+  "000579": {
+    "sku": "000579",
+    "id_produto": 1818185504,
+    "fracionado": "A3N4",
+    "deposito_1": "",
+    "raw": "A3N4",
+    "ultima_atualizacao": "2026-10-01 09:22:57"
+  },
+  "006591": {
+    "sku": "006591",
+    "id_produto": 1818185514,
+    "fracionado": "A2N3",
+    "deposito_1": "",
+    "raw": "A2N3",
+    "ultima_atualizacao": "2026-10-01 09:22:58"
+  },
+  "007652": {
+    "sku": "007652",
+    "id_produto": 1818185517,
+    "fracionado": "A2N3",
+    "deposito_1": "",
+    "raw": "A2N3",
+    "ultima_atualizacao": "2026-10-01 09:22:59"
+  },
+  "007159": {
+    "sku": "007159",
+    "id_produto": 1818185520,
+    "fracionado": "A2N3",
+    "deposito_1": "",
+    "raw": "A2N3",
+    "ultima_atualizacao": "2026-10-01 09:23:00"
+  },
+  "007454": {
+    "sku": "007454",
+    "id_produto": 1818185522,
+    "fracionado": "A2N3",
+    "deposito_1": "",
+    "raw": "A2N3",
+    "ultima_atualizacao": "2026-10-01 09:23:01"
+  },
+  "007455": {
+    "sku": "007455",
+    "id_produto": 1818185524,
+    "fracionado": "A2N3",
+    "deposito_1": "",
+    "raw": "A2N3",
+    "ultima_atualizacao": "2026-10-01 09:23:02"
+  },
+  "007144": {
+    "sku": "007144",
+    "id_produto": 1818185537,
+    "fracionado": "A2N6",
+    "deposito_1": "",
+    "raw": "A2N6",
+    "ultima_atualizacao": "2026-10-01 09:23:02"
+  },
+  "007143": {
+    "sku": "007143",
+    "id_produto": 1818185539,
+    "fracionado": "A2N4",
+    "deposito_1": "",
+    "raw": "A2N4",
+    "ultima_atualizacao": "2026-10-01 09:23:03"
+  },
+  "000683": {
+    "sku": "000683",
+    "id_produto": 1818185543,
+    "fracionado": "A2N3",
+    "deposito_1": "",
+    "raw": "A2N3",
+    "ultima_atualizacao": "2026-10-01 09:23:04"
+  },
+  "000684": {
+    "sku": "000684",
+    "id_produto": 1818185546,
+    "fracionado": "A2N3",
+    "deposito_1": "",
+    "raw": "A2N3",
+    "ultima_atualizacao": "2026-10-01 09:23:05"
+  },
+  "000685": {
+    "sku": "000685",
+    "id_produto": 1818185553,
+    "fracionado": "A2N3",
+    "deposito_1": "",
+    "raw": "A2N3",
+    "ultima_atualizacao": "2026-10-01 09:23:06"
+  },
+  "000762": {
+    "sku": "000762",
+    "id_produto": 1818185555,
+    "fracionado": "A2N3",
+    "deposito_1": "",
+    "raw": "A2N3",
+    "ultima_atualizacao": "2026-10-01 09:23:07"
+  },
+  "002504": {
+    "sku": "002504",
+    "id_produto": 1818185557,
+    "fracionado": "A2N2",
+    "deposito_1": "",
+    "raw": "A2N2",
+    "ultima_atualizacao": "2026-10-01 09:23:07"
+  },
+  "004768": {
+    "sku": "004768",
+    "id_produto": 1818185573,
+    "fracionado": "A2N4",
+    "deposito_1": "",
+    "raw": "A2N4",
+    "ultima_atualizacao": "2026-10-01 09:23:08"
+  },
+  "000088": {
+    "sku": "000088",
+    "id_produto": 1818185593,
+    "fracionado": "A2N5",
+    "deposito_1": "",
+    "raw": "A2N5",
+    "ultima_atualizacao": "2026-10-01 09:23:10"
+  },
+  "000089": {
+    "sku": "000089",
+    "id_produto": 1818185595,
+    "fracionado": "A2N5",
+    "deposito_1": "",
+    "raw": "A2N5",
+    "ultima_atualizacao": "2026-10-01 09:23:11"
+  },
+  "000090": {
+    "sku": "000090",
+    "id_produto": 1818185597,
+    "fracionado": "A2N5",
+    "deposito_1": "",
+    "raw": "A2N5",
+    "ultima_atualizacao": "2026-10-01 09:23:12"
+  },
+  "002451": {
+    "sku": "002451",
+    "id_produto": 1818185637,
+    "fracionado": "A1N4",
+    "deposito_1": "",
+    "raw": "A1N4",
+    "ultima_atualizacao": "2026-10-01 09:23:13"
+  },
+  "002454": {
+    "sku": "002454",
+    "id_produto": 1818185643,
+    "fracionado": "A1N4",
+    "deposito_1": "",
+    "raw": "A1N4",
+    "ultima_atualizacao": "2026-10-01 09:23:13"
+  },
+  "009394": {
+    "sku": "009394",
+    "id_produto": 1818185647,
+    "fracionado": "A3N4",
+    "deposito_1": "",
+    "raw": "A3N4",
+    "ultima_atualizacao": "2026-10-01 09:23:14"
+  },
+  "009393": {
+    "sku": "009393",
+    "id_produto": 1818185649,
+    "fracionado": "A3N4",
+    "deposito_1": "",
+    "raw": "A3N4",
+    "ultima_atualizacao": "2026-10-01 09:23:15"
+  },
+  "007456": {
+    "sku": "007456",
+    "id_produto": 1818185651,
+    "fracionado": "A3N6",
+    "deposito_1": "",
+    "raw": "A3N6",
+    "ultima_atualizacao": "2026-10-01 09:23:16"
+  },
+  "007307": {
+    "sku": "007307",
+    "id_produto": 1818185653,
+    "fracionado": "A3N6",
+    "deposito_1": "",
+    "raw": "A3N6",
+    "ultima_atualizacao": "2026-10-01 09:23:17"
+  },
+  "007308": {
+    "sku": "007308",
+    "id_produto": 1818185655,
+    "fracionado": "A3N6",
+    "deposito_1": "",
+    "raw": "A3N6",
+    "ultima_atualizacao": "2026-10-01 09:23:18"
+  },
+  "007309": {
+    "sku": "007309",
+    "id_produto": 1818185658,
+    "fracionado": "A3N6",
+    "deposito_1": "",
+    "raw": "A3N6",
+    "ultima_atualizacao": "2026-10-01 09:23:19"
+  },
+  "008143": {
+    "sku": "008143",
+    "id_produto": 1818185660,
+    "fracionado": "A2N2",
+    "deposito_1": "",
+    "raw": "A2N2",
+    "ultima_atualizacao": "2026-10-01 09:23:20"
+  },
+  "008148": {
+    "sku": "008148",
+    "id_produto": 1818185664,
+    "fracionado": "A2N2",
+    "deposito_1": "",
+    "raw": "A2N2",
+    "ultima_atualizacao": "2026-10-01 09:23:20"
+  },
+  "008149": {
+    "sku": "008149",
+    "id_produto": 1818185666,
+    "fracionado": "A2N2",
+    "deposito_1": "",
+    "raw": "A2N2",
+    "ultima_atualizacao": "2026-10-01 09:23:21"
+  },
+  "009424": {
+    "sku": "009424",
+    "id_produto": 1818185668,
+    "fracionado": "A3N5",
+    "deposito_1": "",
+    "raw": "A3N5",
+    "ultima_atualizacao": "2026-10-01 09:23:22"
+  },
+  "009423": {
+    "sku": "009423",
+    "id_produto": 1818185671,
+    "fracionado": "A3N5",
+    "deposito_1": "",
+    "raw": "A3N5",
+    "ultima_atualizacao": "2026-10-01 09:23:23"
+  },
+  "009422": {
+    "sku": "009422",
+    "id_produto": 1818185673,
+    "fracionado": "A3N5",
+    "deposito_1": "",
+    "raw": "A3N5",
+    "ultima_atualizacao": "2026-10-01 09:23:24"
+  },
+  "005235": {
+    "sku": "005235",
+    "id_produto": 1818185675,
+    "fracionado": "A3N5",
+    "deposito_1": "",
+    "raw": "A3N5",
+    "ultima_atualizacao": "2026-10-01 09:23:25"
+  },
+  "000660": {
+    "sku": "000660",
+    "id_produto": 1818185686,
+    "fracionado": "A1N2",
+    "deposito_1": "",
+    "raw": "A1N2",
+    "ultima_atualizacao": "2026-10-01 09:23:25"
+  },
+  "000662": {
+    "sku": "000662",
+    "id_produto": 1818185692,
+    "fracionado": "A1N2",
+    "deposito_1": "",
+    "raw": "A1N2",
+    "ultima_atualizacao": "2026-10-01 09:23:26"
+  },
+  "000663": {
+    "sku": "000663",
+    "id_produto": 1818185695,
+    "fracionado": "A1N2",
+    "deposito_1": "",
+    "raw": "A1N2",
+    "ultima_atualizacao": "2026-10-01 09:23:27"
+  },
+  "000664": {
+    "sku": "000664",
+    "id_produto": 1818185698,
+    "fracionado": "A1N2",
+    "deposito_1": "",
+    "raw": "A1N2",
+    "ultima_atualizacao": "2026-10-01 09:23:28"
+  },
+  "007154": {
+    "sku": "007154",
+    "id_produto": 1818185702,
+    "fracionado": "A1N2",
+    "deposito_1": "",
+    "raw": "A1N2",
+    "ultima_atualizacao": "2026-10-01 09:23:29"
+  },
+  "007002": {
+    "sku": "007002",
+    "id_produto": 1818185704,
+    "fracionado": "A1N2",
+    "deposito_1": "",
+    "raw": "A1N2",
+    "ultima_atualizacao": "2026-10-01 09:23:30"
+  },
+  "007003": {
+    "sku": "007003",
+    "id_produto": 1818185706,
+    "fracionado": "A1N2",
+    "deposito_1": "",
+    "raw": "A1N2",
+    "ultima_atualizacao": "2026-10-01 09:23:30"
+  },
+  "007004": {
+    "sku": "007004",
+    "id_produto": 1818185708,
+    "fracionado": "A1N2",
+    "deposito_1": "",
+    "raw": "A1N2",
+    "ultima_atualizacao": "2026-10-01 09:23:31"
+  },
+  "007164": {
+    "sku": "007164",
+    "id_produto": 1818185710,
+    "fracionado": "A2N4",
+    "deposito_1": "",
+    "raw": "A2N4",
+    "ultima_atualizacao": "2026-10-01 09:23:32"
+  },
+  "000539": {
+    "sku": "000539",
+    "id_produto": 1818185719,
+    "fracionado": "A2N2",
+    "deposito_1": "",
+    "raw": "A2N2",
+    "ultima_atualizacao": "2026-10-01 09:23:33"
+  },
+  "006999": {
+    "sku": "006999",
+    "id_produto": 1818185726,
+    "fracionado": "A2N5",
+    "deposito_1": "",
+    "raw": "A2N5",
+    "ultima_atualizacao": "2026-10-01 09:23:34"
+  },
+  "007000": {
+    "sku": "007000",
+    "id_produto": 1818185728,
+    "fracionado": "A2N5",
+    "deposito_1": "",
+    "raw": "A2N5",
+    "ultima_atualizacao": "2026-10-01 09:23:35"
+  },
+  "007001": {
+    "sku": "007001",
+    "id_produto": 1818185732,
+    "fracionado": "A2N5",
+    "deposito_1": "",
+    "raw": "A2N5",
+    "ultima_atualizacao": "2026-10-01 09:23:35"
+  },
+  "009540": {
+    "sku": "009540",
+    "id_produto": 1818185734,
+    "fracionado": "A3N5",
+    "deposito_1": "",
+    "raw": "A3N5",
+    "ultima_atualizacao": "2026-10-01 09:23:36"
+  },
+  "008502": {
+    "sku": "008502",
+    "id_produto": 1818185736,
+    "fracionado": "A1N6",
+    "deposito_1": "",
+    "raw": "A1N6",
+    "ultima_atualizacao": "2026-10-01 09:23:37"
+  },
+  "008501": {
+    "sku": "008501",
+    "id_produto": 1818185738,
+    "fracionado": "A1N5",
+    "deposito_1": "",
+    "raw": "A1N5",
+    "ultima_atualizacao": "2026-10-01 09:23:38"
+  },
+  "008496": {
+    "sku": "008496",
+    "id_produto": 1818185742,
+    "fracionado": "A1N5",
+    "deposito_1": "",
+    "raw": "A1N5",
+    "ultima_atualizacao": "2026-10-01 09:23:39"
+  },
+  "007510": {
+    "sku": "007510",
+    "id_produto": 1818185746,
+    "fracionado": "A1N3",
+    "deposito_1": "",
+    "raw": "A1N3",
+    "ultima_atualizacao": "2026-10-01 09:23:39"
+  },
+  "007508": {
+    "sku": "007508",
+    "id_produto": 1818185748,
+    "fracionado": "A1N3",
+    "deposito_1": "",
+    "raw": "A1N3",
+    "ultima_atualizacao": "2026-10-01 09:23:40"
+  },
+  "007509": {
+    "sku": "007509",
+    "id_produto": 1818185750,
+    "fracionado": "A1N3",
+    "deposito_1": "",
+    "raw": "A1N3",
+    "ultima_atualizacao": "2026-10-01 09:23:41"
+  },
+  "008492": {
+    "sku": "008492",
+    "id_produto": 1818185753,
+    "fracionado": "A1N3",
+    "deposito_1": "",
+    "raw": "A1N3",
+    "ultima_atualizacao": "2026-10-01 09:23:42"
+  },
+  "007524": {
+    "sku": "007524",
+    "id_produto": 1818185757,
+    "fracionado": "A1N3",
+    "deposito_1": "",
+    "raw": "A1N3",
+    "ultima_atualizacao": "2026-10-01 09:23:43"
+  },
+  "009285": {
+    "sku": "009285",
+    "id_produto": 1818185763,
+    "fracionado": "A1N3",
+    "deposito_1": "",
+    "raw": "A1N3",
+    "ultima_atualizacao": "2026-10-01 09:23:44"
+  },
+  "009284": {
+    "sku": "009284",
+    "id_produto": 1818185773,
+    "fracionado": "A1N3",
+    "deposito_1": "",
+    "raw": "A1N3",
+    "ultima_atualizacao": "2026-10-01 09:23:45"
+  },
+  "009283": {
+    "sku": "009283",
+    "id_produto": 1818185778,
+    "fracionado": "A1N3",
+    "deposito_1": "",
+    "raw": "A1N3",
+    "ultima_atualizacao": "2026-10-01 09:23:46"
+  },
+  "000066": {
+    "sku": "000066",
+    "id_produto": 1818185786,
+    "fracionado": "A1N3",
+    "deposito_1": "",
+    "raw": "A1N3",
+    "ultima_atualizacao": "2026-10-01 09:23:46"
+  },
+  "008216": {
+    "sku": "008216",
+    "id_produto": 1818185797,
+    "fracionado": "A1N6",
+    "deposito_1": "",
+    "raw": "A1N6",
+    "ultima_atualizacao": "2026-10-01 09:23:47"
+  },
+  "008217": {
+    "sku": "008217",
+    "id_produto": 1818185799,
+    "fracionado": "A1N4",
+    "deposito_1": "",
+    "raw": "A1N4",
+    "ultima_atualizacao": "2026-10-01 09:23:48"
+  },
+  "002377": {
+    "sku": "002377",
+    "id_produto": 1818185808,
+    "fracionado": "A1N2",
+    "deposito_1": "",
+    "raw": "A1N2",
+    "ultima_atualizacao": "2026-10-01 09:23:49"
+  },
+  "002376": {
+    "sku": "002376",
+    "id_produto": 1818185810,
+    "fracionado": "A1N2",
+    "deposito_1": "",
+    "raw": "A1N2",
+    "ultima_atualizacao": "2026-10-01 09:23:50"
+  },
+  "002375": {
+    "sku": "002375",
+    "id_produto": 1818185812,
+    "fracionado": "A1N2",
+    "deposito_1": "",
+    "raw": "A1N2",
+    "ultima_atualizacao": "2026-10-01 09:23:51"
+  },
+  "000111": {
+    "sku": "000111",
+    "id_produto": 1818185820,
+    "fracionado": "A1N4",
+    "deposito_1": "",
+    "raw": "A1N4",
+    "ultima_atualizacao": "2026-10-01 09:23:51"
+  },
+  "000501": {
+    "sku": "000501",
+    "id_produto": 1818185859,
+    "fracionado": "A3N5",
+    "deposito_1": "",
+    "raw": "A3N5",
+    "ultima_atualizacao": "2026-10-01 09:23:52"
+  },
+  "000638": {
+    "sku": "000638",
+    "id_produto": 1818185863,
+    "fracionado": "A1N5",
+    "deposito_1": "",
+    "raw": "A1N5",
+    "ultima_atualizacao": "2026-10-01 09:23:53"
+  },
+  "000639": {
+    "sku": "000639",
+    "id_produto": 1818185866,
+    "fracionado": "A1N5",
+    "deposito_1": "",
+    "raw": "A1N5",
+    "ultima_atualizacao": "2026-10-01 09:23:54"
+  },
+  "000641": {
+    "sku": "000641",
+    "id_produto": 1818185868,
+    "fracionado": "A1N5",
+    "deposito_1": "",
+    "raw": "A1N5",
+    "ultima_atualizacao": "2026-10-01 09:23:55"
+  },
+  "000642": {
+    "sku": "000642",
+    "id_produto": 1818185870,
+    "fracionado": "A1N5",
+    "deposito_1": "",
+    "raw": "A1N5",
+    "ultima_atualizacao": "2026-10-01 09:23:56"
+  },
+  "000649": {
+    "sku": "000649",
+    "id_produto": 1818185872,
+    "fracionado": "A1N5",
+    "deposito_1": "",
+    "raw": "A1N5",
+    "ultima_atualizacao": "2026-10-01 09:23:57"
+  },
+  "000650": {
+    "sku": "000650",
+    "id_produto": 1818185874,
+    "fracionado": "A1N5",
+    "deposito_1": "",
+    "raw": "A1N5",
+    "ultima_atualizacao": "2026-10-01 09:23:57"
+  },
+  "000647": {
+    "sku": "000647",
+    "id_produto": 1818185876,
+    "fracionado": "A1N5",
+    "deposito_1": "",
+    "raw": "A1N5",
+    "ultima_atualizacao": "2026-10-01 09:23:58"
+  },
+  "000648": {
+    "sku": "000648",
+    "id_produto": 1818185878,
+    "fracionado": "A1N5",
+    "deposito_1": "",
+    "raw": "A1N5",
+    "ultima_atualizacao": "2026-10-01 09:23:59"
+  },
+  "001929": {
+    "sku": "001929",
+    "id_produto": 1818185924,
+    "fracionado": "A2N6",
+    "deposito_1": "",
+    "raw": "A2N6",
+    "ultima_atualizacao": "2026-10-01 09:24:00"
+  },
+  "001930": {
+    "sku": "001930",
+    "id_produto": 1818185926,
+    "fracionado": "A2N6",
+    "deposito_1": "",
+    "raw": "A2N6",
+    "ultima_atualizacao": "2026-10-01 09:24:01"
+  },
+  "005243": {
+    "sku": "005243",
+    "id_produto": 1818185935,
+    "fracionado": "A2-N5",
+    "deposito_1": "",
+    "raw": "A2-N5",
+    "ultima_atualizacao": "2026-10-01 09:24:02"
+  },
+  "000039": {
+    "sku": "000039",
+    "id_produto": 1818185941,
+    "fracionado": "A1N4",
+    "deposito_1": "",
+    "raw": "A1N4",
+    "ultima_atualizacao": "2026-10-01 09:24:03"
+  },
+  "000040": {
+    "sku": "000040",
+    "id_produto": 1818185944,
+    "fracionado": "A1N4",
+    "deposito_1": "",
+    "raw": "A1N4",
+    "ultima_atualizacao": "2026-10-01 09:24:04"
+  },
+  "000041": {
+    "sku": "000041",
+    "id_produto": 1818185946,
+    "fracionado": "A1N4",
+    "deposito_1": "",
+    "raw": "A1N4",
+    "ultima_atualizacao": "2026-10-01 09:24:05"
+  },
+  "000678": {
+    "sku": "000678",
+    "id_produto": 1818185948,
+    "fracionado": "A2N4",
+    "deposito_1": "",
+    "raw": "A2N4",
+    "ultima_atualizacao": "2026-10-01 09:24:05"
+  },
+  "000679": {
+    "sku": "000679",
+    "id_produto": 1818185950,
+    "fracionado": "A2N4",
+    "deposito_1": "",
+    "raw": "A2N4",
+    "ultima_atualizacao": "2026-10-01 09:24:06"
+  },
+  "000680": {
+    "sku": "000680",
+    "id_produto": 1818185952,
+    "fracionado": "A2N4",
+    "deposito_1": "",
+    "raw": "A2N4",
+    "ultima_atualizacao": "2026-10-01 09:24:07"
+  },
+  "000624": {
+    "sku": "000624",
+    "id_produto": 1818185963,
+    "fracionado": "A2N5",
+    "deposito_1": "",
+    "raw": "A2N5",
+    "ultima_atualizacao": "2026-10-01 09:24:08"
+  },
+  "000625": {
+    "sku": "000625",
+    "id_produto": 1818185965,
+    "fracionado": "A2N5",
+    "deposito_1": "",
+    "raw": "A2N5",
+    "ultima_atualizacao": "2026-10-01 09:24:09"
+  },
+  "000626": {
+    "sku": "000626",
+    "id_produto": 1818185969,
+    "fracionado": "A2N5",
+    "deposito_1": "",
+    "raw": "A2N5",
+    "ultima_atualizacao": "2026-10-01 09:24:10"
+  },
+  "000558": {
+    "sku": "000558",
+    "id_produto": 1818185973,
+    "fracionado": "A2N4",
+    "deposito_1": "",
+    "raw": "A2N4",
+    "ultima_atualizacao": "2026-10-01 09:24:11"
+  },
+  "000560": {
+    "sku": "000560",
+    "id_produto": 1818185975,
+    "fracionado": "A2N4",
+    "deposito_1": "",
+    "raw": "A2N4",
+    "ultima_atualizacao": "2026-10-01 09:24:12"
+  },
+  "005080": {
+    "sku": "005080",
+    "id_produto": 1818185982,
+    "fracionado": "A1N4",
+    "deposito_1": "",
+    "raw": "A1N4",
+    "ultima_atualizacao": "2026-10-01 09:24:13"
+  },
+  "008976": {
+    "sku": "008976",
+    "id_produto": 1818185986,
+    "fracionado": "A1N4",
+    "deposito_1": "",
+    "raw": "A1N4",
+    "ultima_atualizacao": "2026-10-01 09:24:14"
+  },
+  "000273": {
+    "sku": "000273",
+    "id_produto": 1818185990,
+    "fracionado": "A1N5",
+    "deposito_1": "",
+    "raw": "A1N5",
+    "ultima_atualizacao": "2026-10-01 09:24:15"
+  },
+  "000274": {
+    "sku": "000274",
+    "id_produto": 1818185992,
+    "fracionado": "A1N5",
+    "deposito_1": "",
+    "raw": "A1N5",
+    "ultima_atualizacao": "2026-10-01 09:24:16"
+  },
+  "000275": {
+    "sku": "000275",
+    "id_produto": 1818185994,
+    "fracionado": "A1N5",
+    "deposito_1": "",
+    "raw": "A1N5",
+    "ultima_atualizacao": "2026-10-01 09:24:17"
+  },
+  "000276": {
+    "sku": "000276",
+    "id_produto": 1818185996,
+    "fracionado": "A1N5",
+    "deposito_1": "",
+    "raw": "A1N5",
+    "ultima_atualizacao": "2026-10-01 09:24:18"
+  },
+  "007156": {
+    "sku": "007156",
+    "id_produto": 1818185998,
+    "fracionado": "A1N4",
+    "deposito_1": "",
+    "raw": "A1N4",
+    "ultima_atualizacao": "2026-10-01 09:24:19"
+  },
+  "007158": {
+    "sku": "007158",
+    "id_produto": 1818186004,
+    "fracionado": "A1N4",
+    "deposito_1": "",
+    "raw": "A1N4",
+    "ultima_atualizacao": "2026-10-01 09:24:19"
+  },
+  "008510": {
+    "sku": "008510",
+    "id_produto": 1818186013,
+    "fracionado": "A2N6",
+    "deposito_1": "",
+    "raw": "A2N6",
+    "ultima_atualizacao": "2026-10-01 09:24:20"
+  },
+  "008511": {
+    "sku": "008511",
+    "id_produto": 1818186021,
+    "fracionado": "A2N6",
+    "deposito_1": "",
+    "raw": "A2N6",
+    "ultima_atualizacao": "2026-10-01 09:24:21"
+  },
+  "008512": {
+    "sku": "008512",
+    "id_produto": 1818186023,
+    "fracionado": "A2N6",
+    "deposito_1": "",
+    "raw": "A2N6",
+    "ultima_atualizacao": "2026-10-01 09:24:22"
+  },
+  "000633": {
+    "sku": "000633",
+    "id_produto": 1818186050,
+    "fracionado": "A2N4",
+    "deposito_1": "",
+    "raw": "A2N4",
+    "ultima_atualizacao": "2026-10-01 09:24:23"
+  },
+  "000634": {
+    "sku": "000634",
+    "id_produto": 1818186052,
+    "fracionado": "A2N4",
+    "deposito_1": "",
+    "raw": "A2N4",
+    "ultima_atualizacao": "2026-10-01 09:24:24"
+  },
+  "007163": {
+    "sku": "007163",
+    "id_produto": 1818186161,
+    "fracionado": "A2N4",
+    "deposito_1": "",
+    "raw": "A2N4",
+    "ultima_atualizacao": "2026-10-01 09:24:24"
+  },
+  "007157": {
+    "sku": "007157",
+    "id_produto": 1818186169,
+    "fracionado": "A1N4",
+    "deposito_1": "",
+    "raw": "A1N4",
+    "ultima_atualizacao": "2026-10-01 09:24:25"
+  },
+  "009537": {
+    "sku": "009537",
+    "id_produto": 1818186199,
+    "fracionado": "D2N5",
+    "deposito_1": "",
+    "raw": "D2N5",
+    "ultima_atualizacao": "2026-10-01 09:24:26"
+  },
+  "002978": {
+    "sku": "002978",
+    "id_produto": 1818186230,
+    "fracionado": "D1N5",
+    "deposito_1": "",
+    "raw": "D1N5",
+    "ultima_atualizacao": "2026-10-01 09:24:27"
+  },
+  "006437": {
+    "sku": "006437",
+    "id_produto": 1818186245,
+    "fracionado": "P1N6",
+    "deposito_1": "",
+    "raw": "P1N6",
+    "ultima_atualizacao": "2026-10-01 09:24:28"
+  },
+  "002701": {
+    "sku": "002701",
+    "id_produto": 1818186260,
+    "fracionado": "D2N5",
+    "deposito_1": "",
+    "raw": "D2N5",
+    "ultima_atualizacao": "2026-10-01 09:24:29"
+  },
+  "002077": {
+    "sku": "002077",
+    "id_produto": 1818186278,
+    "fracionado": "D2N6",
+    "deposito_1": "",
+    "raw": "D2N6",
+    "ultima_atualizacao": "2026-10-01 09:24:29"
+  },
+  "002079": {
+    "sku": "002079",
+    "id_produto": 1818186297,
+    "fracionado": "D2N5",
+    "deposito_1": "",
+    "raw": "D2N5",
+    "ultima_atualizacao": "2026-10-01 09:24:30"
+  },
+  "002078": {
+    "sku": "002078",
+    "id_produto": 1818186316,
+    "fracionado": "D2N6",
+    "deposito_1": "",
+    "raw": "D2N6",
+    "ultima_atualizacao": "2026-10-01 09:24:31"
+  },
+  "006949": {
+    "sku": "006949",
+    "id_produto": 1818186322,
+    "fracionado": "D2N6",
+    "deposito_1": "",
+    "raw": "D2N6",
+    "ultima_atualizacao": "2026-10-01 09:24:32"
+  },
+  "002500": {
+    "sku": "002500",
+    "id_produto": 1818186324,
+    "fracionado": "D1N6",
+    "deposito_1": "",
+    "raw": "D1N6",
+    "ultima_atualizacao": "2026-10-01 09:24:33"
+  },
+  "002944": {
+    "sku": "002944",
+    "id_produto": 1818186330,
+    "fracionado": "D1N6",
+    "deposito_1": "",
+    "raw": "D1N6",
+    "ultima_atualizacao": "2026-10-01 09:24:34"
+  },
+  "007929": {
+    "sku": "007929",
+    "id_produto": 1818186402,
+    "fracionado": "D2N2 1B2A",
+    "deposito_1": "",
+    "raw": "D2N2 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:24:34"
+  },
+  "006910": {
+    "sku": "006910",
+    "id_produto": 1818186467,
+    "fracionado": "G-N2",
+    "deposito_1": "",
+    "raw": "G-N2",
+    "ultima_atualizacao": "2026-10-01 09:24:35"
+  },
+  "000505": {
+    "sku": "000505",
+    "id_produto": 1818186520,
+    "fracionado": "B-N5 - 1B-N2",
+    "deposito_1": "",
+    "raw": "B-N5 - 1B-N2",
+    "ultima_atualizacao": "2026-10-01 09:24:36"
+  },
+  "007671": {
+    "sku": "007671",
+    "id_produto": 1818186572,
+    "fracionado": "B2N3",
+    "deposito_1": "",
+    "raw": "B2N3",
+    "ultima_atualizacao": "2026-10-01 09:24:37"
+  },
+  "007675": {
+    "sku": "007675",
+    "id_produto": 1818186576,
+    "fracionado": "B1N5",
+    "deposito_1": "",
+    "raw": "B1N5",
+    "ultima_atualizacao": "2026-10-01 09:24:38"
+  },
+  "008802": {
+    "sku": "008802",
+    "id_produto": 1818186763,
+    "fracionado": "G-N2",
+    "deposito_1": "",
+    "raw": "G-N2",
+    "ultima_atualizacao": "2026-10-01 09:24:39"
+  },
+  "005706": {
+    "sku": "005706",
+    "id_produto": 1818186772,
+    "fracionado": "D-N5",
+    "deposito_1": "",
+    "raw": "D-N5",
+    "ultima_atualizacao": "2026-10-01 09:24:40"
+  },
+  "006644": {
+    "sku": "006644",
+    "id_produto": 1818186777,
+    "fracionado": "D5N4",
+    "deposito_1": "",
+    "raw": "D5N4",
+    "ultima_atualizacao": "2026-10-01 09:24:40"
+  },
+  "009248": {
+    "sku": "009248",
+    "id_produto": 1818186783,
+    "fracionado": "A3N2",
+    "deposito_1": "",
+    "raw": "A3N2",
+    "ultima_atualizacao": "2026-10-01 09:24:41"
+  },
+  "001798": {
+    "sku": "001798",
+    "id_produto": 1818186801,
+    "fracionado": "B1N3",
+    "deposito_1": "",
+    "raw": "B1N3",
+    "ultima_atualizacao": "2026-10-01 09:24:44"
+  },
+  "008858": {
+    "sku": "008858",
+    "id_produto": 1818186906,
+    "fracionado": "B3N4",
+    "deposito_1": "",
+    "raw": "B3N4",
+    "ultima_atualizacao": "2026-10-01 09:24:57"
+  },
+  "003900": {
+    "sku": "003900",
+    "id_produto": 1818186915,
+    "fracionado": "B3N4",
+    "deposito_1": "",
+    "raw": "B3N4",
+    "ultima_atualizacao": "2026-10-01 09:24:58"
+  },
+  "000547": {
+    "sku": "000547",
+    "id_produto": "1818186928",
+    "fracionado": "B1-N6",
+    "deposito_1": "D1.1-N3",
+    "raw": "B1-N6, D1.1-N3",
+    "ultima_atualizacao": "2026-10-02 11:38:12"
+  },
+  "008310": {
+    "sku": "008310",
+    "id_produto": 1824886828,
+    "fracionado": "A-N4 - 1D-N3",
+    "deposito_1": "",
+    "raw": "A-N4 - 1D-N3",
+    "ultima_atualizacao": "2026-10-01 09:24:59"
+  },
+  "002886": {
+    "sku": "002886",
+    "id_produto": 1824931039,
+    "fracionado": "F-N5",
+    "deposito_1": "",
+    "raw": "F-N5",
+    "ultima_atualizacao": "2026-10-01 09:25:00"
+  },
+  "001679": {
+    "sku": "001679",
+    "id_produto": 1825094566,
+    "fracionado": "B3N5",
+    "deposito_1": "",
+    "raw": "B3N5",
+    "ultima_atualizacao": "2026-10-01 09:25:10"
+  },
+  "000124": {
+    "sku": "000124",
+    "id_produto": 1825603003,
+    "fracionado": "A2N4",
+    "deposito_1": "",
+    "raw": "A2N4",
+    "ultima_atualizacao": "2026-10-01 09:25:12"
+  },
+  "009426": {
+    "sku": "009426",
+    "id_produto": 1825643109,
+    "fracionado": "E2N2",
+    "deposito_1": "",
+    "raw": "E2N2",
+    "ultima_atualizacao": "2026-10-01 09:25:13"
+  },
+  "003556": {
+    "sku": "003556",
+    "id_produto": 1829383969,
+    "fracionado": "E2N5",
+    "deposito_1": "",
+    "raw": "E2N5",
+    "ultima_atualizacao": "2026-10-01 09:25:17"
+  },
+  "008752": {
+    "sku": "008752",
+    "id_produto": 1854752851,
+    "fracionado": "E-N2",
+    "deposito_1": "",
+    "raw": "E-N2",
+    "ultima_atualizacao": "2026-10-01 09:25:20"
+  },
+  "010324": {
+    "sku": "010324",
+    "id_produto": 1854752898,
+    "fracionado": "A-N4",
+    "deposito_1": "",
+    "raw": "A-N4",
+    "ultima_atualizacao": "2026-10-01 09:25:21"
+  },
+  "010325": {
+    "sku": "010325",
+    "id_produto": 1854752904,
+    "fracionado": "A-N4",
+    "deposito_1": "",
+    "raw": "A-N4",
+    "ultima_atualizacao": "2026-10-01 09:25:22"
+  },
+  "010328": {
+    "sku": "010328",
+    "id_produto": 1854752920,
+    "fracionado": "A-N4",
+    "deposito_1": "",
+    "raw": "A-N4",
+    "ultima_atualizacao": "2026-10-01 09:25:23"
+  },
+  "010327": {
+    "sku": "010327",
+    "id_produto": 1854752930,
+    "fracionado": "A-N4",
+    "deposito_1": "",
+    "raw": "A-N4",
+    "ultima_atualizacao": "2026-10-01 09:25:24"
+  },
+  "009613": {
+    "sku": "009613",
+    "id_produto": 1854752980,
+    "fracionado": "C1N5",
+    "deposito_1": "",
+    "raw": "C1N5",
+    "ultima_atualizacao": "2026-10-01 09:25:25"
+  },
+  "008710": {
+    "sku": "008710",
+    "id_produto": 1854753704,
+    "fracionado": "B2N2",
+    "deposito_1": "",
+    "raw": "B2N2",
+    "ultima_atualizacao": "2026-10-01 09:25:51"
+  },
+  "008709": {
+    "sku": "008709",
+    "id_produto": 1854753709,
+    "fracionado": "B2N2",
+    "deposito_1": "",
+    "raw": "B2N2",
+    "ultima_atualizacao": "2026-10-01 09:25:52"
+  },
+  "006223": {
+    "sku": "006223",
+    "id_produto": 1854753734,
+    "fracionado": "F-N7",
+    "deposito_1": "",
+    "raw": "F-N7",
+    "ultima_atualizacao": "2026-10-01 09:25:53"
+  },
+  "007136": {
+    "sku": "007136",
+    "id_produto": 1854753745,
+    "fracionado": "F-N9",
+    "deposito_1": "",
+    "raw": "F-N9",
+    "ultima_atualizacao": "2026-10-01 09:25:54"
+  },
+  "000202": {
+    "sku": "000202",
+    "id_produto": 1854753749,
+    "fracionado": "F-N8",
+    "deposito_1": "",
+    "raw": "F-N8",
+    "ultima_atualizacao": "2026-10-01 09:25:55"
+  },
+  "009690": {
+    "sku": "009690",
+    "id_produto": 1854753762,
+    "fracionado": "E-N8",
+    "deposito_1": "",
+    "raw": "E-N8",
+    "ultima_atualizacao": "2026-10-01 09:25:56"
+  },
+  "009235": {
+    "sku": "009235",
+    "id_produto": 1854753814,
+    "fracionado": "A4N5",
+    "deposito_1": "",
+    "raw": "A4N5",
+    "ultima_atualizacao": "2026-10-01 09:25:57"
+  },
+  "010323": {
+    "sku": "010323",
+    "id_produto": 1854753817,
+    "fracionado": "F-N1",
+    "deposito_1": "",
+    "raw": "F-N1",
+    "ultima_atualizacao": "2026-10-01 09:25:58"
+  },
+  "009238": {
+    "sku": "009238",
+    "id_produto": 1854753821,
+    "fracionado": "G-N9",
+    "deposito_1": "",
+    "raw": "G-N9",
+    "ultima_atualizacao": "2026-10-01 09:25:58"
+  },
+  "001364": {
+    "sku": "001364",
+    "id_produto": 1854753843,
+    "fracionado": "E2N8",
+    "deposito_1": "",
+    "raw": "E2N8",
+    "ultima_atualizacao": "2026-10-01 09:26:00"
+  },
+  "009412": {
+    "sku": "009412",
+    "id_produto": 1854753849,
+    "fracionado": "A4N5",
+    "deposito_1": "",
+    "raw": "A4N5",
+    "ultima_atualizacao": "2026-10-01 09:26:01"
+  },
+  "006911": {
+    "sku": "006911",
+    "id_produto": 1854753863,
+    "fracionado": "E1N2",
+    "deposito_1": "",
+    "raw": "E1N2",
+    "ultima_atualizacao": "2026-10-01 09:26:02"
+  },
+  "010371": {
+    "sku": "010371",
+    "id_produto": 1854753877,
+    "fracionado": "D-N7 - 2D-N1",
+    "deposito_1": "",
+    "raw": "D-N7 - 2D-N1",
+    "ultima_atualizacao": "2026-10-01 09:26:02"
+  },
+  "002714": {
+    "sku": "002714",
+    "id_produto": 1854753924,
+    "fracionado": "C3N3",
+    "deposito_1": "",
+    "raw": "C3N3",
+    "ultima_atualizacao": "2026-10-01 09:26:03"
+  },
+  "010121": {
+    "sku": "010121",
+    "id_produto": 1854753963,
+    "fracionado": "G-N7",
+    "deposito_1": "",
+    "raw": "G-N7",
+    "ultima_atualizacao": "2026-10-01 09:26:04"
+  },
+  "010359": {
+    "sku": "010359",
+    "id_produto": 1854754087,
+    "fracionado": "C1N4",
+    "deposito_1": "",
+    "raw": "C1N4",
+    "ultima_atualizacao": "2026-10-01 09:26:05"
+  },
+  "009545": {
+    "sku": "009545",
+    "id_produto": 1854754095,
+    "fracionado": "G-N7",
+    "deposito_1": "",
+    "raw": "G-N7",
+    "ultima_atualizacao": "2026-10-01 09:26:06"
+  },
+  "002046": {
+    "sku": "002046",
+    "id_produto": 1854754113,
+    "fracionado": "G-N8",
+    "deposito_1": "",
+    "raw": "G-N8",
+    "ultima_atualizacao": "2026-10-01 09:26:07"
+  },
+  "010360": {
+    "sku": "010360",
+    "id_produto": 1854754126,
+    "fracionado": "C1N3",
+    "deposito_1": "",
+    "raw": "C1N3",
+    "ultima_atualizacao": "2026-10-01 09:26:07"
+  },
+  "010365": {
+    "sku": "010365",
+    "id_produto": 1854754131,
+    "fracionado": "C1N3",
+    "deposito_1": "",
+    "raw": "C1N3",
+    "ultima_atualizacao": "2026-10-01 09:26:08"
+  },
+  "008378": {
+    "sku": "008378",
+    "id_produto": 1854754152,
+    "fracionado": "G-N3",
+    "deposito_1": "",
+    "raw": "G-N3",
+    "ultima_atualizacao": "2026-10-01 09:26:10"
+  },
+  "003125": {
+    "sku": "003125",
+    "id_produto": 1854754179,
+    "fracionado": "G-N1",
+    "deposito_1": "",
+    "raw": "G-N1",
+    "ultima_atualizacao": "2026-10-01 09:26:11"
+  },
+  "009688": {
+    "sku": "009688",
+    "id_produto": 1854754194,
+    "fracionado": "E1N3",
+    "deposito_1": "",
+    "raw": "E1N3",
+    "ultima_atualizacao": "2026-10-01 09:26:12"
+  },
+  "010141": {
+    "sku": "010141",
+    "id_produto": 1854754210,
+    "fracionado": "F-N2",
+    "deposito_1": "",
+    "raw": "F-N2",
+    "ultima_atualizacao": "2026-10-01 09:26:13"
+  },
+  "010362": {
+    "sku": "010362",
+    "id_produto": 1854754232,
+    "fracionado": "C1N1",
+    "deposito_1": "",
+    "raw": "C1N1",
+    "ultima_atualizacao": "2026-10-01 09:26:15"
+  },
+  "010363": {
+    "sku": "010363",
+    "id_produto": 1854754242,
+    "fracionado": "C1N1",
+    "deposito_1": "",
+    "raw": "C1N1",
+    "ultima_atualizacao": "2026-10-01 09:26:16"
+  },
+  "010361": {
+    "sku": "010361",
+    "id_produto": 1854754247,
+    "fracionado": "C1N4",
+    "deposito_1": "",
+    "raw": "C1N4",
+    "ultima_atualizacao": "2026-10-01 09:26:18"
+  },
+  "010367": {
+    "sku": "010367",
+    "id_produto": 1854754250,
+    "fracionado": "C1N4",
+    "deposito_1": "",
+    "raw": "C1N4",
+    "ultima_atualizacao": "2026-10-01 09:26:18"
+  },
+  "010369": {
+    "sku": "010369",
+    "id_produto": 1854754256,
+    "fracionado": "C-N5 - 1A-N2",
+    "deposito_1": "",
+    "raw": "C-N5 - 1A-N2",
+    "ultima_atualizacao": "2026-10-01 09:26:20"
+  },
+  "009556": {
+    "sku": "009556",
+    "id_produto": 1854754276,
+    "fracionado": "A2N3",
+    "deposito_1": "",
+    "raw": "A2N3",
+    "ultima_atualizacao": "2026-10-01 09:26:22"
+  },
+  "001920": {
+    "sku": "001920",
+    "id_produto": 1854754293,
+    "fracionado": "A2N2",
+    "deposito_1": "",
+    "raw": "A2N2",
+    "ultima_atualizacao": "2026-10-01 09:26:24"
+  },
+  "001921": {
+    "sku": "001921",
+    "id_produto": 1854754295,
+    "fracionado": "A2N2",
+    "deposito_1": "",
+    "raw": "A2N2",
+    "ultima_atualizacao": "2026-10-01 09:26:25"
+  },
+  "001922": {
+    "sku": "001922",
+    "id_produto": 1854754297,
+    "fracionado": "A2N2",
+    "deposito_1": "",
+    "raw": "A2N2",
+    "ultima_atualizacao": "2026-10-01 09:26:26"
+  },
+  "009541": {
+    "sku": "009541",
+    "id_produto": 1854754306,
+    "fracionado": "A3N5",
+    "deposito_1": "",
+    "raw": "A3N5",
+    "ultima_atualizacao": "2026-10-01 09:26:26"
+  },
+  "000536": {
+    "sku": "000536",
+    "id_produto": 1854754323,
+    "fracionado": "A2N2",
+    "deposito_1": "",
+    "raw": "A2N2",
+    "ultima_atualizacao": "2026-10-01 09:26:27"
+  },
+  "000540": {
+    "sku": "000540",
+    "id_produto": 1854754325,
+    "fracionado": "A2N2",
+    "deposito_1": "",
+    "raw": "A2N2",
+    "ultima_atualizacao": "2026-10-01 09:26:28"
+  },
+  "008498": {
+    "sku": "008498",
+    "id_produto": 1854754355,
+    "fracionado": "A1N5",
+    "deposito_1": "",
+    "raw": "A1N5",
+    "ultima_atualizacao": "2026-10-01 09:26:31"
+  },
+  "009637": {
+    "sku": "009637",
+    "id_produto": 1854754366,
+    "fracionado": "A1N3",
+    "deposito_1": "",
+    "raw": "A1N3",
+    "ultima_atualizacao": "2026-10-01 09:26:32"
+  },
+  "001919": {
+    "sku": "001919",
+    "id_produto": 1854754387,
+    "fracionado": "A2N2",
+    "deposito_1": "",
+    "raw": "A2N2",
+    "ultima_atualizacao": "2026-10-01 09:26:32"
+  },
+  "001927": {
+    "sku": "001927",
+    "id_produto": 1854754417,
+    "fracionado": "A2N6",
+    "deposito_1": "",
+    "raw": "A2N6",
+    "ultima_atualizacao": "2026-10-01 09:26:35"
+  },
+  "000054": {
+    "sku": "000054",
+    "id_produto": 1854754427,
+    "fracionado": "A2N5",
+    "deposito_1": "",
+    "raw": "A2N5",
+    "ultima_atualizacao": "2026-10-01 09:26:36"
+  },
+  "008509": {
+    "sku": "008509",
+    "id_produto": 1854754471,
+    "fracionado": "A2N6",
+    "deposito_1": "",
+    "raw": "A2N6",
+    "ultima_atualizacao": "2026-10-01 09:26:38"
+  },
+  "002429": {
+    "sku": "002429",
+    "id_produto": 1854754501,
+    "fracionado": "A2N3",
+    "deposito_1": "",
+    "raw": "A2N3",
+    "ultima_atualizacao": "2026-10-01 09:26:39"
+  },
+  "000627": {
+    "sku": "000627",
+    "id_produto": 1854754523,
+    "fracionado": "A2N5",
+    "deposito_1": "",
+    "raw": "A2N5",
+    "ultima_atualizacao": "2026-10-01 09:26:40"
+  },
+  "004884": {
+    "sku": "004884",
+    "id_produto": 1854754611,
+    "fracionado": "B2N5",
+    "deposito_1": "",
+    "raw": "B2N5",
+    "ultima_atualizacao": "2026-10-01 09:26:43"
+  },
+  "007162": {
+    "sku": "007162",
+    "id_produto": 1854754617,
+    "fracionado": "A2N4",
+    "deposito_1": "",
+    "raw": "A2N4",
+    "ultima_atualizacao": "2026-10-01 09:26:43"
+  },
+  "007395": {
+    "sku": "007395",
+    "id_produto": 1854754619,
+    "fracionado": "E1N1",
+    "deposito_1": "",
+    "raw": "E1N1",
+    "ultima_atualizacao": "2026-10-01 09:26:44"
+  },
+  "002249": {
+    "sku": "002249",
+    "id_produto": 1854754622,
+    "fracionado": "D2N6",
+    "deposito_1": "",
+    "raw": "D2N6",
+    "ultima_atualizacao": "2026-10-01 09:26:45"
+  },
+  "009040": {
+    "sku": "009040",
+    "id_produto": 1854754647,
+    "fracionado": "B2N3",
+    "deposito_1": "",
+    "raw": "B2N3",
+    "ultima_atualizacao": "2026-10-01 09:26:48"
+  },
+  "008272": {
+    "sku": "008272",
+    "id_produto": 1854754765,
+    "fracionado": "B2N3",
+    "deposito_1": "",
+    "raw": "B2N3",
+    "ultima_atualizacao": "2026-10-01 09:26:48"
+  },
+  "007197": {
+    "sku": "007197",
+    "id_produto": 1854754799,
+    "fracionado": "B1N5",
+    "deposito_1": "",
+    "raw": "B1N5",
+    "ultima_atualizacao": "2026-10-01 09:26:49"
+  },
+  "007672": {
+    "sku": "007672",
+    "id_produto": 1854754818,
+    "fracionado": "B2N3",
+    "deposito_1": "",
+    "raw": "B2N3",
+    "ultima_atualizacao": "2026-10-01 09:26:50"
+  },
+  "002002": {
+    "sku": "002002",
+    "id_produto": 1854754890,
+    "fracionado": "A1N6",
+    "deposito_1": "",
+    "raw": "A1N6",
+    "ultima_atualizacao": "2026-10-01 09:26:53"
+  },
+  "004917": {
+    "sku": "004917",
+    "id_produto": 1854754896,
+    "fracionado": "B2N2",
+    "deposito_1": "",
+    "raw": "B2N2",
+    "ultima_atualizacao": "2026-10-01 09:26:54"
+  },
+  "002001": {
+    "sku": "002001",
+    "id_produto": 1854754901,
+    "fracionado": "A1N6",
+    "deposito_1": "",
+    "raw": "A1N6",
+    "ultima_atualizacao": "2026-10-01 09:26:54"
+  },
+  "010472": {
+    "sku": "010472",
+    "id_produto": 1854755068,
+    "fracionado": "B1N2",
+    "deposito_1": "",
+    "raw": "B1N2",
+    "ultima_atualizacao": "2026-10-01 09:27:09"
+  },
+  "010473": {
+    "sku": "010473",
+    "id_produto": 1854755070,
+    "fracionado": "B1N2",
+    "deposito_1": "",
+    "raw": "B1N2",
+    "ultima_atualizacao": "2026-10-01 09:27:09"
+  },
+  "010474": {
+    "sku": "010474",
+    "id_produto": 1854755073,
+    "fracionado": "B1N2",
+    "deposito_1": "",
+    "raw": "B1N2",
+    "ultima_atualizacao": "2026-10-01 09:27:10"
+  },
+  "010477": {
+    "sku": "010477",
+    "id_produto": 1854755077,
+    "fracionado": "B1N2",
+    "deposito_1": "",
+    "raw": "B1N2",
+    "ultima_atualizacao": "2026-10-01 09:27:12"
+  },
+  "010560": {
+    "sku": "010560",
+    "id_produto": 1854755106,
+    "fracionado": "K-N5 - 1C-N3",
+    "deposito_1": "",
+    "raw": "K-N5 - 1C-N3",
+    "ultima_atualizacao": "2026-10-01 09:27:22"
+  },
+  "010562": {
+    "sku": "010562",
+    "id_produto": 1854755110,
+    "fracionado": "K-N5 - 1C-N3",
+    "deposito_1": "",
+    "raw": "K-N5 - 1C-N3",
+    "ultima_atualizacao": "2026-10-01 09:27:24"
+  },
+  "010563": {
+    "sku": "010563",
+    "id_produto": 1854755112,
+    "fracionado": "D-N7",
+    "deposito_1": "",
+    "raw": "D-N7",
+    "ultima_atualizacao": "2026-10-01 09:27:24"
+  },
+  "010613": {
+    "sku": "010613",
+    "id_produto": 1854755220,
+    "fracionado": "A-N8 - 2D-N3",
+    "deposito_1": "",
+    "raw": "A-N8 - 2D-N3",
+    "ultima_atualizacao": "2026-10-01 09:27:41"
+  },
+  "010614": {
+    "sku": "010614",
+    "id_produto": 1854755227,
+    "fracionado": "A-N8 - 2D-N3",
+    "deposito_1": "",
+    "raw": "A-N8 - 2D-N3",
+    "ultima_atualizacao": "2026-10-01 09:27:42"
+  },
+  "010616": {
+    "sku": "010616",
+    "id_produto": 1854755229,
+    "fracionado": "A-N8 - 2D-N3",
+    "deposito_1": "",
+    "raw": "A-N8 - 2D-N3",
+    "ultima_atualizacao": "2026-10-01 09:27:43"
+  },
+  "010620": {
+    "sku": "010620",
+    "id_produto": 1854755233,
+    "fracionado": "K-N5 - 1C-N3",
+    "deposito_1": "",
+    "raw": "K-N5 - 1C-N3",
+    "ultima_atualizacao": "2026-10-01 09:27:44"
+  },
+  "010621": {
+    "sku": "010621",
+    "id_produto": 1854755235,
+    "fracionado": "K-N5 - 2D-N3",
+    "deposito_1": "",
+    "raw": "K-N5 - 2D-N3",
+    "ultima_atualizacao": "2026-10-01 09:27:45"
+  },
+  "010622": {
+    "sku": "010622",
+    "id_produto": 1854755237,
+    "fracionado": "K-N5 - 1D-N3",
+    "deposito_1": "",
+    "raw": "K-N5 - 1D-N3",
+    "ultima_atualizacao": "2026-10-01 09:27:45"
+  },
+  "010677": {
+    "sku": "010677",
+    "id_produto": 1854755299,
+    "fracionado": "F-N5",
+    "deposito_1": "",
+    "raw": "F-N5",
+    "ultima_atualizacao": "2026-10-01 09:27:52"
+  },
+  "010094": {
+    "sku": "010094",
+    "id_produto": 1855077731,
+    "fracionado": "A4N6",
+    "deposito_1": "",
+    "raw": "A4N6",
+    "ultima_atualizacao": "2026-10-01 09:28:41"
+  },
+  "010366": {
+    "sku": "010366",
+    "id_produto": 1856084390,
+    "fracionado": "C1N4",
+    "deposito_1": "",
+    "raw": "C1N4",
+    "ultima_atualizacao": "2026-10-01 09:28:42"
+  },
+  "009850": {
+    "sku": "009850",
+    "id_produto": 1856084403,
+    "fracionado": "A4N3",
+    "deposito_1": "",
+    "raw": "A4N3",
+    "ultima_atualizacao": "2026-10-01 09:28:43"
+  },
+  "008296": {
+    "sku": "008296",
+    "id_produto": 1856084421,
+    "fracionado": "B3N6",
+    "deposito_1": "",
+    "raw": "B3N6",
+    "ultima_atualizacao": "2026-10-01 09:28:44"
+  },
+  "008397": {
+    "sku": "008397",
+    "id_produto": 1856084428,
+    "fracionado": "G-N7",
+    "deposito_1": "",
+    "raw": "G-N7",
+    "ultima_atualizacao": "2026-10-01 09:28:44"
+  },
+  "000577": {
+    "sku": "000577",
+    "id_produto": 1856084435,
+    "fracionado": "A3N4",
+    "deposito_1": "",
+    "raw": "A3N4",
+    "ultima_atualizacao": "2026-10-01 09:28:45"
+  },
+  "006601": {
+    "sku": "006601",
+    "id_produto": 1856084440,
+    "fracionado": "G-N7",
+    "deposito_1": "",
+    "raw": "G-N7",
+    "ultima_atualizacao": "2026-10-01 09:28:46"
+  },
+  "010553": {
+    "sku": "010553",
+    "id_produto": 1856084464,
+    "fracionado": "B2N2",
+    "deposito_1": "",
+    "raw": "B2N2",
+    "ultima_atualizacao": "2026-10-01 09:28:47"
+  },
+  "010554": {
+    "sku": "010554",
+    "id_produto": 1856084470,
+    "fracionado": "B2N2",
+    "deposito_1": "",
+    "raw": "B2N2",
+    "ultima_atualizacao": "2026-10-01 09:28:48"
+  },
+  "010555": {
+    "sku": "010555",
+    "id_produto": 1856084476,
+    "fracionado": "B2N2",
+    "deposito_1": "",
+    "raw": "B2N2",
+    "ultima_atualizacao": "2026-10-01 09:28:49"
+  },
+  "010326": {
+    "sku": "010326",
+    "id_produto": 1856090665,
+    "fracionado": "A-N4",
+    "deposito_1": "",
+    "raw": "A-N4",
+    "ultima_atualizacao": "2026-10-01 09:28:49"
+  },
+  "005030": {
+    "sku": "005030",
+    "id_produto": 1856102807,
+    "fracionado": "A3N4",
+    "deposito_1": "",
+    "raw": "A3N4",
+    "ultima_atualizacao": "2026-10-01 09:28:55"
+  },
+  "009420": {
+    "sku": "009420",
+    "id_produto": 1856104925,
+    "fracionado": "G-N7",
+    "deposito_1": "",
+    "raw": "G-N7",
+    "ultima_atualizacao": "2026-10-01 09:28:59"
+  },
+  "008513": {
+    "sku": "008513",
+    "id_produto": 1861578854,
+    "fracionado": "A2N6",
+    "deposito_1": "",
+    "raw": "A2N6",
+    "ultima_atualizacao": "2026-10-01 09:29:01"
+  },
+  "PRD00007": {
+    "sku": "PRD00007",
+    "id_produto": 1863423375,
+    "fracionado": "E1N2",
+    "deposito_1": "",
+    "raw": "E1N2",
+    "ultima_atualizacao": "2026-10-01 09:29:02"
+  },
+  "PRD00008": {
+    "sku": "PRD00008",
+    "id_produto": 1863429163,
+    "fracionado": "E1N2",
+    "deposito_1": "",
+    "raw": "E1N2",
+    "ultima_atualizacao": "2026-10-01 09:29:03"
+  },
+  "PRD00012": {
+    "sku": "PRD00012",
+    "id_produto": 1863587581,
+    "fracionado": "B-N3",
+    "deposito_1": "",
+    "raw": "B-N3",
+    "ultima_atualizacao": "2026-10-01 09:29:04"
+  },
+  "PRD00015": {
+    "sku": "PRD00015",
+    "id_produto": 1864629354,
+    "fracionado": "E1N4",
+    "deposito_1": "",
+    "raw": "E1N4",
+    "ultima_atualizacao": "2026-10-01 09:29:05"
+  },
+  "PRD00018": {
+    "sku": "PRD00018",
+    "id_produto": 1864712657,
+    "fracionado": "E1N2",
+    "deposito_1": "",
+    "raw": "E1N2",
+    "ultima_atualizacao": "2026-10-01 09:29:06"
+  },
+  "002305": {
+    "sku": "002305",
+    "id_produto": 1864755648,
+    "fracionado": "E-N8",
+    "deposito_1": "",
+    "raw": "E-N8",
+    "ultima_atualizacao": "2026-10-01 09:29:07"
+  },
+  "PRD00020": {
+    "sku": "PRD00020",
+    "id_produto": 1864840311,
+    "fracionado": "B-N3 - 1C-N3",
+    "deposito_1": "",
+    "raw": "B-N3 - 1C-N3",
+    "ultima_atualizacao": "2026-10-01 09:29:08"
+  },
+  "PRD00041": {
+    "sku": "PRD00041",
+    "id_produto": 1866385706,
+    "fracionado": "A-N5",
+    "deposito_1": "",
+    "raw": "A-N5",
+    "ultima_atualizacao": "2026-10-01 09:29:10"
+  },
+  "PRD00043": {
+    "sku": "PRD00043",
+    "id_produto": 1866387070,
+    "fracionado": "A-N5",
+    "deposito_1": "",
+    "raw": "A-N5",
+    "ultima_atualizacao": "2026-10-01 09:29:11"
+  },
+  "PRD00051": {
+    "sku": "PRD00051",
+    "id_produto": 1874995150,
+    "fracionado": "A-N2",
+    "deposito_1": "",
+    "raw": "A-N2",
+    "ultima_atualizacao": "2026-10-01 09:29:15"
+  },
+  "PRD00057": {
+    "sku": "PRD00057",
+    "id_produto": 1889191301,
+    "fracionado": "E2N6",
+    "deposito_1": "",
+    "raw": "E2N6",
+    "ultima_atualizacao": "2026-10-01 09:29:16"
+  },
+  "PRD00068": {
+    "sku": "PRD00068",
+    "id_produto": 1891059522,
+    "fracionado": "C-N5",
+    "deposito_1": "",
+    "raw": "C-N5",
+    "ultima_atualizacao": "2026-10-01 09:29:20"
+  },
+  "PRD00108": {
+    "sku": "PRD00108",
+    "id_produto": 1899322997,
+    "fracionado": "A-N5",
+    "deposito_1": "",
+    "raw": "A-N5",
+    "ultima_atualizacao": "2026-10-01 09:29:48"
+  },
+  "PRD00109": {
+    "sku": "PRD00109",
+    "id_produto": 1899325865,
+    "fracionado": "A-N5",
+    "deposito_1": "",
+    "raw": "A-N5",
+    "ultima_atualizacao": "2026-10-01 09:29:49"
+  },
+  "PRD00110": {
+    "sku": "PRD00110",
+    "id_produto": 1899327171,
+    "fracionado": "A-N5",
+    "deposito_1": "",
+    "raw": "A-N5",
+    "ultima_atualizacao": "2026-10-01 09:29:50"
+  },
+  "PRD00112": {
+    "sku": "PRD00112",
+    "id_produto": 1904074743,
+    "fracionado": "B-N4 - 2B-N2",
+    "deposito_1": "",
+    "raw": "B-N4 - 2B-N2",
+    "ultima_atualizacao": "2026-10-01 09:29:51"
+  },
+  "PRD00227": {
+    "sku": "PRD00227",
+    "id_produto": "1907931377",
+    "fracionado": "B1-N3",
+    "deposito_1": "D1.2-N3",
+    "raw": "B1-N3, D1.2-N3",
+    "ultima_atualizacao": "2026-10-02 11:14:02"
+  },
+  "PRD00117": {
+    "sku": "PRD00117",
+    "id_produto": 1907965436,
+    "fracionado": "D5N4",
+    "deposito_1": "",
+    "raw": "D5N4",
+    "ultima_atualizacao": "2026-10-01 09:29:54"
+  },
+  "PRD00122": {
+    "sku": "PRD00122",
+    "id_produto": 1914056870,
+    "fracionado": "D-N6 - 2C-N2",
+    "deposito_1": "",
+    "raw": "D-N6 - 2C-N2",
+    "ultima_atualizacao": "2026-10-01 09:29:59"
+  },
+  "PRD00124": {
+    "sku": "PRD00124",
+    "id_produto": 1914733702,
+    "fracionado": "A1N5",
+    "deposito_1": "",
+    "raw": "A1N5",
+    "ultima_atualizacao": "2026-10-01 09:29:59"
+  },
+  "PRD00125": {
+    "sku": "PRD00125",
+    "id_produto": 1914733911,
+    "fracionado": "A1N5",
+    "deposito_1": "",
+    "raw": "A1N5",
+    "ultima_atualizacao": "2026-10-01 09:30:00"
+  },
+  "PRD00126": {
+    "sku": "PRD00126",
+    "id_produto": 1915091817,
+    "fracionado": "D1N4",
+    "deposito_1": "",
+    "raw": "D1N4",
+    "ultima_atualizacao": "2026-10-01 09:30:01"
+  },
+  "PRD00200": {
+    "sku": "PRD00200",
+    "id_produto": 1918463440,
+    "fracionado": "D5N4",
+    "deposito_1": "",
+    "raw": "D5N4",
+    "ultima_atualizacao": "2026-10-01 09:30:18"
+  },
+  "PRD00222": {
+    "sku": "PRD00222",
+    "id_produto": 1925534457,
+    "fracionado": "D1N4",
+    "deposito_1": "",
+    "raw": "D1N4",
+    "ultima_atualizacao": "2026-10-01 09:30:29"
+  },
+  "PRD00223": {
+    "sku": "PRD00223",
+    "id_produto": 1925806694,
+    "fracionado": "F-N2",
+    "deposito_1": "",
+    "raw": "F-N2",
+    "ultima_atualizacao": "2026-10-01 09:30:30"
+  },
+  "PRD00232": {
+    "sku": "PRD00232",
+    "id_produto": 1963651855,
+    "fracionado": "A2N4",
+    "deposito_1": "",
+    "raw": "A2N4",
+    "ultima_atualizacao": "2026-10-01 09:30:32"
+  },
+  "PRD00261": {
+    "sku": "PRD00261",
+    "id_produto": 1974139186,
+    "fracionado": "G-N6",
+    "deposito_1": "",
+    "raw": "G-N6",
+    "ultima_atualizacao": "2026-10-01 09:30:49"
+  },
+  "PRD00262": {
+    "sku": "PRD00262",
+    "id_produto": 1978065311,
+    "fracionado": "C-N3 - 2C-N1",
+    "deposito_1": "",
+    "raw": "C-N3 - 2C-N1",
+    "ultima_atualizacao": "2026-10-01 09:30:50"
+  },
+  "PRD00305": {
+    "sku": "PRD00305",
+    "id_produto": "1997540232",
+    "fracionado": "C-N4",
+    "deposito_1": "D1.2-N1",
+    "raw": "C-N4, D1.2-N1",
+    "ultima_atualizacao": "2026-10-02 11:11:01"
+  },
+  "PRD00381": {
+    "sku": "PRD00381",
+    "id_produto": 2027558491,
+    "fracionado": "B3N4",
+    "deposito_1": "",
+    "raw": "B3N4",
+    "ultima_atualizacao": "2026-10-01 09:31:33"
+  },
+  "PRD00385": {
+    "sku": "PRD00385",
+    "id_produto": 2027845538,
+    "fracionado": "A-N5",
+    "deposito_1": "",
+    "raw": "A-N5",
+    "ultima_atualizacao": "2026-10-01 09:31:34"
+  },
+  "PRD00386": {
+    "sku": "PRD00386",
+    "id_produto": 2027845957,
+    "fracionado": "A-N5",
+    "deposito_1": "",
+    "raw": "A-N5",
+    "ultima_atualizacao": "2026-10-01 09:31:35"
+  },
+  "PRD00387": {
+    "sku": "PRD00387",
+    "id_produto": 2027846190,
+    "fracionado": "A-N5",
+    "deposito_1": "",
+    "raw": "A-N5",
+    "ultima_atualizacao": "2026-10-01 09:31:36"
+  },
+  "PRD00411": {
+    "sku": "PRD00411",
+    "id_produto": 2030572443,
+    "fracionado": "A-N5",
+    "deposito_1": "",
+    "raw": "A-N5",
+    "ultima_atualizacao": "2026-10-01 09:35:13"
+  },
+  "PRD00436": {
+    "sku": "PRD00436",
+    "id_produto": 2044032333,
+    "fracionado": "D1N4",
+    "deposito_1": "",
+    "raw": "D1N4",
+    "ultima_atualizacao": "2026-10-01 09:35:24"
+  },
+  "PRD00438": {
+    "sku": "PRD00438",
+    "id_produto": 2044034921,
+    "fracionado": "D1N4",
+    "deposito_1": "",
+    "raw": "D1N4",
+    "ultima_atualizacao": "2026-10-01 09:35:25"
+  },
+  "PRD00440": {
+    "sku": "PRD00440",
+    "id_produto": 2049718655,
+    "fracionado": "A4N6",
+    "deposito_1": "",
+    "raw": "A4N6",
+    "ultima_atualizacao": "2026-10-01 09:35:25"
+  },
+  "PRD00441": {
+    "sku": "PRD00441",
+    "id_produto": 2049719547,
+    "fracionado": "A4N6",
+    "deposito_1": "",
+    "raw": "A4N6",
+    "ultima_atualizacao": "2026-10-01 09:35:26"
+  },
+  "PRD00463": {
+    "sku": "PRD00463",
+    "id_produto": 2059790345,
+    "fracionado": "B-N5 - 2A-N2",
+    "deposito_1": "",
+    "raw": "B-N5 - 2A-N2",
+    "ultima_atualizacao": "2026-10-01 09:35:37"
+  },
+  "PRD00476": {
+    "sku": "PRD00476",
+    "id_produto": 2068002180,
+    "fracionado": "B3N5",
+    "deposito_1": "",
+    "raw": "B3N5",
+    "ultima_atualizacao": "2026-10-01 09:35:43"
+  },
+  "PRD00478": {
+    "sku": "PRD00478",
+    "id_produto": 2068918022,
+    "fracionado": "D4N3 1B2A",
+    "deposito_1": "",
+    "raw": "D4N3 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:35:44"
+  },
+  "PRD00481": {
+    "sku": "PRD00481",
+    "id_produto": 2080839834,
+    "fracionado": "D4N3 1B2A",
+    "deposito_1": "",
+    "raw": "D4N3 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:35:45"
+  },
+  "PRD00482": {
+    "sku": "PRD00482",
+    "id_produto": 2080843327,
+    "fracionado": "D4N3 1B2A",
+    "deposito_1": "",
+    "raw": "D4N3 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:35:45"
+  },
+  "PRD00483": {
+    "sku": "PRD00483",
+    "id_produto": 2080844188,
+    "fracionado": "D4N3 1B2A",
+    "deposito_1": "",
+    "raw": "D4N3 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:35:46"
+  },
+  "PRD00484": {
+    "sku": "PRD00484",
+    "id_produto": 2080845971,
+    "fracionado": "D4N3 1B2A",
+    "deposito_1": "",
+    "raw": "D4N3 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:35:47"
+  },
+  "PRD00485": {
+    "sku": "PRD00485",
+    "id_produto": 2080846812,
+    "fracionado": "D4N3 1B2A",
+    "deposito_1": "",
+    "raw": "D4N3 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:35:48"
+  },
+  "PRD00486": {
+    "sku": "PRD00486",
+    "id_produto": 2080847692,
+    "fracionado": "D4N3 1B2A",
+    "deposito_1": "",
+    "raw": "D4N3 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:35:49"
+  },
+  "PRD00487": {
+    "sku": "PRD00487",
+    "id_produto": 2080848375,
+    "fracionado": "D4N3 1B2A",
+    "deposito_1": "",
+    "raw": "D4N3 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:35:50"
+  },
+  "PRD00488": {
+    "sku": "PRD00488",
+    "id_produto": 2080857984,
+    "fracionado": "D4N3 1B2A",
+    "deposito_1": "",
+    "raw": "D4N3 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:35:51"
+  },
+  "PRD00489": {
+    "sku": "PRD00489",
+    "id_produto": 2080864884,
+    "fracionado": "D4N3 1B2A",
+    "deposito_1": "",
+    "raw": "D4N3 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:35:52"
+  },
+  "PRD00490": {
+    "sku": "PRD00490",
+    "id_produto": 2080865501,
+    "fracionado": "D4N3 1B2A",
+    "deposito_1": "",
+    "raw": "D4N3 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:35:52"
+  },
+  "PRD00491": {
+    "sku": "PRD00491",
+    "id_produto": 2080866686,
+    "fracionado": "D4N3 1B2A",
+    "deposito_1": "",
+    "raw": "D4N3 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:35:53"
+  },
+  "PRD00492": {
+    "sku": "PRD00492",
+    "id_produto": 2080867324,
+    "fracionado": "D4N3 1B2A",
+    "deposito_1": "",
+    "raw": "D4N3 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:35:54"
+  },
+  "PRD00504": {
+    "sku": "PRD00504",
+    "id_produto": 2087094665,
+    "fracionado": "D4N3 1B2A",
+    "deposito_1": "",
+    "raw": "D4N3 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:36:03"
+  },
+  "PRD00505": {
+    "sku": "PRD00505",
+    "id_produto": 2087095818,
+    "fracionado": "D4N3 1B2A",
+    "deposito_1": "",
+    "raw": "D4N3 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:36:04"
+  },
+  "PRD00506": {
+    "sku": "PRD00506",
+    "id_produto": 2087135014,
+    "fracionado": "D4N3 1B2A",
+    "deposito_1": "",
+    "raw": "D4N3 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:36:05"
+  },
+  "PRD00507": {
+    "sku": "PRD00507",
+    "id_produto": 2087140243,
+    "fracionado": "D4N3 1B2A",
+    "deposito_1": "",
+    "raw": "D4N3 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:36:06"
+  },
+  "PRD00535": {
+    "sku": "PRD00535",
+    "id_produto": 2101403016,
+    "fracionado": "D1N6",
+    "deposito_1": "",
+    "raw": "D1N6",
+    "ultima_atualizacao": "2026-10-01 09:36:22"
+  },
+  "PRD00536": {
+    "sku": "PRD00536",
+    "id_produto": 2101403054,
+    "fracionado": "D1N6",
+    "deposito_1": "",
+    "raw": "D1N6",
+    "ultima_atualizacao": "2026-10-01 09:36:22"
+  },
+  "PRD00545": {
+    "sku": "PRD00545",
+    "id_produto": 2101403463,
+    "fracionado": "D1N6",
+    "deposito_1": "",
+    "raw": "D1N6",
+    "ultima_atualizacao": "2026-10-01 09:36:23"
+  },
+  "PRD00573": {
+    "sku": "PRD00573",
+    "id_produto": 2148336561,
+    "fracionado": "Deposito",
+    "deposito_1": "",
+    "raw": "Deposito",
+    "ultima_atualizacao": "2026-10-01 09:36:41"
+  },
+  "PRD00635": {
+    "sku": "PRD00635",
+    "id_produto": 2192867881,
+    "fracionado": "F-N6",
+    "deposito_1": "",
+    "raw": "F-N6",
+    "ultima_atualizacao": "2026-10-01 09:37:10"
+  },
+  "PRD00640": {
+    "sku": "PRD00640",
+    "id_produto": 2203943759,
+    "fracionado": "D3N3",
+    "deposito_1": "",
+    "raw": "D3N3",
+    "ultima_atualizacao": "2026-10-01 09:37:11"
+  },
+  "PRD00752": {
+    "sku": "PRD00752",
+    "id_produto": 2208026684,
+    "fracionado": "E-N2",
+    "deposito_1": "",
+    "raw": "E-N2",
+    "ultima_atualizacao": "2026-10-01 09:37:37"
+  },
+  "PRD00842": {
+    "sku": "PRD00842",
+    "id_produto": 2219296418,
+    "fracionado": "D4N3 1B2A",
+    "deposito_1": "",
+    "raw": "D4N3 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:38:14"
+  },
+  "PRD00843": {
+    "sku": "PRD00843",
+    "id_produto": 2219452433,
+    "fracionado": "D4N3 1B2A",
+    "deposito_1": "",
+    "raw": "D4N3 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:38:15"
+  },
+  "PRD00846": {
+    "sku": "PRD00846",
+    "id_produto": 2219453387,
+    "fracionado": "D4N3 1B2A",
+    "deposito_1": "",
+    "raw": "D4N3 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:38:16"
+  },
+  "PRD00847": {
+    "sku": "PRD00847",
+    "id_produto": 2219453496,
+    "fracionado": "D4N3 1B2A",
+    "deposito_1": "",
+    "raw": "D4N3 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:38:17"
+  },
+  "PRD00856": {
+    "sku": "PRD00856",
+    "id_produto": 2221223892,
+    "fracionado": "C-N5",
+    "deposito_1": "",
+    "raw": "C-N5",
+    "ultima_atualizacao": "2026-10-01 09:38:18"
+  },
+  "PRD00855": {
+    "sku": "PRD00855",
+    "id_produto": 2223336371,
+    "fracionado": "C-N5",
+    "deposito_1": "",
+    "raw": "C-N5",
+    "ultima_atualizacao": "2026-10-01 09:38:19"
+  },
+  "PRD00858": {
+    "sku": "PRD00858",
+    "id_produto": 2238458256,
+    "fracionado": "D4N4",
+    "deposito_1": "",
+    "raw": "D4N4",
+    "ultima_atualizacao": "2026-10-01 09:38:21"
+  },
+  "002925": {
+    "sku": "002925",
+    "id_produto": 1818185400,
+    "fracionado": "1B2A",
+    "deposito_1": "",
+    "raw": "1B2A",
+    "ultima_atualizacao": "2026-10-01 09:38:23"
+  },
+  "007010": {
+    "sku": "007010",
+    "id_produto": 1818186765,
+    "fracionado": "D4N3 1B2A",
+    "deposito_1": "",
+    "raw": "D4N3 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:38:24"
+  },
+  "PRD00380": {
+    "sku": "PRD00380",
+    "id_produto": 2027500210,
+    "fracionado": "D4N3 1B2A",
+    "deposito_1": "",
+    "raw": "D4N3 1B2A",
+    "ultima_atualizacao": "2026-10-01 09:38:26"
+  },
+  "PRD00865": {
+    "sku": "PRD00865",
+    "id_produto": 2254083056,
+    "fracionado": "A2N2",
+    "deposito_1": "",
+    "raw": "A2N2",
+    "ultima_atualizacao": "2026-10-01 09:38:30"
+  },
+  "PRD00866": {
+    "sku": "PRD00866",
+    "id_produto": 2254083793,
+    "fracionado": "A2N2",
+    "deposito_1": "",
+    "raw": "A2N2",
+    "ultima_atualizacao": "2026-10-01 09:38:31"
+  },
+  "PRD00867": {
+    "sku": "PRD00867",
+    "id_produto": 2254083926,
+    "fracionado": "A2N2",
+    "deposito_1": "",
+    "raw": "A2N2",
+    "ultima_atualizacao": "2026-10-01 09:38:32"
+  },
+  "PRD00868": {
+    "sku": "PRD00868",
+    "id_produto": 2254083960,
+    "fracionado": "A2N2",
+    "deposito_1": "",
+    "raw": "A2N2",
+    "ultima_atualizacao": "2026-10-01 09:38:33"
+  },
+  "PRD00869": {
+    "sku": "PRD00869",
+    "id_produto": 2254317393,
+    "fracionado": "A3N6",
+    "deposito_1": "",
+    "raw": "A3N6",
+    "ultima_atualizacao": "2026-10-01 09:38:34"
+  },
+  "PRD00048": {
+    "sku": "PRD00048",
+    "id_produto": "1870036524",
+    "fracionado": "B1-N3",
+    "deposito_1": "D1.2-N1",
+    "raw": "B1-N3, D1.2-N1",
+    "ultima_atualizacao": "2026-10-02 11:07:41"
+  },
+  "000507": {
+    "sku": "000507",
+    "id_produto": "1818186518",
+    "fracionado": "B1-N6",
+    "deposito_1": "D1.2-N2",
+    "raw": "B1-N6, D1.2-N2",
+    "ultima_atualizacao": "2026-10-02 11:11:48"
+  },
+  "001533": {
+    "sku": "001533",
+    "id_produto": "1818184864",
+    "fracionado": "C1-N7",
+    "deposito_1": "D1.2-N3",
+    "raw": "C1-N7, D1.2-N3",
+    "ultima_atualizacao": "2026-10-02 11:13:31"
+  },
+  "001534": {
+    "sku": "001534",
+    "id_produto": "1818185087",
+    "fracionado": "D1-N4",
+    "deposito_1": "D1.1-N1",
+    "raw": "D1-N4, D1.1-N1",
+    "ultima_atualizacao": "2026-10-02 11:18:40"
+  },
+  "004332": {
+    "sku": "004332",
+    "id_produto": "1818186917",
+    "fracionado": "D1-N3",
+    "deposito_1": "D1.1-N1",
+    "raw": "D1-N3, D1.1-N1",
+    "ultima_atualizacao": "2026-10-02 11:23:30"
+  },
+  "PRD00641": {
+    "sku": "PRD00641",
+    "id_produto": "2203987777",
+    "fracionado": "C1-N7",
+    "deposito_1": "D1.1-N3",
+    "raw": "C1-N7, D1.1-N3",
+    "ultima_atualizacao": "2026-10-02 11:28:42"
+  },
+  "002853": {
+    "sku": "002853",
+    "id_produto": "1818184055",
+    "fracionado": "C1-N6",
+    "deposito_1": "D1.1-N3",
+    "raw": "C1-N6, D1.1-N3",
+    "ultima_atualizacao": "2026-10-02 11:38:50"
+  },
+  "PRD00770": {
+    "sku": "PRD00770",
+    "id_produto": "2218244481",
+    "fracionado": "C1-N6",
+    "deposito_1": "",
+    "raw": "C1-N6",
+    "ultima_atualizacao": "2026-10-02 11:39:50"
+  }
+}

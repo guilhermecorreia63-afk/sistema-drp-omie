@@ -1,0 +1,47 @@
+# ================================
+# DEPENDÊNCIAS DO PROJETO - OMIE ERP INTEGRATION
+# ================================
+# Instale com: pip install -r requirements.txt
+# ================================
+
+# ----- Streamlit e Interface -----
+streamlit>=1.35.0
+
+# ----- Requisições HTTP e API -----
+requests>=2.31.0
+
+# ----- Banco de Dados -----
+# Turso / LibSQL (Pipeline v2 - HTTP)
+requests  # usado para chamadas HTTP ao Turso
+# sqlite3 já incluído no Python padrão (fallback)
+
+# ----- Variáveis de Ambiente -----
+python-dotenv>=1.0.0
+
+# ----- Processamento de Dados -----
+pandas>=2.1.0
+numpy>=1.26.0
+
+# ----- XML (Leitor de NF-e para Etiquetas) -----
+lxml>=5.0.0
+
+# ----- Código de Barras -----
+python-barcode>=0.15.0
+Pillow>=10.2.0
+
+# ----- Geração de Etiquetas -----
+reportlab>=4.0.0
+
+# ----- Netlify (Local Testing / Deploy) -----
+# Netlify CLI para rodar localmente e testar antes do deploy
+netlify-cli>=17.0.0
+
+# ----- Cache -----
+streamlit  # já inclui suporte a st.cache_data
+
+# ----- Utilidades -----
+pydantic>=2.5.0
+urllib3>=2.0.0
+
+# ----- E-mail -----
+# SMTP já incluído no Python (smtplib)
