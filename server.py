@@ -393,27 +393,33 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._send_json({"success": True, "message": f"Alerta registrado com sucesso no servidor."})
 
     def handle_api_producao_get(self):
-        json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'producao_status.json')
+        detalhes_map = {}
         producao_skus = []
-        if os.path.exists(json_path):
-            try:
-                with open(json_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    if isinstance(data, list):
-                        producao_skus = data
-                    elif isinstance(data, dict):
-                        producao_skus = [k for k, v in data.items() if v]
-            except Exception as e:
-                print(f"[API SERVER] Erro ao ler producao_status.json: {e}")
-        else:
-            try:
-                import database as db_mod
+        try:
+            import database as db_mod
+            detalhes_map = db_mod.obter_detalhes_producao()
+            if detalhes_map:
+                producao_skus = [k for k, v in detalhes_map.items() if isinstance(v, dict) and v.get('em_producao')]
+            else:
                 st_map = db_mod.obter_status_producao()
                 producao_skus = [k for k, v in st_map.items() if v]
-            except Exception:
-                producao_skus = []
+        except Exception as e:
+            print(f"[API SERVER] Aviso ao ler status de producao do Turso DB: {e}")
 
-        self._send_json({"success": True, "producao": producao_skus})
+        if not producao_skus:
+            json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'producao_status.json')
+            if os.path.exists(json_path):
+                try:
+                    with open(json_path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                        if isinstance(data, list):
+                            producao_skus = data
+                        elif isinstance(data, dict):
+                            producao_skus = [k for k, v in data.items() if v]
+                except Exception as e:
+                    print(f"[API SERVER] Erro ao ler producao_status.json: {e}")
+
+        self._send_json({"success": True, "producao": producao_skus, "detalhes": detalhes_map})
 
     def handle_api_producao_save(self):
         body = self._read_body()

@@ -477,13 +477,30 @@ async function carregarProdutos() {
         }
 
 
-        // Carregar status de produçao salvo do servidor
+        // Carregar status de produçao salvo do servidor (Turso DB)
         try {
             const respProd = await fetch('/api/producao?_t=' + Date.now());
             if (respProd.ok) {
                 const dataProd = await respProd.json();
+                const detalhes = dataProd.detalhes || {};
+
                 if (Array.isArray(dataProd.producao)) {
                     state.producao = new Set(dataProd.producao);
+                }
+
+                // Atualiza detalhes nos produtos locais vindo do Turso DB
+                if (state.produtos && state.produtos.length > 0) {
+                    state.produtos.forEach(p => {
+                        const sStr = String(p.sku).trim();
+                        if (sStr in detalhes) {
+                            const det = detalhes[sStr];
+                            p.em_producao = Boolean(det.em_producao);
+                            if (det.data_previsao) p.data_previsao = det.data_previsao;
+                            if (det.numero_pedido) p.numero_pedido = det.numero_pedido;
+                            if (p.em_producao) state.producao.add(p.sku);
+                            else state.producao.delete(p.sku);
+                        }
+                    });
                 }
             }
         } catch (eProd) {
@@ -502,9 +519,6 @@ async function carregarProdutos() {
         let alterouProducaoAuto = false;
 
         state.produtos.forEach(p => {
-            if (p.em_producao) {
-                state.producao.add(p.sku);
-            }
             p.em_producao = state.producao.has(p.sku);
 
             const estAtual = p.matriz || 0;
