@@ -1,25 +1,8 @@
 {
   "version": 2,
-  "cleanUrls": true,
-  "builds": [
-    {
-      "src": "api/*.py",
-      "use": "@vercel/python"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/cron_sync",
-      "dest": "/api/cron_sync.py"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/index.py"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/$1"
-    }
+  "rewrites": [
+    { "source": "/api/cron_sync", "destination": "/api/cron_sync.py" },
+    { "source": "/api/(.*)", "destination": "/api/index.py" }
   ],
   "crons": [
     {
