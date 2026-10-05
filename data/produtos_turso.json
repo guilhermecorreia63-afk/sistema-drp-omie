@@ -2851,15 +2851,15 @@
     "vendas_geral_90d": 1.0,
     "vendas_geral_180d": 4.0,
     "em_transito": 0,
-    "qtd_producao": 1.0,
-    "em_producao": true,
+    "qtd_producao": 0,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074679305,
     "valor_unitario": 37.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "27/02/2025",
-    "numero_pedido": "475"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "006463",
@@ -3734,7 +3734,7 @@
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "matriz": 433,
     "matriz_reservado": 0,
-    "em_producao": true,
+    "em_producao": false,
     "cd_sp": 4,
     "cd_sp_reservado": 0,
     "vendas_sul_sudeste_30d": 1.0,
@@ -3745,8 +3745,9 @@
     "vendas_geral_60d": 1.0,
     "vendas_geral_90d": 4.0,
     "vendas_geral_180d": 12.0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": "",
+    "qtd_producao": 0
   },
   {
     "sku": "009746",
@@ -9046,15 +9047,15 @@
     "vendas_geral_90d": 4.0,
     "vendas_geral_180d": 23.0,
     "em_transito": 0,
-    "qtd_producao": 1.0,
-    "em_producao": true,
+    "qtd_producao": 0,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074680651,
     "valor_unitario": 23.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 3,
-    "data_previsao": "27/02/2025",
-    "numero_pedido": "475"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "002079",
@@ -14028,14 +14029,14 @@
     "vendas_geral_180d": 19.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074681910,
     "valor_unitario": 38.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 3,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010255",
@@ -14870,14 +14871,14 @@
     "vendas_geral_180d": 326.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074682167,
     "valor_unitario": 54.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 5,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "004943",
@@ -18529,7 +18530,7 @@
     "vendas_geral_180d": 0.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "tamanho": "G",
     "modelo_base": "CAMISA ESPORTE CJS 2024",
     "ultima_sincronizacao": "2026-09-29 17:35:58",
@@ -18537,8 +18538,8 @@
     "valor_unitario": 59.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010472",
@@ -18560,14 +18561,14 @@
     "vendas_geral_180d": 6.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074682706,
     "valor_unitario": 9.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010473",
@@ -18589,14 +18590,14 @@
     "vendas_geral_180d": 8.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074682709,
     "valor_unitario": 9.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010474",
@@ -18618,14 +18619,14 @@
     "vendas_geral_180d": 6.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074682712,
     "valor_unitario": 9.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010476",
@@ -19018,14 +19019,14 @@
     "vendas_geral_180d": 68.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074682750,
     "valor_unitario": 16.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010561",
@@ -19047,14 +19048,14 @@
     "vendas_geral_180d": 47.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074682753,
     "valor_unitario": 16.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010562",
@@ -19076,14 +19077,14 @@
     "vendas_geral_180d": 102.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074682756,
     "valor_unitario": 16.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010563",
@@ -19105,14 +19106,14 @@
     "vendas_geral_180d": 43.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074682759,
     "valor_unitario": 54.9,
     "cd_sp_reservado": 1,
     "matriz_reservado": 13,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010580",
@@ -19850,14 +19851,14 @@
     "vendas_geral_180d": 80.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074682836,
     "valor_unitario": 16.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 1,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010621",
@@ -19879,14 +19880,14 @@
     "vendas_geral_180d": 106.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074682839,
     "valor_unitario": 16.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010622",
@@ -19908,14 +19909,14 @@
     "vendas_geral_180d": 144.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074682843,
     "valor_unitario": 16.9,
     "cd_sp_reservado": 1,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010660",
@@ -20138,14 +20139,14 @@
     "vendas_geral_180d": 0.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074687941,
     "valor_unitario": 98.8,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010668",
@@ -20167,14 +20168,14 @@
     "vendas_geral_180d": 0.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074687947,
     "valor_unitario": 88.8,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010669",
@@ -20196,14 +20197,14 @@
     "vendas_geral_180d": 0.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074687955,
     "valor_unitario": 85.8,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010672",
@@ -20225,7 +20226,7 @@
     "vendas_geral_180d": 0.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "estoque_discipulado": false,
     "status_especial": "Sem Estoque Discipulado",
     "ultima_sincronizacao": "2026-10-05 14:39:03",
@@ -20233,8 +20234,8 @@
     "valor_unitario": 98.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010673",
@@ -20256,7 +20257,7 @@
     "vendas_geral_180d": 0.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "estoque_discipulado": false,
     "status_especial": "Sem Estoque Discipulado",
     "ultima_sincronizacao": "2026-10-05 14:39:03",
@@ -20264,8 +20265,8 @@
     "valor_unitario": 105.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "27/02/2025",
-    "numero_pedido": "479"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010674",
@@ -20287,7 +20288,7 @@
     "vendas_geral_180d": 0.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "estoque_discipulado": false,
     "status_especial": "Sem Estoque Discipulado",
     "ultima_sincronizacao": "2026-10-05 14:39:03",
@@ -20295,8 +20296,8 @@
     "valor_unitario": 96.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "27/02/2025",
-    "numero_pedido": "479"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010675",
@@ -20517,7 +20518,7 @@
     "vendas_geral_180d": 0.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "tamanho": "G",
     "modelo_base": "COMBO PEQUENA VIA - CAMISA BRANCA",
     "ultima_sincronizacao": "2026-10-05 14:39:03",
@@ -20525,8 +20526,8 @@
     "valor_unitario": 207.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010773",
@@ -20548,7 +20549,7 @@
     "vendas_geral_180d": 0.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "tamanho": "GG",
     "modelo_base": "COMBO PEQUENA VIA - CAMISA BRANCA",
     "ultima_sincronizacao": "2026-10-05 14:39:03",
@@ -20556,8 +20557,8 @@
     "valor_unitario": 207.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010774",
@@ -20579,7 +20580,7 @@
     "vendas_geral_180d": 0.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "tamanho": "M",
     "modelo_base": "COMBO PEQUENA VIA - CAMISA BRANCA",
     "ultima_sincronizacao": "2026-10-05 14:39:03",
@@ -20587,8 +20588,8 @@
     "valor_unitario": 207.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010775",
@@ -20610,7 +20611,7 @@
     "vendas_geral_180d": 0.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "tamanho": "P",
     "modelo_base": "COMBO PEQUENA VIA - CAMISA BRANCA",
     "ultima_sincronizacao": "2026-10-05 14:39:03",
@@ -20618,8 +20619,8 @@
     "valor_unitario": 207.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010776",
@@ -20641,7 +20642,7 @@
     "vendas_geral_180d": 0.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "tamanho": "PP",
     "modelo_base": "COMBO PEQUENA VIA - CAMISA BRANCA",
     "ultima_sincronizacao": "2026-10-05 14:39:03",
@@ -20649,8 +20650,8 @@
     "valor_unitario": 207.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010777",
@@ -20672,7 +20673,7 @@
     "vendas_geral_180d": 0.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "tamanho": "XG",
     "modelo_base": "COMBO PEQUENA VIA - CAMISA BRANCA",
     "ultima_sincronizacao": "2026-10-05 14:39:03",
@@ -20680,8 +20681,8 @@
     "valor_unitario": 207.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010778",
@@ -20703,7 +20704,7 @@
     "vendas_geral_180d": 0.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "tamanho": "G",
     "modelo_base": "COMBO PEQUENA VIA - CAMISA PRETA",
     "ultima_sincronizacao": "2026-10-05 14:39:03",
@@ -20711,8 +20712,8 @@
     "valor_unitario": 207.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010779",
@@ -20734,7 +20735,7 @@
     "vendas_geral_180d": 0.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "tamanho": "GG",
     "modelo_base": "COMBO PEQUENA VIA - CAMISA PRETA",
     "ultima_sincronizacao": "2026-10-05 14:39:03",
@@ -20742,8 +20743,8 @@
     "valor_unitario": 207.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010780",
@@ -20765,7 +20766,7 @@
     "vendas_geral_180d": 0.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "tamanho": "M",
     "modelo_base": "COMBO PEQUENA VIA - CAMISA PRETA",
     "ultima_sincronizacao": "2026-10-05 14:39:03",
@@ -20773,8 +20774,8 @@
     "valor_unitario": 207.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010781",
@@ -20796,7 +20797,7 @@
     "vendas_geral_180d": 0.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "tamanho": "P",
     "modelo_base": "COMBO PEQUENA VIA - CAMISA PRETA",
     "ultima_sincronizacao": "2026-10-05 14:39:03",
@@ -20804,8 +20805,8 @@
     "valor_unitario": 207.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010782",
@@ -20827,7 +20828,7 @@
     "vendas_geral_180d": 0.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "tamanho": "PP",
     "modelo_base": "COMBO PEQUENA VIA - CAMISA PRETA",
     "ultima_sincronizacao": "2026-10-05 14:39:03",
@@ -20835,8 +20836,8 @@
     "valor_unitario": 207.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010783",
@@ -21130,14 +21131,14 @@
     "vendas_geral_180d": 0.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074688220,
     "valor_unitario": 72.8,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010840",
@@ -21159,14 +21160,14 @@
     "vendas_geral_180d": 0.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074688225,
     "valor_unitario": 62.8,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010841",
@@ -21188,14 +21189,14 @@
     "vendas_geral_180d": 0.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074688230,
     "valor_unitario": 0.0,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010842",
@@ -21217,7 +21218,7 @@
     "vendas_geral_180d": 0.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "estoque_discipulado": true,
     "status_especial": null,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
@@ -21225,8 +21226,8 @@
     "valor_unitario": 62.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010826",
@@ -21464,14 +21465,14 @@
     "vendas_geral_180d": 0.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074688289,
     "valor_unitario": 0.0,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": ""
   },
   {
     "sku": "010845",
@@ -47246,15 +47247,15 @@
     "vendas_sul_sudeste_30d": 0,
     "vendas_geral_30d": 0,
     "ativo": true,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-09-29 17:35:58",
     "valor_unitario": 6.5,
     "em_transito": 0,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "27/02/2025",
-    "qtd_producao": 1.0,
-    "numero_pedido": "477"
+    "data_previsao": "",
+    "qtd_producao": 0,
+    "numero_pedido": ""
   },
   {
     "id_produto": 3074680698,
@@ -47344,15 +47345,15 @@
     "vendas_sul_sudeste_30d": 0,
     "vendas_geral_30d": 0,
     "ativo": true,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-09-29 17:35:58",
     "valor_unitario": 6.5,
     "em_transito": 0,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "27/02/2025",
-    "qtd_producao": 1.0,
-    "numero_pedido": "477"
+    "data_previsao": "",
+    "qtd_producao": 0,
+    "numero_pedido": ""
   },
   {
     "id_produto": 3074684058,
@@ -47518,15 +47519,15 @@
     "vendas_sul_sudeste_30d": 0,
     "vendas_geral_30d": 0,
     "ativo": true,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-09-29 17:35:58",
     "valor_unitario": 21.9,
     "em_transito": 0,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "27/02/2025",
-    "qtd_producao": 1.0,
-    "numero_pedido": "476"
+    "data_previsao": "",
+    "qtd_producao": 0,
+    "numero_pedido": ""
   },
   {
     "id_produto": 3074684084,
@@ -76667,14 +76668,15 @@
     "vendas_sul_sudeste_30d": 0,
     "vendas_geral_30d": 0,
     "ativo": true,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-09-29 17:35:58",
     "valor_unitario": 59.9,
     "em_transito": 0,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": "",
+    "qtd_producao": 0
   },
   {
     "id_produto": 3074682806,
@@ -76764,14 +76766,15 @@
     "vendas_sul_sudeste_30d": 0,
     "vendas_geral_30d": 0,
     "ativo": true,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-09-29 17:35:58",
     "valor_unitario": 29.9,
     "em_transito": 0,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": "",
+    "qtd_producao": 0
   },
   {
     "id_produto": 3074682851,
@@ -76804,15 +76807,15 @@
     "vendas_sul_sudeste_30d": 0,
     "vendas_geral_30d": 0,
     "ativo": true,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-09-29 17:35:58",
     "valor_unitario": 29.9,
     "em_transito": 0,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "27/02/2025",
-    "qtd_producao": 1.0,
-    "numero_pedido": "477"
+    "data_previsao": "",
+    "qtd_producao": 0,
+    "numero_pedido": ""
   },
   {
     "id_produto": 3074687961,
@@ -76826,14 +76829,15 @@
     "vendas_sul_sudeste_30d": 0,
     "vendas_geral_30d": 0,
     "ativo": true,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-09-29 17:35:58",
     "valor_unitario": 85.8,
     "em_transito": 0,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": "",
+    "qtd_producao": 0
   },
   {
     "id_produto": 3074687968,
@@ -76847,14 +76851,15 @@
     "vendas_sul_sudeste_30d": 0,
     "vendas_geral_30d": 0,
     "ativo": true,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-09-29 17:35:58",
     "valor_unitario": 82.8,
     "em_transito": 0,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": "",
+    "qtd_producao": 0
   },
   {
     "id_produto": 3074687698,
@@ -77381,14 +77386,15 @@
     "vendas_sul_sudeste_30d": 0,
     "vendas_geral_30d": 0,
     "ativo": true,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-09-29 17:35:58",
     "valor_unitario": 0.0,
     "em_transito": 0,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025",
-    "numero_pedido": "478"
+    "data_previsao": "",
+    "numero_pedido": "",
+    "qtd_producao": 0
   },
   {
     "id_produto": 3074687850,
@@ -77478,15 +77484,15 @@
     "vendas_sul_sudeste_30d": 0,
     "vendas_geral_30d": 0,
     "ativo": true,
-    "em_producao": true,
+    "em_producao": false,
     "ultima_sincronizacao": "2026-09-29 17:35:58",
     "valor_unitario": 118.8,
     "em_transito": 0,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "27/02/2025",
-    "qtd_producao": 1.0,
-    "numero_pedido": "476"
+    "data_previsao": "",
+    "qtd_producao": 0,
+    "numero_pedido": ""
   },
   {
     "id_produto": 3074688422,

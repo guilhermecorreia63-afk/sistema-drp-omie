@@ -162,33 +162,10 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
         except Exception as e:
             print(f"[SYNC] Erro ao consultar estoque CD_SP em lote: {e}")
 
-    # 3. Consultar Pedidos de Compra (475, 476, 477, 478, 479, 481, 482, 483 e Recompras) e atualizar 'em_producao'
-    prods_em_compra_map = {} # sku_str ou id_prod -> {"qtd": int, "data_previsao": str}
-    target_orders = ['475', '476', '477', '478', '479', '481', '482', '483']
+    # 3. Consultar Requisições de Compra ativas no Omie ERP (PesquisarReq)
+    prods_em_compra_map = {} # sku_str ou id_prod -> {"qtd": int, "data_previsao": str, "numero_pedido": str}
 
     if client_matriz:
-        print(f"[SYNC] Consultando Pedidos de Compra Omie {target_orders}...")
-        for num_ped in target_orders:
-            try:
-                res_ped = client_matriz.executar("produtos/pedido/", "ConsultarPedido", [{"numero_pedido": num_ped}])
-                ped = res_ped.get("pedido_venda_produto", {})
-                cab = ped.get("cabecalho", {})
-                dt_prev = cab.get("data_previsao", "")
-                det = ped.get("det", [])
-                for item in det:
-                    prod = item.get("produto", {})
-                    sku_p = str(prod.get("codigo", "")).strip()
-                    id_p = int(prod.get("codigo_produto", 0) or 0)
-                    qtd_p = int(prod.get("quantidade", 0) or 0)
-                    
-                    info = {"qtd": qtd_p, "data_previsao": dt_prev, "numero_pedido": str(num_ped)}
-                    if sku_p:
-                        prods_em_compra_map[sku_p] = info
-                    if id_p:
-                        prods_em_compra_map[id_p] = info
-            except Exception as e_p:
-                print(f"[SYNC] Aviso ao consultar Pedido Omie #{num_ped}: {e_p}")
-
         print("[SYNC] Consultando Requisições de Compra ativas no Omie (PesquisarReq)...")
         try:
             res_reqs = client_matriz.executar("produtos/requisicaocompra/", "PesquisarReq", [{"pagina": 1, "registros_por_pagina": 100}])
@@ -204,9 +181,9 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
                         cod_p_int = int(cod_p)
                         if cod_p_int not in prods_em_compra_map:
                             prods_em_compra_map[cod_p_int] = {"qtd": qtd_p, "data_previsao": dt_prev_req, "numero_pedido": str(cod_req)}
-            print(f"[SYNC] Encontrados {len(prods_em_compra_map)} produtos em Pedidos/Requisições de Compra ativos no Omie.")
+            print(f"[SYNC] Encontrados {len(prods_em_compra_map)} produtos em Requisições de Compra ativas no Omie.")
         except Exception as e_req:
-            print(f"[SYNC] Erro ao consultar Requisições de Compra no Omie: {e_req}")
+            print(f"[SYNC] Aviso ao consultar Requisições de Compra no Omie: {e_req}")
 
     # Atualiza 'em_producao' e reconhece Entrada de Estoque (aumento de saldo)
     prods_turso_db = {}
@@ -225,7 +202,7 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
         matriz_anterior = int(p.get("matriz_anterior", p.get("matriz", 0)))
         matriz_atual = int(p.get("matriz", 0))
 
-        # Se o saldo em estoque AUMENTOU em relação à leitura anterior, houve Entrada de Estoque!
+        # 1. Se o saldo em estoque AUMENTOU em relação à leitura anterior, houve Entrada de Estoque!
         # Nesse caso, remove a tag 'em_producao' e limpa 'data_previsao'
         if matriz_atual > matriz_anterior and matriz_anterior >= 0:
             p["em_producao"] = False
@@ -238,6 +215,18 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
                 except Exception:
                     pass
             print(f"[SYNC ENTRADA] Saldo do SKU {sku} aumentou de {matriz_anterior} para {matriz_atual}. Tag 'em_producao' removida automaticamente!")
+
+        # 2. Se o usuário definiu o status manualmente no Turso DB, RESPEITA a escolha do usuário!
+        elif sku in prods_turso_db:
+            db_info = prods_turso_db[sku]
+            if isinstance(db_info, dict):
+                p["em_producao"] = bool(db_info.get("em_producao", False))
+                p["data_previsao"] = db_info.get("data_previsao", "") if p["em_producao"] else ""
+                p["numero_pedido"] = db_info.get("numero_pedido", "") if p["em_producao"] else ""
+            else:
+                p["em_producao"] = bool(db_info)
+
+        # 3. Caso não haja definição manual salva, verifica se o item está em requisição de compra ativa
         elif sku in prods_em_compra_map or id_prod in prods_em_compra_map:
             match_info = prods_em_compra_map.get(sku) or prods_em_compra_map.get(id_prod)
             p["em_producao"] = True
@@ -251,18 +240,6 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
                     db.salvar_status_producao(sku, True, data_previsao=p.get("data_previsao", ""), quantidade_producao=p.get("qtd_producao", 0), numero_pedido=p.get("numero_pedido", ""))
                 except Exception:
                     pass
-        else:
-            # Mantém escolha manual/salva no Turso DB se não houve entrada de estoque
-            if sku in prods_turso_db:
-                db_info = prods_turso_db[sku]
-                if isinstance(db_info, dict):
-                    p["em_producao"] = db_info.get("em_producao", False)
-                    if db_info.get("data_previsao"):
-                        p["data_previsao"] = db_info["data_previsao"]
-                    if db_info.get("numero_pedido"):
-                        p["numero_pedido"] = db_info["numero_pedido"]
-                else:
-                    p["em_producao"] = bool(db_info)
 
     # 4. Mesclar Vendas usando ControleDRP antes de gerar JSON
     try:
