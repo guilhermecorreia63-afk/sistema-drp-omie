@@ -2,6 +2,17 @@
   "version": 2,
   "cleanUrls": true,
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index.py" },
     { "source": "/(.*)", "destination": "/$1" }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron_sync",
+      "schedule": "20 15 * * *"
+    },
+    {
+      "path": "/api/cron_sync",
+      "schedule": "30 21 * * *"
+    }
   ]
 }

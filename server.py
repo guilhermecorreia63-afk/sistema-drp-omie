@@ -45,10 +45,14 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         url_path = self.path.split('?')[0].rstrip('/')
-        if url_path == '/api/blacklist':
+        if url_path == '/api/cron_sync':
+            self.handle_api_cron_sync()
+        elif url_path == '/api/blacklist':
             self.handle_api_blacklist_get()
-        elif url_path == '/api/remessas/status_transito':
+        elif url_path in ['/api/remessas/status_transito', '/api/remessas/status']:
             self.handle_api_remessas_status_transito_get()
+        elif url_path == '/api/remessas/listar':
+            self.handle_api_remessas_listar()
         elif url_path == '/api/depara':
             self.handle_api_depara_get()
         elif url_path == '/api/depositos':
@@ -67,7 +71,9 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_POST(self):
         url_path = self.path.split('?')[0].rstrip('/')
-        if url_path == '/api/email':
+        if url_path == '/api/cron_sync':
+            self.handle_api_cron_sync()
+        elif url_path == '/api/email':
             self.handle_api_email()
         elif url_path == '/api/sync':
             self.handle_api_sync()
@@ -581,7 +587,88 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             
         self._send_json({"success": True, "remessa_id": remessa_id, "status_transito": novo_status, "status_map": status_map})
 
+    def handle_api_cron_sync(self):
+        """
+        Endpoint do Cron Job Automático (12h20 e 18h30 - Horário de Fortaleza / UTC-3).
+        Sincroniza estoques e vendas, atualiza alertas e dispara o e-mail automático.
+        """
+        query = parse_qs(urlparse(self.path).query)
+        force = query.get('force', ['false'])[0].lower() in ['true', '1', 'sim']
 
+        lock_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'cron_lock.json')
+        agora_dt = datetime.now()
+        agora_iso = agora_dt.strftime('%Y-%m-%d %H:%M:%S')
+
+        # 1. Trava contra execuções duplicadas nos últimos 5 minutos (300 segundos)
+        if not force and os.path.exists(lock_path):
+            try:
+                with open(lock_path, 'r', encoding='utf-8') as f:
+                    lock_data = json.load(f)
+                last_time_str = lock_data.get('last_run')
+                if last_time_str:
+                    last_dt = datetime.strptime(last_time_str, '%Y-%m-%d %H:%M:%S')
+                    diff_seconds = (agora_dt - last_dt).total_seconds()
+                    if diff_seconds < 300:  # Executou há menos de 5 min
+                        self._send_json({
+                            "success": True,
+                            "skipped": True,
+                            "message": f"Sincronização agendada já executada recentemente ({int(diff_seconds)}s atrás). Evitando e-mail duplicado.",
+                            "last_run": last_time_str
+                        })
+                        return
+            except Exception as ex_lock:
+                print(f"[CRON API] Aviso lock: {ex_lock}")
+
+        # Atualiza o lock
+        try:
+            os.makedirs(os.path.dirname(lock_path), exist_ok=True)
+            with open(lock_path, 'w', encoding='utf-8') as f:
+                json.dump({"last_run": agora_iso, "status": "RUNNING"}, f)
+        except Exception:
+            pass
+
+        print(f"[CRON API] Iniciando Sincronização Automática (12h20 / 18h30 Fortaleza) em {agora_iso}...", flush=True)
+
+        try:
+            # A. Sincronização completa Omie / Turso
+            import sync_service
+            ok_sync, msg_sync, count_sync = sync_service.sincronizar_dados_seletivo("TUDO")
+            print(f"[CRON API] Sync finalizado: ok={ok_sync}, msg={msg_sync}, prods={count_sync}", flush=True)
+
+            # B. Disparo do e-mail de alerta automático
+            import alertas_email
+            if alertas_email:
+                import importlib
+                importlib.reload(alertas_email)
+                ok_email, msg_email = alertas_email.enviar_email_alerta()
+            else:
+                ok_email, msg_email = False, "Módulo alertas_email não disponível."
+
+            print(f"[CRON API] Disparo e-mail finalizado: ok={ok_email}, msg={msg_email}", flush=True)
+
+            # C. Atualiza lock com SUCCESS
+            try:
+                with open(lock_path, 'w', encoding='utf-8') as f:
+                    json.dump({"last_run": agora_iso, "status": "SUCCESS", "count": count_sync, "email": ok_email}, f)
+            except Exception:
+                pass
+
+            self._send_json({
+                "success": True,
+                "message": "Sincronização automática e envio de e-mail das 12h20/18h30 concluídos com sucesso!",
+                "timestamp": agora_iso,
+                "sync": {"success": ok_sync, "message": msg_sync, "count": count_sync},
+                "email": {"success": ok_email, "message": msg_email}
+            })
+
+        except Exception as err:
+            print(f"[CRON API] Erro no fluxo cron_sync: {err}", flush=True)
+            try:
+                with open(lock_path, 'w', encoding='utf-8') as f:
+                    json.dump({"last_run": agora_iso, "status": "ERROR", "error": str(err)}, f)
+            except Exception:
+                pass
+            self._send_json({"success": False, "message": f"Erro na sincronização automática: {str(err)}"}, status=500)
 
     def handle_api_email(self):
         content_length = int(self.headers.get('Content-Length', 0))
