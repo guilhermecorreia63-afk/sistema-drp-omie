@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-api/index.py - Vercel Serverless Function Handler para todas as APIs (/api/*)
+api/cron_sync.py - Endpoint Vercel Serverless para Cron Jobs (12h20 e 18h30 Fortaleza)
 """
 import sys
 import os
@@ -12,4 +12,8 @@ if root_dir not in sys.path:
 from server import DRPRequestHandler
 
 class handler(DRPRequestHandler):
-    pass
+    def do_GET(self):
+        self.handle_api_cron_sync()
+
+    def do_POST(self):
+        self.handle_api_cron_sync()
