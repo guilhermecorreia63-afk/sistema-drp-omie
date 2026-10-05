@@ -419,6 +419,7 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         body = self._read_body()
         sku = str(body.get('sku', '')).strip()
         em_producao = body.get('em_producao')
+        data_previsao = body.get('data_previsao')
         skus_lista = body.get('producao')
 
         json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'producao_status.json')
@@ -459,6 +460,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 for p in produtos:
                     p_sku = str(p.get('sku', '')).strip()
                     p['em_producao'] = p_sku in producao_set
+                    if sku and p_sku == sku and data_previsao is not None:
+                        p['data_previsao'] = data_previsao
                 with open(prods_json_path, 'w', encoding='utf-8') as f:
                     json.dump(produtos, f, ensure_ascii=False, indent=2)
             except Exception as e:
@@ -467,7 +470,7 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         try:
             import database as db_mod
             if sku:
-                db_mod.salvar_status_producao(sku, bool(em_producao))
+                db_mod.salvar_status_producao(sku, bool(em_producao), data_previsao=data_previsao)
         except Exception as e:
             print(f"[API SERVER] Aviso Turso DB status producao: {e}")
 
@@ -817,11 +820,37 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 des_status = res_omie.get("cDesStatus") or res_omie.get("faultstring") or ""
                 
                 if cod_req:
+                    # Auto-flag todos os produtos desse pedido como 'em_producao = True' e salvar data_previsao
+                    dt_prev_req = body.get('dataPrevisao') or body.get('data_previsao') or dt_sugestao
+                    skus_ped = [str(it.get('sku') or it.get('codigo_produto') or '').strip() for it in itens]
+                    
+                    try:
+                        import database as db_mod
+                        prods_json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'produtos_turso.json')
+                        if os.path.exists(prods_json_path):
+                            with open(prods_json_path, 'r', encoding='utf-8') as f:
+                                prods_all = json.load(f)
+                            skus_set = set(skus_ped)
+                            for p in prods_all:
+                                p_s = str(p.get('sku', '')).strip()
+                                if p_s in skus_set:
+                                    p['em_producao'] = True
+                                    p['data_previsao'] = dt_prev_req
+                            with open(prods_json_path, 'w', encoding='utf-8') as f:
+                                json.dump(prods_all, f, ensure_ascii=False, indent=2)
+                        
+                        for s_sku in skus_ped:
+                            if s_sku:
+                                db_mod.salvar_status_producao(s_sku, True, data_previsao=dt_prev_req)
+                        print(f"[API SERVER] Auto-flagged {len(skus_ped)} SKUs como em_producao com prev {dt_prev_req}")
+                    except Exception as err_up:
+                        print(f"[API SERVER] Erro ao auto-marcar produtos em producao: {err_up}")
+
                     response_payload = {
                         "success": True,
                         "codReqCompra": cod_req,
                         "codIntReqCompra": req_id,
-                        "message": f"Requisição de Compra nº {cod_req} gerada com sucesso no Omie ERP!",
+                        "message": f"Requisição de Compra nº {cod_req} gerada com sucesso no Omie ERP! Produtos colocados em Produção automaticamente.",
                         "itens_enviados": len(itens_req),
                         "nao_encontrados": nao_encontrados,
                         "raw_omie": res_omie

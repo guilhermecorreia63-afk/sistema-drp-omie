@@ -163,6 +163,7 @@ def inicializar_banco():
             sku TEXT PRIMARY KEY,
             em_producao INTEGER DEFAULT 0,
             quantidade_producao INTEGER DEFAULT 0,
+            data_previsao TEXT,
             data_atualizacao TEXT
         )""",
         """CREATE TABLE IF NOT EXISTS drp_sazonal (
@@ -443,15 +444,41 @@ def obter_status_producao() -> dict[str, bool]:
         pass
     return {}
 
-def salvar_status_producao(sku: str, em_producao: bool):
+def obter_detalhes_producao() -> dict[str, dict]:
     try:
-        executar_query(
-            "INSERT OR REPLACE INTO drp_producao (sku, em_producao, data_atualizacao) VALUES (?, ?, datetime('now'))",
-            (sku, 1 if em_producao else 0),
-            is_select=False
-        )
+        try:
+            executar_query("ALTER TABLE drp_producao ADD COLUMN data_previsao TEXT", is_select=False)
+        except Exception:
+            pass
+        df = executar_query("SELECT sku, em_producao, quantidade_producao, data_previsao FROM drp_producao")
+        if df is not None and not df.empty:
+            res = {}
+            for _, row in df.iterrows():
+                res[row['sku']] = {
+                    'em_producao': bool(row.get('em_producao', 0)),
+                    'quantidade_producao': int(row.get('quantidade_producao', 0) or 0),
+                    'data_previsao': str(row.get('data_previsao', '') or '')
+                }
+            return res
     except Exception:
         pass
+    return {}
+
+def salvar_status_producao(sku: str, em_producao: bool, data_previsao: str = None, quantidade_producao: int = 0):
+    try:
+        try:
+            executar_query("ALTER TABLE drp_producao ADD COLUMN data_previsao TEXT", is_select=False)
+        except Exception:
+            pass
+        
+        val_dt = data_previsao if data_previsao is not None else ''
+        executar_query(
+            "INSERT INTO drp_producao (sku, em_producao, data_previsao, quantidade_producao, data_atualizacao) VALUES (?, ?, ?, ?, datetime('now')) ON CONFLICT(sku) DO UPDATE SET em_producao=excluded.em_producao, data_previsao=excluded.data_previsao, quantidade_producao=excluded.quantidade_producao, data_atualizacao=datetime('now')",
+            (sku, 1 if em_producao else 0, val_dt, quantidade_producao),
+            is_select=False
+        )
+    except Exception as e:
+        print(f"[DB] Erro ao salvar status producao {sku}: {e}")
 
 def obter_sazonalidade() -> dict[str, bool]:
     try:
