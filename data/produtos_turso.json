@@ -1885,7 +1885,7 @@
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "matriz": 5,
     "matriz_reservado": 2,
-    "em_producao": false,
+    "em_producao": true,
     "cd_sp": 2,
     "cd_sp_reservado": 0,
     "vendas_sul_sudeste_30d": 0.0,
@@ -1895,7 +1895,9 @@
     "vendas_geral_30d": 0.0,
     "vendas_geral_60d": 0.0,
     "vendas_geral_90d": 1.0,
-    "vendas_geral_180d": 3.0
+    "vendas_geral_180d": 3.0,
+    "data_previsao": "13/11/2026",
+    "numero_pedido": "476"
   },
   {
     "sku": "003929",
@@ -3529,12 +3531,14 @@
     "vendas_geral_180d": 66.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": false,
+    "em_producao": true,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074679485,
     "valor_unitario": 54.8,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 2
+    "matriz_reservado": 2,
+    "data_previsao": "13/11/2026",
+    "numero_pedido": "476"
   },
   {
     "sku": "009245",
@@ -3925,12 +3929,14 @@
     "vendas_geral_180d": 65.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": false,
+    "em_producao": true,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074679569,
     "valor_unitario": 27.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 4
+    "matriz_reservado": 4,
+    "data_previsao": "13/11/2026",
+    "numero_pedido": "476"
   },
   {
     "sku": "000556",
@@ -4585,12 +4591,14 @@
     "vendas_geral_180d": 177.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": false,
+    "em_producao": true,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074679758,
     "valor_unitario": 56.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 14
+    "matriz_reservado": 14,
+    "data_previsao": "13/11/2026",
+    "numero_pedido": "476"
   },
   {
     "sku": "009481",
@@ -5384,7 +5392,7 @@
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "matriz": 4,
     "matriz_reservado": 0,
-    "em_producao": false,
+    "em_producao": true,
     "cd_sp": 3,
     "cd_sp_reservado": 0,
     "vendas_sul_sudeste_30d": 0.0,
@@ -5394,7 +5402,9 @@
     "vendas_geral_30d": 0.0,
     "vendas_geral_60d": 0.0,
     "vendas_geral_90d": 1.0,
-    "vendas_geral_180d": 7.0
+    "vendas_geral_180d": 7.0,
+    "data_previsao": "13/11/2026",
+    "numero_pedido": "476"
   },
   {
     "sku": "002543",
@@ -39518,12 +39528,14 @@
     "vendas_geral_180d": 28.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": false,
+    "em_producao": true,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074683985,
     "valor_unitario": 9.5,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 0
+    "matriz_reservado": 0,
+    "data_previsao": "13/11/2026",
+    "numero_pedido": "476"
   },
   {
     "sku": "274",
