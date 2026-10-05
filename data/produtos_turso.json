@@ -47519,15 +47519,15 @@
     "vendas_sul_sudeste_30d": 0,
     "vendas_geral_30d": 0,
     "ativo": true,
-    "em_producao": false,
+    "em_producao": true,
     "ultima_sincronizacao": "2026-09-29 17:35:58",
     "valor_unitario": 21.9,
     "em_transito": 0,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "",
+    "data_previsao": "27/02/2025",
     "qtd_producao": 0,
-    "numero_pedido": ""
+    "numero_pedido": "476"
   },
   {
     "id_produto": 3074684084,
@@ -77484,15 +77484,15 @@
     "vendas_sul_sudeste_30d": 0,
     "vendas_geral_30d": 0,
     "ativo": true,
-    "em_producao": false,
+    "em_producao": true,
     "ultima_sincronizacao": "2026-09-29 17:35:58",
     "valor_unitario": 118.8,
     "em_transito": 0,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "",
+    "data_previsao": "27/02/2025",
     "qtd_producao": 0,
-    "numero_pedido": ""
+    "numero_pedido": "476"
   },
   {
     "id_produto": 3074688422,
