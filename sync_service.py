@@ -181,7 +181,7 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
                     id_p = int(prod.get("codigo_produto", 0) or 0)
                     qtd_p = int(prod.get("quantidade", 0) or 0)
                     
-                    info = {"qtd": qtd_p, "data_previsao": dt_prev}
+                    info = {"qtd": qtd_p, "data_previsao": dt_prev, "numero_pedido": str(num_ped)}
                     if sku_p:
                         prods_em_compra_map[sku_p] = info
                     if id_p:
@@ -196,13 +196,14 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
             for r in reqs:
                 cab_req = r.get("cabecalhoReq", {})
                 dt_prev_req = cab_req.get("dtSugestao", "")
+                cod_req = r.get("cCodIntReq") or r.get("nCodReq") or ""
                 for it in r.get("ItensReqCompra", []):
                     cod_p = it.get("codProd")
                     qtd_p = int(it.get("qtde", 0) or 0)
                     if cod_p:
                         cod_p_int = int(cod_p)
                         if cod_p_int not in prods_em_compra_map:
-                            prods_em_compra_map[cod_p_int] = {"qtd": qtd_p, "data_previsao": dt_prev_req}
+                            prods_em_compra_map[cod_p_int] = {"qtd": qtd_p, "data_previsao": dt_prev_req, "numero_pedido": str(cod_req)}
             print(f"[SYNC] Encontrados {len(prods_em_compra_map)} produtos em Pedidos/Requisições de Compra ativos no Omie.")
         except Exception as e_req:
             print(f"[SYNC] Erro ao consultar Requisições de Compra no Omie: {e_req}")
@@ -215,7 +216,7 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
         except Exception:
             try:
                 raw_st = db.obter_status_producao()
-                prods_turso_db = {k: {"em_producao": v, "data_previsao": "", "quantidade_producao": 0} for k, v in raw_st.items()}
+                prods_turso_db = {k: {"em_producao": v, "data_previsao": "", "quantidade_producao": 0, "numero_pedido": ""} for k, v in raw_st.items()}
             except Exception:
                 prods_turso_db = {}
 
@@ -230,9 +231,10 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
             p["em_producao"] = False
             p["qtd_producao"] = 0
             p["data_previsao"] = ""
+            p["numero_pedido"] = ""
             if db:
                 try:
-                    db.salvar_status_producao(sku, False, data_previsao="", quantidade_producao=0)
+                    db.salvar_status_producao(sku, False, data_previsao="", quantidade_producao=0, numero_pedido="")
                 except Exception:
                     pass
             print(f"[SYNC ENTRADA] Saldo do SKU {sku} aumentou de {matriz_anterior} para {matriz_atual}. Tag 'em_producao' removida automaticamente!")
@@ -242,9 +244,11 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
             p["qtd_producao"] = match_info.get("qtd", 0)
             if match_info.get("data_previsao"):
                 p["data_previsao"] = match_info["data_previsao"]
+            if match_info.get("numero_pedido"):
+                p["numero_pedido"] = match_info["numero_pedido"]
             if db:
                 try:
-                    db.salvar_status_producao(sku, True, data_previsao=p.get("data_previsao", ""), quantidade_producao=p.get("qtd_producao", 0))
+                    db.salvar_status_producao(sku, True, data_previsao=p.get("data_previsao", ""), quantidade_producao=p.get("qtd_producao", 0), numero_pedido=p.get("numero_pedido", ""))
                 except Exception:
                     pass
         else:
@@ -255,6 +259,8 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
                     p["em_producao"] = db_info.get("em_producao", False)
                     if db_info.get("data_previsao"):
                         p["data_previsao"] = db_info["data_previsao"]
+                    if db_info.get("numero_pedido"):
+                        p["numero_pedido"] = db_info["numero_pedido"]
                 else:
                     p["em_producao"] = bool(db_info)
 

@@ -453,15 +453,30 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             print(f"[API SERVER] Erro ao salvar producao_status.json: {e}")
 
+        num_pedido_target = str(body.get('numero_pedido', '')).strip()
+
         if os.path.exists(prods_json_path):
             try:
                 with open(prods_json_path, 'r', encoding='utf-8') as f:
                     produtos = json.load(f)
+                
+                # Se não veio numero_pedido diretamente no body, descobre pelo SKU fornecido
+                if not num_pedido_target and sku:
+                    for p in produtos:
+                        if str(p.get('sku', '')).strip() == sku and p.get('numero_pedido'):
+                            num_pedido_target = str(p.get('numero_pedido')).strip()
+                            break
+
                 for p in produtos:
                     p_sku = str(p.get('sku', '')).strip()
+                    p_ped = str(p.get('numero_pedido', '')).strip()
                     p['em_producao'] = p_sku in producao_set
-                    if sku and p_sku == sku and data_previsao is not None:
-                        p['data_previsao'] = data_previsao
+
+                    if data_previsao is not None:
+                        # Atualiza o próprio SKU ou todos os SKUs que compartilham o mesmo numero_pedido
+                        if (sku and p_sku == sku) or (num_pedido_target and p_ped == num_pedido_target):
+                            p['data_previsao'] = data_previsao
+
                 with open(prods_json_path, 'w', encoding='utf-8') as f:
                     json.dump(produtos, f, ensure_ascii=False, indent=2)
             except Exception as e:
@@ -469,8 +484,15 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         try:
             import database as db_mod
-            if sku:
-                db_mod.salvar_status_producao(sku, bool(em_producao), data_previsao=data_previsao)
+            if num_pedido_target and data_previsao is not None:
+                # Salva no Turso DB para todos os SKUs do pedido
+                for p in produtos:
+                    p_sku = str(p.get('sku', '')).strip()
+                    p_ped = str(p.get('numero_pedido', '')).strip()
+                    if p_ped == num_pedido_target:
+                        db_mod.salvar_status_producao(p_sku, True, data_previsao=data_previsao, numero_pedido=num_pedido_target)
+            elif sku:
+                db_mod.salvar_status_producao(sku, bool(em_producao), data_previsao=data_previsao, numero_pedido=num_pedido_target)
         except Exception as e:
             print(f"[API SERVER] Aviso Turso DB status producao: {e}")
 

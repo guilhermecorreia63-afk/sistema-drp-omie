@@ -2858,7 +2858,8 @@
     "valor_unitario": 37.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "27/02/2025"
+    "data_previsao": "27/02/2025",
+    "numero_pedido": "475"
   },
   {
     "sku": "006463",
@@ -3744,7 +3745,8 @@
     "vendas_geral_60d": 1.0,
     "vendas_geral_90d": 4.0,
     "vendas_geral_180d": 12.0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "009746",
@@ -9051,7 +9053,8 @@
     "valor_unitario": 23.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 3,
-    "data_previsao": "27/02/2025"
+    "data_previsao": "27/02/2025",
+    "numero_pedido": "475"
   },
   {
     "sku": "002079",
@@ -14031,7 +14034,8 @@
     "valor_unitario": 38.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 3,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010255",
@@ -14872,7 +14876,8 @@
     "valor_unitario": 54.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 5,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "004943",
@@ -18532,7 +18537,8 @@
     "valor_unitario": 59.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010472",
@@ -18560,7 +18566,8 @@
     "valor_unitario": 9.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010473",
@@ -18588,7 +18595,8 @@
     "valor_unitario": 9.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010474",
@@ -18616,7 +18624,8 @@
     "valor_unitario": 9.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010476",
@@ -19015,7 +19024,8 @@
     "valor_unitario": 16.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010561",
@@ -19043,7 +19053,8 @@
     "valor_unitario": 16.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010562",
@@ -19071,7 +19082,8 @@
     "valor_unitario": 16.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010563",
@@ -19099,7 +19111,8 @@
     "valor_unitario": 54.9,
     "cd_sp_reservado": 1,
     "matriz_reservado": 13,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010580",
@@ -19843,7 +19856,8 @@
     "valor_unitario": 16.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 1,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010621",
@@ -19871,7 +19885,8 @@
     "valor_unitario": 16.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010622",
@@ -19899,7 +19914,8 @@
     "valor_unitario": 16.9,
     "cd_sp_reservado": 1,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010660",
@@ -20128,7 +20144,8 @@
     "valor_unitario": 98.8,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010668",
@@ -20156,7 +20173,8 @@
     "valor_unitario": 88.8,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010669",
@@ -20184,7 +20202,8 @@
     "valor_unitario": 85.8,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010672",
@@ -20214,7 +20233,8 @@
     "valor_unitario": 98.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010673",
@@ -20244,7 +20264,8 @@
     "valor_unitario": 105.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "27/02/2025"
+    "data_previsao": "27/02/2025",
+    "numero_pedido": "479"
   },
   {
     "sku": "010674",
@@ -20274,7 +20295,8 @@
     "valor_unitario": 96.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "27/02/2025"
+    "data_previsao": "27/02/2025",
+    "numero_pedido": "479"
   },
   {
     "sku": "010675",
@@ -20503,7 +20525,8 @@
     "valor_unitario": 207.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010773",
@@ -20533,7 +20556,8 @@
     "valor_unitario": 207.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010774",
@@ -20563,7 +20587,8 @@
     "valor_unitario": 207.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010775",
@@ -20593,7 +20618,8 @@
     "valor_unitario": 207.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010776",
@@ -20623,7 +20649,8 @@
     "valor_unitario": 207.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010777",
@@ -20653,7 +20680,8 @@
     "valor_unitario": 207.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010778",
@@ -20683,7 +20711,8 @@
     "valor_unitario": 207.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010779",
@@ -20713,7 +20742,8 @@
     "valor_unitario": 207.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010780",
@@ -20743,7 +20773,8 @@
     "valor_unitario": 207.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010781",
@@ -20773,7 +20804,8 @@
     "valor_unitario": 207.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010782",
@@ -20803,7 +20835,8 @@
     "valor_unitario": 207.1,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010783",
@@ -21103,7 +21136,8 @@
     "valor_unitario": 72.8,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010840",
@@ -21131,7 +21165,8 @@
     "valor_unitario": 62.8,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010841",
@@ -21159,7 +21194,8 @@
     "valor_unitario": 0.0,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010842",
@@ -21189,7 +21225,8 @@
     "valor_unitario": 62.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010826",
@@ -21433,7 +21470,8 @@
     "valor_unitario": 0.0,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "sku": "010845",
@@ -47215,7 +47253,8 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "27/02/2025",
-    "qtd_producao": 1.0
+    "qtd_producao": 1.0,
+    "numero_pedido": "477"
   },
   {
     "id_produto": 3074680698,
@@ -47312,7 +47351,8 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "27/02/2025",
-    "qtd_producao": 1.0
+    "qtd_producao": 1.0,
+    "numero_pedido": "477"
   },
   {
     "id_produto": 3074684058,
@@ -47485,7 +47525,8 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "27/02/2025",
-    "qtd_producao": 1.0
+    "qtd_producao": 1.0,
+    "numero_pedido": "476"
   },
   {
     "id_produto": 3074684084,
@@ -76632,7 +76673,8 @@
     "em_transito": 0,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "id_produto": 3074682806,
@@ -76728,7 +76770,8 @@
     "em_transito": 0,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "id_produto": 3074682851,
@@ -76768,7 +76811,8 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "27/02/2025",
-    "qtd_producao": 1.0
+    "qtd_producao": 1.0,
+    "numero_pedido": "477"
   },
   {
     "id_produto": 3074687961,
@@ -76788,7 +76832,8 @@
     "em_transito": 0,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "id_produto": 3074687968,
@@ -76808,7 +76853,8 @@
     "em_transito": 0,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "id_produto": 3074687698,
@@ -77341,7 +77387,8 @@
     "em_transito": 0,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "12/02/2025"
+    "data_previsao": "12/02/2025",
+    "numero_pedido": "478"
   },
   {
     "id_produto": 3074687850,
@@ -77438,7 +77485,8 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "27/02/2025",
-    "qtd_producao": 1.0
+    "qtd_producao": 1.0,
+    "numero_pedido": "476"
   },
   {
     "id_produto": 3074688422,

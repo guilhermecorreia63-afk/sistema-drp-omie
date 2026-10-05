@@ -777,12 +777,18 @@ function calcularNecessidade(p, periodo, abastecimento, modo = 'cd') {
     return Math.max(0, Math.ceil(alvo - estoqueAtual));
 }
 
-function definirStatus(estoque, estoqueAlvo, emProducao, vendas, statusEspecial = null, dataPrevisao = null) {
+function definirStatus(estoque, estoqueAlvo, emProducao, vendas, statusEspecial = null, dataPrevisao = null, numeroPedido = null) {
     if (statusEspecial === 'Sem Estoque Discipulado') {
         return { label: 'Sem Estoque Discipulado 🕯️', class: 'badge-discipulado' };
     }
     if (emProducao) {
-        const txtPrev = dataPrevisao ? `<br><small style="font-weight:normal; font-size:0.7rem; opacity:0.95;">📅 Prev: ${dataPrevisao}</small>` : '';
+        let txtPrev = '';
+        if (dataPrevisao) {
+            const tagPed = numeroPedido ? ` [Ped #${numeroPedido}]` : '';
+            txtPrev = `<br><small style="font-weight:normal; font-size:0.7rem; opacity:0.95;">📅 Prev: ${dataPrevisao}${tagPed}</small>`;
+        } else if (numeroPedido) {
+            txtPrev = `<br><small style="font-weight:normal; font-size:0.7rem; opacity:0.95;">📦 Ped #${numeroPedido}</small>`;
+        }
         return { label: `Em Produção / Compra${txtPrev}`, class: 'badge-producao' };
     }
     
@@ -1018,7 +1024,7 @@ function renderTabMatriz() {
         const estAlvo = calcularEstoqueAlvo(vendas, state.periodoDias, state.abastecimentoDias, lt);
         const estMatrizDisp = getMatrizDisponivel(p);
         const duracao = vendas > 0 ? Math.floor(estMatrizDisp / (vendas / state.periodoDias)) : 999;
-        const status = definirStatus(estMatrizDisp, estAlvo, emProd, vendas, p.status_especial, p.data_previsao);
+        const status = definirStatus(estMatrizDisp, estAlvo, emProd, vendas, p.status_especial, p.data_previsao, p.numero_pedido);
         const isChecked = state.skusChecadosMatriz.has(p.sku);
 
         const badgeResMatriz = (p.matriz_reservado || 0) > 0 ? `<br><small style="color:var(--text-muted); font-size:0.7rem;" title="Estoque Físico: ${p.matriz} un | Reservado p/ Pedidos: ${p.matriz_reservado} un">(Fís: ${p.matriz})</small>` : '';
@@ -1044,7 +1050,7 @@ function renderTabMatriz() {
             </td>
             <td>
                 <input type="checkbox" class="chk-prod" data-sku="${p.sku}" ${emProd ? 'checked' : ''}>
-                ${emProd ? `<br><input type="text" class="input-dt-prev" data-sku="${p.sku}" value="${p.data_previsao || ''}" placeholder="DD/MM/AAAA" style="font-size:0.7rem; width:78px; margin-top:2px; padding:1px 3px; border:1px solid #cbd5e1; border-radius:3px;" title="Data Prevista de Entrega">` : ''}
+                ${emProd ? `<br><input type="text" class="input-dt-prev" data-sku="${p.sku}" value="${p.data_previsao || ''}" placeholder="DD/MM/AAAA" style="font-size:0.7rem; width:78px; margin-top:2px; padding:1px 3px; border:1px solid #cbd5e1; border-radius:3px;" title="Data Prevista de Entrega (Pedido)">` : ''}
             </td>
             <td>
                 <input type="checkbox" class="chk-saz" data-sku="${p.sku}" ${ehSaz ? 'checked' : ''}>
@@ -1077,7 +1083,7 @@ function renderTabMatriz() {
                 await fetch('/api/producao/salvar', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sku, em_producao: isChecked, data_previsao: pObj ? pObj.data_previsao : '' })
+                    body: JSON.stringify({ sku, em_producao: isChecked, data_previsao: pObj ? pObj.data_previsao : '', numero_pedido: pObj ? pObj.numero_pedido : '' })
                 });
             } catch (errServ) {
                 console.warn('Erro ao salvar producao no servidor:', errServ);
@@ -1092,16 +1098,30 @@ function renderTabMatriz() {
                 const sku = e.target.dataset.sku;
                 const valDt = e.target.value.trim();
                 const pObj = state.produtos.find(prod => String(prod.sku).trim() === String(sku).trim());
-                if (pObj) pObj.data_previsao = valDt;
+                const numPed = pObj ? pObj.numero_pedido : '';
+
+                if (pObj) {
+                    pObj.data_previsao = valDt;
+                    // Atualiza a data em todos os produtos do mesmo pedido de compra
+                    if (numPed) {
+                        state.produtos.forEach(pOther => {
+                            if (pOther.numero_pedido && String(pOther.numero_pedido).trim() === String(numPed).trim()) {
+                                pOther.data_previsao = valDt;
+                            }
+                        });
+                    }
+                }
+
                 try {
                     await fetch('/api/producao/salvar', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ sku, em_producao: true, data_previsao: valDt })
+                        body: JSON.stringify({ sku, numero_pedido: numPed, em_producao: true, data_previsao: valDt })
                     });
                 } catch (errServ) {
                     console.warn('Erro ao salvar data_previsao no servidor:', errServ);
                 }
+                render();
             });
         }
 
