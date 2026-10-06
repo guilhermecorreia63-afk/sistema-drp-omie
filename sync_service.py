@@ -202,19 +202,28 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
         matriz_anterior = int(p.get("matriz_anterior", p.get("matriz", 0)))
         matriz_atual = int(p.get("matriz", 0))
 
-        # 1. Se o saldo em estoque AUMENTOU em relação à leitura anterior, houve Entrada de Estoque!
-        # Nesse caso, remove a tag 'em_producao' e limpa 'data_previsao'
-        if matriz_atual > matriz_anterior and matriz_anterior >= 0:
+        # Detecta se o item estava marcado em produção no Turso DB
+        was_in_prod = False
+        if sku in prods_turso_db:
+            db_info = prods_turso_db[sku]
+            if isinstance(db_info, dict):
+                was_in_prod = bool(db_info.get("em_producao", False))
+            else:
+                was_in_prod = bool(db_info)
+
+        # 1. Se o saldo em estoque AUMENTOU ou o estoque físico foi reabastecido (matriz_atual > 0 e estava em produção sem pedido pendente de entrega)
+        if (matriz_atual > matriz_anterior and matriz_anterior >= 0) or (was_in_prod and matriz_atual > 0 and not p.get("numero_pedido")):
             p["em_producao"] = False
             p["qtd_producao"] = 0
             p["data_previsao"] = ""
             p["numero_pedido"] = ""
+            p["fornecedor"] = ""
             if db:
                 try:
-                    db.salvar_status_producao(sku, False, data_previsao="", quantidade_producao=0, numero_pedido="")
+                    db.salvar_status_producao(sku, False, data_previsao="", quantidade_producao=0, numero_pedido="", fornecedor="")
                 except Exception:
                     pass
-            print(f"[SYNC ENTRADA] Saldo do SKU {sku} aumentou de {matriz_anterior} para {matriz_atual}. Tag 'em_producao' removida automaticamente!")
+            print(f"[SYNC ENTRADA] Saldo do SKU {sku} ({p.get('nome')}) atualizado para {matriz_atual}. Tag 'em_producao' removida automaticamente!")
 
         # 2. Se o usuário definiu o status manualmente no Turso DB, RESPEITA a escolha do usuário!
         elif sku in prods_turso_db:
@@ -223,6 +232,8 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
                 p["em_producao"] = bool(db_info.get("em_producao", False))
                 p["data_previsao"] = db_info.get("data_previsao", "") if p["em_producao"] else ""
                 p["numero_pedido"] = db_info.get("numero_pedido", "") if p["em_producao"] else ""
+                p["fornecedor"] = db_info.get("fornecedor", "") if p["em_producao"] else ""
+                p["quantidade_producao"] = db_info.get("quantidade_producao", 0) if p["em_producao"] else 0
             else:
                 p["em_producao"] = bool(db_info)
 
