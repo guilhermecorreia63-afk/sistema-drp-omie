@@ -454,7 +454,11 @@ def obter_detalhes_producao() -> dict[str, dict]:
             executar_query("ALTER TABLE drp_producao ADD COLUMN numero_pedido TEXT", is_select=False)
         except Exception:
             pass
-        df = executar_query("SELECT sku, em_producao, quantidade_producao, data_previsao, numero_pedido FROM drp_producao")
+        try:
+            executar_query("ALTER TABLE drp_producao ADD COLUMN fornecedor TEXT", is_select=False)
+        except Exception:
+            pass
+        df = executar_query("SELECT sku, em_producao, quantidade_producao, data_previsao, numero_pedido, fornecedor FROM drp_producao")
         if df is not None and not df.empty:
             res = {}
             for _, row in df.iterrows():
@@ -462,14 +466,15 @@ def obter_detalhes_producao() -> dict[str, dict]:
                     'em_producao': bool(row.get('em_producao', 0)),
                     'quantidade_producao': int(row.get('quantidade_producao', 0) or 0),
                     'data_previsao': str(row.get('data_previsao', '') or ''),
-                    'numero_pedido': str(row.get('numero_pedido', '') or '')
+                    'numero_pedido': str(row.get('numero_pedido', '') or ''),
+                    'fornecedor': str(row.get('fornecedor', '') or '')
                 }
             return res
     except Exception:
         pass
     return {}
 
-def salvar_status_producao(sku: str, em_producao: bool, data_previsao: str = None, quantidade_producao: int = 0, numero_pedido: str = None):
+def salvar_status_producao(sku: str, em_producao: bool, data_previsao: str = None, quantidade_producao: int = 0, numero_pedido: str = None, fornecedor: str = None):
     try:
         try:
             executar_query("ALTER TABLE drp_producao ADD COLUMN data_previsao TEXT", is_select=False)
@@ -479,12 +484,17 @@ def salvar_status_producao(sku: str, em_producao: bool, data_previsao: str = Non
             executar_query("ALTER TABLE drp_producao ADD COLUMN numero_pedido TEXT", is_select=False)
         except Exception:
             pass
+        try:
+            executar_query("ALTER TABLE drp_producao ADD COLUMN fornecedor TEXT", is_select=False)
+        except Exception:
+            pass
         
         val_dt = data_previsao if data_previsao is not None else ''
         val_ped = numero_pedido if numero_pedido is not None else ''
+        val_forn = fornecedor if fornecedor is not None else ''
         executar_query(
-            "INSERT INTO drp_producao (sku, em_producao, data_previsao, quantidade_producao, numero_pedido, data_atualizacao) VALUES (?, ?, ?, ?, ?, datetime('now')) ON CONFLICT(sku) DO UPDATE SET em_producao=excluded.em_producao, data_previsao=excluded.data_previsao, quantidade_producao=excluded.quantidade_producao, numero_pedido=excluded.numero_pedido, data_atualizacao=datetime('now')",
-            (sku, 1 if em_producao else 0, val_dt, quantidade_producao, val_ped),
+            "INSERT INTO drp_producao (sku, em_producao, data_previsao, quantidade_producao, numero_pedido, fornecedor, data_atualizacao) VALUES (?, ?, ?, ?, ?, ?, datetime('now')) ON CONFLICT(sku) DO UPDATE SET em_producao=excluded.em_producao, data_previsao=excluded.data_previsao, quantidade_producao=excluded.quantidade_producao, numero_pedido=excluded.numero_pedido, fornecedor=excluded.fornecedor, data_atualizacao=datetime('now')",
+            (sku, 1 if em_producao else 0, val_dt, quantidade_producao, val_ped, val_forn),
             is_select=False
         )
     except Exception as e:

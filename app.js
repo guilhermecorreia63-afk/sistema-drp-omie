@@ -362,6 +362,9 @@ function setupEventListeners() {
     addListener('btn-save-grade-camisas', 'click', fecharModalGradeCamisas);
     addListener('btn-gerar-requisicao-grade-camisas', 'click', gerarRequisicaoGradeCamisas);
 
+    addListener('btn-close-modal-pedido', 'click', fecharModalPedido);
+    addListener('btn-close-pedido-footer', 'click', fecharModalPedido);
+
     addListener('btn-preview-fiscal', 'click', abrirModalFiscal);
     addListener('btn-generate-transfer', 'click', abrirModalOpcoesRemessa);
 
@@ -791,17 +794,25 @@ function calcularNecessidade(p, periodo, abastecimento, modo = 'cd') {
     return Math.max(0, Math.ceil(alvo - estoqueAtual));
 }
 
-function definirStatus(estoque, estoqueAlvo, emProducao, vendas, statusEspecial = null, dataPrevisao = null, numeroPedido = null) {
+function definirStatus(estoque, estoqueAlvo, emProducao, vendas, statusEspecial = null, dataPrevisao = null, numeroPedido = null, fornecedor = null) {
     if (statusEspecial === 'Sem Estoque Discipulado') {
         return { label: 'Sem Estoque Discipulado 🕯️', class: 'badge-discipulado' };
     }
     if (emProducao) {
         let txtPrev = '';
-        if (dataPrevisao) {
-            const tagPed = numeroPedido ? ` [Ped #${numeroPedido}]` : '';
-            txtPrev = `<br><small style="font-weight:normal; font-size:0.7rem; opacity:0.95;">📅 Prev: ${dataPrevisao}${tagPed}</small>`;
-        } else if (numeroPedido) {
-            txtPrev = `<br><small style="font-weight:normal; font-size:0.7rem; opacity:0.95;">📦 Ped #${numeroPedido}</small>`;
+        const tagPed = (numeroPedido && String(numeroPedido).trim() !== '' && numeroPedido !== 'nan' && numeroPedido !== 'None') 
+            ? ` <span class="badge-ped-link" onclick="event.stopPropagation(); abrirModalPedido('${numeroPedido}')" style="cursor:pointer; text-decoration:underline; font-weight:bold; color:#fde047;" title="Clique para ver a grade/itens deste Pedido de Compra">[Ped #${numeroPedido}]</span>` 
+            : '';
+        const tagForn = (fornecedor && String(fornecedor).trim() !== '' && fornecedor !== 'nan' && fornecedor !== 'None') 
+            ? `<br><small style="font-weight:600; font-size:0.7rem; color:#93c5fd; opacity:0.95;">🏢 ${fornecedor}</small>` 
+            : '';
+
+        if (dataPrevisao && String(dataPrevisao).trim() !== '' && dataPrevisao !== 'nan' && dataPrevisao !== 'None') {
+            txtPrev = `<br><small style="font-weight:normal; font-size:0.7rem; opacity:0.95;">📅 Prev: ${dataPrevisao}${tagPed}</small>${tagForn}`;
+        } else if (tagPed) {
+            txtPrev = `<br><small style="font-weight:normal; font-size:0.7rem; opacity:0.95;">📦 ${tagPed}</small>${tagForn}`;
+        } else if (tagForn) {
+            txtPrev = `${tagForn}`;
         }
         return { label: `Em Produção / Compra${txtPrev}`, class: 'badge-producao' };
     }
@@ -896,7 +907,7 @@ function renderTabCD() {
         const estMatrizDisp = getMatrizDisponivel(p);
         const estEfetivo = estCDDisp + (p.em_transito || 0);
         const necessidade = Math.max(0, Math.ceil(estAlvo - estEfetivo));
-        const status = definirStatus(estEfetivo, estAlvo, emProd, vendas, p.status_especial);
+        const status = definirStatus(estEfetivo, estAlvo, emProd, vendas, p.status_especial, p.data_previsao, p.numero_pedido, p.fornecedor);
         const matrizInsuficiente = estMatrizDisp < necessidade && necessidade > 0;
 
         const isChecked = state.skusChecadosCD.has(p.sku);
@@ -1038,7 +1049,7 @@ function renderTabMatriz() {
         const estAlvo = calcularEstoqueAlvo(vendas, state.periodoDias, state.abastecimentoDias, lt);
         const estMatrizDisp = getMatrizDisponivel(p);
         const duracao = vendas > 0 ? Math.floor(estMatrizDisp / (vendas / state.periodoDias)) : 999;
-        const status = definirStatus(estMatrizDisp, estAlvo, emProd, vendas, p.status_especial, p.data_previsao, p.numero_pedido);
+        const status = definirStatus(estMatrizDisp, estAlvo, emProd, vendas, p.status_especial, p.data_previsao, p.numero_pedido, p.fornecedor);
         const isChecked = state.skusChecadosMatriz.has(p.sku);
 
         const badgeResMatriz = (p.matriz_reservado || 0) > 0 ? `<br><small style="color:var(--text-muted); font-size:0.7rem;" title="Estoque Físico: ${p.matriz} un | Reservado p/ Pedidos: ${p.matriz_reservado} un">(Fís: ${p.matriz})</small>` : '';
@@ -2186,6 +2197,117 @@ function fecharModalGradeCamisas() {
     document.getElementById('modal-grade-camisas').classList.remove('active');
     render();
 }
+
+function fecharModalPedido() {
+    const modal = document.getElementById('modal-detalhes-pedido');
+    if (modal) modal.classList.remove('active');
+}
+
+window.abrirModalPedido = function(numPedido) {
+    const modal = document.getElementById('modal-detalhes-pedido');
+    if (!modal) return;
+
+    numPedido = String(numPedido).trim();
+    document.getElementById('ped-modal-numero').innerText = `#${numPedido}`;
+
+    const itensPedido = state.produtos.filter(p => String(p.numero_pedido || '').trim() === numPedido);
+
+    let fornecedor = '-';
+    let previsao = '-';
+
+    itensPedido.forEach(p => {
+        if (p.fornecedor && p.fornecedor !== 'nan' && p.fornecedor !== 'None') fornecedor = p.fornecedor;
+        if (p.data_previsao && p.data_previsao !== 'nan' && p.data_previsao !== 'None') previsao = p.data_previsao;
+    });
+
+    document.getElementById('ped-modal-fornecedor').innerText = fornecedor;
+    document.getElementById('ped-modal-previsao').innerText = previsao;
+    document.getElementById('ped-modal-total-itens').innerText = itensPedido.length;
+
+    const tbody = document.getElementById('tbody-detalhes-pedido');
+    tbody.innerHTML = '';
+
+    if (itensPedido.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted); padding: 20px;">Nenhum produto encontrado no DRP para o Pedido #${numPedido}.</td></tr>`;
+    } else {
+        itensPedido.forEach(p => {
+            const emProd = state.producao.has(p.sku);
+            const vendas = p[`vendas_geral_${state.periodoDias}d`] || 0;
+            const lt = getLeadTimeFamilia(p.familia, 'matriz');
+            const estAlvo = calcularEstoqueAlvo(vendas, state.periodoDias, state.abastecimentoDias, lt);
+            const estMatrizDisp = getMatrizDisponivel(p);
+            const estCDDisp = getCDDisponivel(p);
+            const status = definirStatus(estMatrizDisp, estAlvo, emProd, vendas, p.status_especial);
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${p.sku}</strong></td>
+                <td><small>${p.nome}</small></td>
+                <td><strong>${p.quantidade_producao || 0}</strong> un</td>
+                <td><strong>${estMatrizDisp}</strong> un</td>
+                <td><strong>${estCDDisp}</strong> un</td>
+                <td><span class="badge ${status.class}">${status.label}</span></td>
+                <td>
+                    <button class="btn btn-sm btn-danger btn-remover-item-ped" data-sku="${p.sku}" title="Remover item da produção"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        tbody.querySelectorAll('.btn-remover-item-ped').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const sku = e.currentTarget.dataset.sku;
+                if (confirm(`Remover SKU ${sku} do Pedido #${numPedido}?`)) {
+                    state.producao.delete(sku);
+                    const prod = state.produtos.find(p => p.sku === sku);
+                    if (prod) {
+                        prod.em_producao = false;
+                        delete prod.numero_pedido;
+                        delete prod.fornecedor;
+                        delete prod.data_previsao;
+                    }
+                    try {
+                        await fetch('/api/producao/salvar', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ sku, em_producao: false, quantidade_producao: 0, data_previsao: '', numero_pedido: '', fornecedor: '' })
+                        });
+                    } catch (errServ) {
+                        console.warn('Erro ao remover item da producao:', errServ);
+                    }
+                    abrirModalPedido(numPedido);
+                    render();
+                }
+            });
+        });
+    }
+
+    const btnRemoverPedido = document.getElementById('btn-remover-pedido-completo');
+    if (btnRemoverPedido) {
+        btnRemoverPedido.onclick = async () => {
+            if (confirm(`Tem certeza que deseja remover TODOS os produtos do Pedido #${numPedido} da Produção?`)) {
+                for (const p of itensPedido) {
+                    state.producao.delete(p.sku);
+                    p.em_producao = false;
+                    delete p.numero_pedido;
+                    delete p.fornecedor;
+                    delete p.data_previsao;
+                    try {
+                        await fetch('/api/producao/salvar', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ sku: p.sku, em_producao: false, quantidade_producao: 0, data_previsao: '', numero_pedido: '', fornecedor: '' })
+                        });
+                    } catch (errServ) {}
+                }
+                modal.classList.remove('active');
+                render();
+            }
+        };
+    }
+
+    modal.classList.add('active');
+};
 
 function gerarRequisicaoGradeCamisas() {
     if (!modeloGradeAtual) return;

@@ -1005,6 +1005,50 @@
         </div>
     </div>
 
+    <!-- Modal Grade / Detalhes do Pedido de Compra -->
+    <div id="modal-detalhes-pedido" class="modal-backdrop">
+        <div class="modal-box modal-lg" style="max-width: 850px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-file-invoice"></i> Detalhes do Pedido de Compra <span id="ped-modal-numero" style="color: var(--primary);">#---</span></h3>
+                <button class="modal-close" id="btn-close-modal-pedido">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; background: rgba(30, 41, 59, 0.6); padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.08);">
+                    <div><strong>🏢 Fornecedor:</strong> <span id="ped-modal-fornecedor" style="color: #60a5fa; font-weight: 600;">-</span></div>
+                    <div><strong>📅 Previsão Entrega:</strong> <span id="ped-modal-previsao" style="color: #f59e0b; font-weight: 600;">-</span></div>
+                    <div><strong>📦 Total de Itens:</strong> <span id="ped-modal-total-itens" style="font-weight: 600;">0</span></div>
+                </div>
+                
+                <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 12px;">
+                    Itens vinculados a este Pedido de Compra no DRP. Clique na lixeira para retirar um item isolado ou no botão abaixo para cancelar a produção do pedido completo:
+                </p>
+                
+                <div class="table-wrapper" style="max-height: 400px; overflow-y: auto;">
+                    <table class="drp-table">
+                        <thead>
+                            <tr>
+                                <th>SKU</th>
+                                <th>Produto</th>
+                                <th>Qtd Pedida</th>
+                                <th>Estoque Matriz</th>
+                                <th>Estoque CD</th>
+                                <th>Status DRP</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-detalhes-pedido">
+                            <!-- Preenchido via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: space-between;">
+                <button class="btn btn-danger btn-sm" id="btn-remover-pedido-completo"><i class="fa-solid fa-trash"></i> Remover Pedido Inteiro da Produção</button>
+                <button class="btn btn-secondary" id="btn-close-pedido-footer">Fechar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Projeção de Velas Férias Discipulado (15/09 a 05/10 - 20 Dias) -->
     <div id="modal-velas-ferias" class="modal-backdrop">
         <div class="modal-box modal-lg">
