@@ -26,7 +26,9 @@
     "matriz_reservado": 0,
     "cd_sp_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "002766",
@@ -49,7 +51,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": true,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678694,
     "valor_unitario": 99.9,
     "cd_sp_reservado": 0,
@@ -80,7 +82,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": true,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678700,
     "valor_unitario": 123.9,
     "cd_sp_reservado": 0,
@@ -111,7 +113,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": true,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678707,
     "valor_unitario": 123.9,
     "cd_sp_reservado": 0,
@@ -142,7 +144,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678713,
     "valor_unitario": 123.9,
     "cd_sp_reservado": 0,
@@ -169,7 +171,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": true,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678719,
     "valor_unitario": 86.9,
     "cd_sp_reservado": 0,
@@ -200,7 +202,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": true,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678725,
     "valor_unitario": 92.9,
     "cd_sp_reservado": 0,
@@ -231,7 +233,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678731,
     "valor_unitario": 97.9,
     "cd_sp_reservado": 0,
@@ -258,7 +260,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678738,
     "valor_unitario": 128.9,
     "cd_sp_reservado": 0,
@@ -285,7 +287,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678744,
     "valor_unitario": 104.9,
     "cd_sp_reservado": 0,
@@ -299,7 +301,7 @@
     "marca": "PAULUS",
     "peso_kg": 1.115,
     "cd_sp": 29,
-    "matriz": 29,
+    "matriz": 28,
     "ativo": true,
     "vendas_sul_sudeste_30d": 14.0,
     "vendas_sul_sudeste_60d": 22.0,
@@ -312,11 +314,11 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678751,
     "valor_unitario": 126.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 2
+    "matriz_reservado": 1
   },
   {
     "sku": "009630",
@@ -339,7 +341,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678758,
     "valor_unitario": 128.9,
     "cd_sp_reservado": 0,
@@ -366,7 +368,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678764,
     "valor_unitario": 128.9,
     "cd_sp_reservado": 0,
@@ -381,7 +383,7 @@
     "valor_unitario": 39.9,
     "marca": "PAULUS",
     "familia": "BIBLIAS",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "matriz": 6,
     "matriz_reservado": 0,
     "em_producao": false,
@@ -417,7 +419,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678777,
     "valor_unitario": 99.9,
     "cd_sp_reservado": 0,
@@ -444,7 +446,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678783,
     "valor_unitario": 87.9,
     "cd_sp_reservado": 0,
@@ -458,7 +460,7 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "peso_kg": 0.635,
     "cd_sp": 1771,
-    "matriz": 6906,
+    "matriz": 6903,
     "ativo": true,
     "vendas_sul_sudeste_30d": 397.0,
     "vendas_sul_sudeste_60d": 610.0,
@@ -471,13 +473,15 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678814,
     "valor_unitario": 54.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 21,
+    "matriz_reservado": 18,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "000135",
@@ -487,7 +491,7 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "peso_kg": 0.535,
     "cd_sp": 67,
-    "matriz": 560,
+    "matriz": 554,
     "ativo": true,
     "vendas_sul_sudeste_30d": 102.0,
     "vendas_sul_sudeste_60d": 166.0,
@@ -500,11 +504,11 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678834,
     "valor_unitario": 54.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 8
+    "matriz_reservado": 2
   },
   {
     "sku": "002853",
@@ -515,7 +519,7 @@
     "valor_unitario": 49.9,
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "familia": "ESTUDO BÍBLICO",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "matriz": 253,
     "matriz_reservado": 4,
     "em_producao": false,
@@ -539,7 +543,7 @@
     "valor_unitario": 47.9,
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "familia": "ESTUDO BÍBLICO",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "matriz": 527,
     "matriz_reservado": 2,
     "em_producao": false,
@@ -563,7 +567,7 @@
     "valor_unitario": 36.19,
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "familia": "ESPIRITUALIDADE - EDIÇÕES",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "matriz": 162,
     "matriz_reservado": 3,
     "em_producao": false,
@@ -587,7 +591,7 @@
     "valor_unitario": 34.9,
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "familia": "ESPIRITUALIDADE - EDIÇÕES",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "matriz": 51,
     "matriz_reservado": 3,
     "em_producao": false,
@@ -625,7 +629,7 @@
     "em_producao": false,
     "tamanho": "G",
     "modelo_base": "CAMISA CARLO ACUTIS MUSIC - CINZA ESCURO",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074683999,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -654,7 +658,7 @@
     "em_producao": false,
     "tamanho": "GG",
     "modelo_base": "CAMISA CARLO ACUTIS MUSIC - CINZA ESCURO",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678876,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -683,7 +687,7 @@
     "em_producao": false,
     "tamanho": "M",
     "modelo_base": "CAMISA CARLO ACUTIS MUSIC - CINZA ESCURO",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678881,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -712,7 +716,7 @@
     "em_producao": false,
     "tamanho": "P",
     "modelo_base": "CAMISA CARLO ACUTIS MUSIC - CINZA ESCURO",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678886,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -741,7 +745,7 @@
     "em_producao": false,
     "tamanho": "PP",
     "modelo_base": "CAMISA CARLO ACUTIS MUSIC - CINZA ESCURO",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678891,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -770,7 +774,7 @@
     "em_producao": false,
     "tamanho": "PP",
     "modelo_base": "CAMISA JP2 - O AMOR ME EXPLICOU TUDO VERMELHA",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678906,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -799,7 +803,7 @@
     "em_producao": false,
     "tamanho": "3G",
     "modelo_base": "CAMISA RABUNI PRETA - LAURA SALVADOR",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678910,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -828,7 +832,7 @@
     "em_producao": false,
     "tamanho": "G",
     "modelo_base": "CAMISA RABUNI PRETA - LAURA SALVADOR",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678915,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -857,7 +861,7 @@
     "em_producao": false,
     "tamanho": "GG",
     "modelo_base": "CAMISA RABUNI PRETA - LAURA SALVADOR",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678920,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -886,7 +890,7 @@
     "em_producao": false,
     "tamanho": "M",
     "modelo_base": "CAMISA RABUNI PRETA - LAURA SALVADOR",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678924,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -915,7 +919,7 @@
     "em_producao": false,
     "tamanho": "P",
     "modelo_base": "CAMISA RABUNI PRETA - LAURA SALVADOR",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678929,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -944,7 +948,7 @@
     "em_producao": false,
     "tamanho": "PP",
     "modelo_base": "CAMISA RABUNI PRETA - LAURA SALVADOR",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678933,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -973,7 +977,7 @@
     "em_producao": false,
     "tamanho": "G",
     "modelo_base": "CAMISA SANTA TERESINHA MUSIC - VERMELHA",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678937,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -1002,7 +1006,7 @@
     "em_producao": false,
     "tamanho": "GG",
     "modelo_base": "CAMISA SANTA TERESINHA MUSIC - VERMELHA",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678943,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -1031,7 +1035,7 @@
     "em_producao": false,
     "tamanho": "M",
     "modelo_base": "CAMISA SANTA TERESINHA MUSIC - VERMELHA",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678948,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -1060,7 +1064,7 @@
     "em_producao": false,
     "tamanho": "P",
     "modelo_base": "CAMISA SANTA TERESINHA MUSIC - VERMELHA",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678954,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -1089,7 +1093,7 @@
     "em_producao": false,
     "tamanho": "PP",
     "modelo_base": "CAMISA SANTA TERESINHA MUSIC - VERMELHA",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678960,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -1118,7 +1122,7 @@
     "em_producao": false,
     "tamanho": "G",
     "modelo_base": "CAMISA SHALOM MUSIC - BRANCA",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678965,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -1147,7 +1151,7 @@
     "em_producao": false,
     "tamanho": "M",
     "modelo_base": "CAMISA SHALOM MUSIC - BRANCA",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678967,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -1176,7 +1180,7 @@
     "em_producao": false,
     "tamanho": "P",
     "modelo_base": "CAMISA SHALOM MUSIC - BRANCA",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678970,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -1205,7 +1209,7 @@
     "em_producao": false,
     "tamanho": "PP",
     "modelo_base": "CAMISA SHALOM MUSIC - BRANCA",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678973,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -1234,7 +1238,7 @@
     "em_producao": false,
     "tamanho": "G",
     "modelo_base": "CAMISA SHALOM MUSIC - PRETA",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678977,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -1263,7 +1267,7 @@
     "em_producao": false,
     "tamanho": "GG",
     "modelo_base": "CAMISA SHALOM MUSIC - PRETA",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678980,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -1292,7 +1296,7 @@
     "em_producao": false,
     "tamanho": "M",
     "modelo_base": "CAMISA SHALOM MUSIC - PRETA",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678983,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -1321,7 +1325,7 @@
     "em_producao": false,
     "tamanho": "P",
     "modelo_base": "CAMISA SHALOM MUSIC - PRETA",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678987,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -1350,7 +1354,7 @@
     "em_producao": false,
     "tamanho": "PP",
     "modelo_base": "CAMISA SHALOM MUSIC - PRETA",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678991,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -1379,7 +1383,7 @@
     "em_producao": false,
     "tamanho": "G",
     "modelo_base": "CAMISA STA TERESA - SÓ DEUS BASTA BRANCA",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678995,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -1408,7 +1412,7 @@
     "em_producao": false,
     "tamanho": "GG",
     "modelo_base": "CAMISA STA TERESA - SÓ DEUS BASTA BRANCA",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074678999,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -1437,7 +1441,7 @@
     "em_producao": false,
     "tamanho": "M",
     "modelo_base": "CAMISA STA TERESA - SÓ DEUS BASTA BRANCA",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679003,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -1466,7 +1470,7 @@
     "em_producao": false,
     "tamanho": "P",
     "modelo_base": "CAMISA STA TERESA - SÓ DEUS BASTA BRANCA",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679007,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -1495,7 +1499,7 @@
     "em_producao": false,
     "tamanho": "PP",
     "modelo_base": "CAMISA STA TERESA - SÓ DEUS BASTA BRANCA",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679011,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -1522,7 +1526,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679018,
     "valor_unitario": 25.9,
     "cd_sp_reservado": 0,
@@ -1537,7 +1541,7 @@
     "valor_unitario": 25.9,
     "marca": "TOALHA E ALFAIAS DISCIPULADO",
     "familia": "TOALHAS",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "matriz": 11,
     "matriz_reservado": 6,
     "em_producao": false,
@@ -1573,7 +1577,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679028,
     "valor_unitario": 8.9,
     "cd_sp_reservado": 0,
@@ -1615,7 +1619,7 @@
     "valor_unitario": 31.9,
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "familia": "ORDO AMORIS",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "matriz": 975,
     "matriz_reservado": 4,
     "em_producao": false,
@@ -1639,7 +1643,7 @@
     "valor_unitario": 29.9,
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "familia": "ORDO AMORIS",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "matriz": 133,
     "matriz_reservado": 6,
     "em_producao": false,
@@ -1675,7 +1679,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679056,
     "valor_unitario": 19.9,
     "cd_sp_reservado": 0,
@@ -1702,7 +1706,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679061,
     "valor_unitario": 9.9,
     "cd_sp_reservado": 0,
@@ -1729,7 +1733,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679067,
     "valor_unitario": 18.5,
     "cd_sp_reservado": 0,
@@ -1756,7 +1760,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679074,
     "valor_unitario": 10.9,
     "cd_sp_reservado": 0,
@@ -1783,7 +1787,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679077,
     "valor_unitario": 9.9,
     "cd_sp_reservado": 0,
@@ -1810,7 +1814,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679083,
     "valor_unitario": 14.9,
     "cd_sp_reservado": 0,
@@ -1824,7 +1828,7 @@
     "marca": "LOYOLA",
     "peso_kg": 0.705,
     "cd_sp": 15,
-    "matriz": 27,
+    "matriz": 26,
     "ativo": true,
     "vendas_sul_sudeste_30d": 3.0,
     "vendas_sul_sudeste_60d": 17.0,
@@ -1837,11 +1841,11 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": true,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679089,
     "valor_unitario": 74.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 1,
+    "matriz_reservado": 0,
     "numero_pedido": "482",
     "fornecedor": "DISTRIBUIDORA LOYOLA",
     "data_previsao": "15/10/2026",
@@ -1855,7 +1859,7 @@
     "marca": "LOYOLA",
     "peso_kg": 1.225,
     "cd_sp": 10,
-    "matriz": 8,
+    "matriz": 7,
     "ativo": true,
     "vendas_sul_sudeste_30d": 7.0,
     "vendas_sul_sudeste_60d": 18.0,
@@ -1868,11 +1872,11 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": true,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679095,
     "valor_unitario": 92.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 2,
+    "matriz_reservado": 1,
     "numero_pedido": "482",
     "fornecedor": "DISTRIBUIDORA LOYOLA",
     "data_previsao": "15/10/2026",
@@ -1899,7 +1903,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679101,
     "valor_unitario": 10.9,
     "cd_sp_reservado": 0,
@@ -1914,7 +1918,7 @@
     "valor_unitario": 10.9,
     "marca": "PAULINAS",
     "familia": "DOCUMENTOS DA IGREJA",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "matriz": 5,
     "matriz_reservado": 2,
     "em_producao": true,
@@ -1928,10 +1932,10 @@
     "vendas_geral_60d": 0.0,
     "vendas_geral_90d": 1.0,
     "vendas_geral_180d": 3.0,
-    "data_previsao": "13/11/2026",
+    "data_previsao": "13/10/2026",
     "numero_pedido": "476",
     "fornecedor": "PIA SOCIEDADE FILHAS DE SÃO PAULO",
-    "quantidade_producao": 0
+    "quantidade_producao": 3
   },
   {
     "sku": "003929",
@@ -1954,7 +1958,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679114,
     "valor_unitario": 14.9,
     "cd_sp_reservado": 0,
@@ -1981,7 +1985,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679122,
     "valor_unitario": 10.9,
     "cd_sp_reservado": 0,
@@ -2008,7 +2012,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679128,
     "valor_unitario": 20.9,
     "cd_sp_reservado": 0,
@@ -2035,7 +2039,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679134,
     "valor_unitario": 14.9,
     "cd_sp_reservado": 0,
@@ -2062,7 +2066,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679141,
     "valor_unitario": 11.9,
     "cd_sp_reservado": 0,
@@ -2077,7 +2081,7 @@
     "valor_unitario": 216.9,
     "marca": "LOYOLA",
     "familia": "ESPIRITUALIDADE - TERCEIROS",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "matriz": 0,
     "matriz_reservado": 0,
     "em_producao": false,
@@ -2112,14 +2116,16 @@
     "vendas_geral_180d": 26.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "em_producao": true,
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679153,
     "valor_unitario": 20.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 1,
-    "data_previsao": "",
-    "numero_pedido": ""
+    "data_previsao": "13/10/2026",
+    "numero_pedido": "476",
+    "fornecedor": "PIA SOCIEDADE FILHAS DE SÃO PAULO",
+    "quantidade_producao": 15
   },
   {
     "sku": "009433",
@@ -2130,7 +2136,7 @@
     "valor_unitario": 87.9,
     "marca": "ECCLESIAE",
     "familia": "ESPIRITUALIDADE - TERCEIROS",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "matriz": 22,
     "matriz_reservado": 1,
     "em_producao": false,
@@ -2166,7 +2172,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679165,
     "valor_unitario": 57.9,
     "cd_sp_reservado": 0,
@@ -2181,7 +2187,7 @@
     "valor_unitario": 94.9,
     "marca": "ECCLESIAE",
     "familia": "ESPIRITUALIDADE - TERCEIROS",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "matriz": 20,
     "matriz_reservado": 1,
     "em_producao": true,
@@ -2209,7 +2215,7 @@
     "valor_unitario": 49.9,
     "marca": "ECCLESIAE",
     "familia": "ESPIRITUALIDADE - TERCEIROS",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "matriz": 9,
     "matriz_reservado": 0,
     "em_producao": true,
@@ -2237,7 +2243,7 @@
     "valor_unitario": 56.9,
     "marca": "ECCLESIAE",
     "familia": "ESPIRITUALIDADE - TERCEIROS",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "matriz": 4,
     "matriz_reservado": 0,
     "em_producao": true,
@@ -2277,7 +2283,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679191,
     "valor_unitario": 76.9,
     "cd_sp_reservado": 0,
@@ -2304,7 +2310,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679194,
     "valor_unitario": 79.9,
     "cd_sp_reservado": 0,
@@ -2319,7 +2325,7 @@
     "valor_unitario": 32.9,
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "familia": "ESPIRITUALIDADE - EDIÇÕES",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "matriz": 533,
     "matriz_reservado": 2,
     "em_producao": false,
@@ -2343,7 +2349,7 @@
     "valor_unitario": 35.9,
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "familia": "ESPIRITUALIDADE - EDIÇÕES",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "matriz": 1353,
     "matriz_reservado": 2,
     "em_producao": false,
@@ -2379,7 +2385,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679218,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -2486,7 +2492,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074684030,
     "valor_unitario": 3.3,
     "cd_sp_reservado": 0,
@@ -2513,7 +2519,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074684034,
     "valor_unitario": 3.5,
     "cd_sp_reservado": 0,
@@ -2540,13 +2546,15 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074684038,
     "valor_unitario": 3.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010154",
@@ -2557,7 +2565,7 @@
     "valor_unitario": 39.9,
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "familia": "ESCUTA",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "matriz": 307,
     "matriz_reservado": 0,
     "em_producao": false,
@@ -2572,7 +2580,9 @@
     "vendas_geral_90d": 4.0,
     "vendas_geral_180d": 19.0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "008175",
@@ -2595,7 +2605,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679236,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
@@ -2622,7 +2632,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679240,
     "valor_unitario": 57.9,
     "cd_sp_reservado": 0,
@@ -2637,7 +2647,7 @@
     "valor_unitario": 30.9,
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "familia": "ESPIRITUALIDADE - EDIÇÕES",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "matriz": 38,
     "matriz_reservado": 5,
     "em_producao": false,
@@ -2661,7 +2671,7 @@
     "valor_unitario": 35.9,
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "familia": "ESPIRITUALIDADE - EDIÇÕES",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "matriz": 785,
     "matriz_reservado": 22,
     "em_producao": false,
@@ -2676,7 +2686,9 @@
     "vendas_geral_90d": 49.0,
     "vendas_geral_180d": 87.0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "009410",
@@ -2699,7 +2711,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": true,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679260,
     "valor_unitario": 48.9,
     "cd_sp_reservado": 0,
@@ -2730,7 +2742,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679265,
     "valor_unitario": 54.9,
     "cd_sp_reservado": 0,
@@ -2745,7 +2757,7 @@
     "valor_unitario": 25.9,
     "marca": "EDITORA SANTA CRUZ",
     "familia": "ESPIRITUALIDADE - TERCEIROS",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "matriz": 6,
     "matriz_reservado": 0,
     "em_producao": false,
@@ -2781,7 +2793,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679277,
     "valor_unitario": 54.9,
     "cd_sp_reservado": 0,
@@ -2796,7 +2808,7 @@
     "valor_unitario": 68.9,
     "marca": "PAULUS",
     "familia": "ESPIRITUALIDADE - TERCEIROS",
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "matriz": 8,
     "matriz_reservado": 0,
     "em_producao": false,
@@ -2832,7 +2844,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679286,
     "valor_unitario": 54.9,
     "cd_sp_reservado": 0,
@@ -2859,7 +2871,7 @@
     "em_transito": 0,
     "qtd_producao": 0,
     "em_producao": false,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679291,
     "valor_unitario": 54.9,
     "cd_sp_reservado": 0,
@@ -2886,7 +2898,7 @@
     "em_transito": 0,
     "qtd_producao": 30,
     "em_producao": true,
-    "ultima_sincronizacao": "2026-10-06 10:55:17",
+    "ultima_sincronizacao": "2026-10-06 11:01:13",
     "id_produto": 3074679298,
     "valor_unitario": 67.9,
     "cd_sp_reservado": 0,
@@ -2923,7 +2935,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "006463",
@@ -3299,8 +3313,8 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "familia": "ESPIRITUALIDADE - EDIÇÕES",
     "ultima_sincronizacao": "2026-10-06 10:55:17",
-    "matriz": 1074,
-    "matriz_reservado": 11,
+    "matriz": 1072,
+    "matriz_reservado": 9,
     "em_producao": false,
     "cd_sp": 16,
     "cd_sp_reservado": 0,
@@ -3313,7 +3327,9 @@
     "vendas_geral_90d": 75.0,
     "vendas_geral_180d": 161.0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "004313",
@@ -3609,10 +3625,10 @@
     "valor_unitario": 54.8,
     "cd_sp_reservado": 0,
     "matriz_reservado": 2,
-    "data_previsao": "13/11/2026",
+    "data_previsao": "13/10/2026",
     "numero_pedido": "476",
     "fornecedor": "PIA SOCIEDADE FILHAS DE SÃO PAULO",
-    "quantidade_producao": 0
+    "quantidade_producao": 10
   },
   {
     "sku": "009245",
@@ -3830,7 +3846,9 @@
     "vendas_geral_180d": 12.0,
     "data_previsao": "",
     "numero_pedido": "",
-    "qtd_producao": 0
+    "qtd_producao": 0,
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "009746",
@@ -3859,7 +3877,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 2,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "009247",
@@ -4016,10 +4036,10 @@
     "valor_unitario": 27.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 2,
-    "data_previsao": "13/11/2026",
+    "data_previsao": "13/10/2026",
     "numero_pedido": "476",
     "fornecedor": "PIA SOCIEDADE FILHAS DE SÃO PAULO",
-    "quantidade_producao": 0
+    "quantidade_producao": 20
   },
   {
     "sku": "000556",
@@ -4104,7 +4124,7 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "peso_kg": 0.205,
     "cd_sp": 19,
-    "matriz": 94,
+    "matriz": 88,
     "ativo": true,
     "vendas_sul_sudeste_30d": 36.0,
     "vendas_sul_sudeste_60d": 54.0,
@@ -4121,7 +4141,7 @@
     "id_produto": 3074679593,
     "valor_unitario": 38.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 9
+    "matriz_reservado": 3
   },
   {
     "sku": "007824",
@@ -4201,7 +4221,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 4,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "008043",
@@ -4359,7 +4381,9 @@
     "vendas_geral_90d": 4.0,
     "vendas_geral_180d": 23.0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "005704",
@@ -4688,10 +4712,10 @@
     "valor_unitario": 56.9,
     "cd_sp_reservado": 0,
     "matriz_reservado": 10,
-    "data_previsao": "13/11/2026",
+    "data_previsao": "13/10/2026",
     "numero_pedido": "476",
     "fornecedor": "PIA SOCIEDADE FILHAS DE SÃO PAULO",
-    "quantidade_producao": 0
+    "quantidade_producao": 20
   },
   {
     "sku": "009481",
@@ -4795,7 +4819,9 @@
     "vendas_geral_90d": 10.0,
     "vendas_geral_180d": 20.0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "007918",
@@ -5483,7 +5509,9 @@
     "vendas_geral_90d": 233.0,
     "vendas_geral_180d": 257.0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "009298",
@@ -5508,10 +5536,10 @@
     "vendas_geral_60d": 0.0,
     "vendas_geral_90d": 1.0,
     "vendas_geral_180d": 7.0,
-    "data_previsao": "13/11/2026",
+    "data_previsao": "13/10/2026",
     "numero_pedido": "476",
     "fornecedor": "PIA SOCIEDADE FILHAS DE SÃO PAULO",
-    "quantidade_producao": 0
+    "quantidade_producao": 4
   },
   {
     "sku": "002543",
@@ -5560,12 +5588,16 @@
     "vendas_geral_180d": 14.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": false,
+    "em_producao": true,
     "ultima_sincronizacao": "2026-10-06 10:55:17",
     "id_produto": 3074679971,
     "valor_unitario": 46.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 2
+    "matriz_reservado": 2,
+    "numero_pedido": "476",
+    "fornecedor": "PIA SOCIEDADE FILHAS DE SÃO PAULO",
+    "data_previsao": "13/10/2026",
+    "quantidade_producao": 10
   },
   {
     "sku": "000564",
@@ -5672,7 +5704,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "000579",
@@ -5998,7 +6032,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "000685",
@@ -7368,7 +7404,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "009284",
@@ -7850,7 +7888,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "000638",
@@ -7906,7 +7946,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "000641",
@@ -7935,7 +7977,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "000642",
@@ -7964,7 +8008,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "000649",
@@ -7993,7 +8039,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "000650",
@@ -8049,7 +8097,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "000648",
@@ -8261,7 +8311,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "000041",
@@ -8317,7 +8369,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "000679",
@@ -8373,7 +8427,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "000624",
@@ -8645,7 +8701,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "000275",
@@ -8728,7 +8786,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "007158",
@@ -8757,7 +8817,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "008510",
@@ -8864,7 +8926,9 @@
     "vendas_geral_90d": 8.0,
     "vendas_geral_180d": 11.0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "000020",
@@ -9205,7 +9269,8 @@
     "matriz_reservado": 3,
     "data_previsao": "",
     "numero_pedido": "",
-    "fornecedor": ""
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "002079",
@@ -10198,7 +10263,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "008773",
@@ -10356,7 +10423,9 @@
     "vendas_geral_90d": 9.0,
     "vendas_geral_180d": 17.0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "008767",
@@ -10963,8 +11032,8 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "familia": "ESPIRITUALIDADE - EDIÇÕES",
     "ultima_sincronizacao": "2026-10-06 10:55:17",
-    "matriz": 111,
-    "matriz_reservado": 5,
+    "matriz": 110,
+    "matriz_reservado": 4,
     "em_producao": false,
     "cd_sp": 25,
     "cd_sp_reservado": 0,
@@ -10985,7 +11054,7 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "peso_kg": 0.465,
     "cd_sp": 88,
-    "matriz": 728,
+    "matriz": 725,
     "ativo": true,
     "vendas_sul_sudeste_30d": 89.0,
     "vendas_sul_sudeste_60d": 162.0,
@@ -11002,9 +11071,11 @@
     "id_produto": 3074681138,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 12,
+    "matriz_reservado": 9,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "000524",
@@ -11062,7 +11133,7 @@
     "marca": "JP2",
     "peso_kg": 0.5,
     "cd_sp": 85,
-    "matriz": 227,
+    "matriz": 226,
     "ativo": true,
     "vendas_sul_sudeste_30d": 18.0,
     "vendas_sul_sudeste_60d": 49.0,
@@ -11079,9 +11150,11 @@
     "id_produto": 3074681170,
     "valor_unitario": 31.9,
     "cd_sp_reservado": 1,
-    "matriz_reservado": 1,
+    "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "002382",
@@ -12608,7 +12681,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 3,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010325",
@@ -12637,7 +12712,9 @@
     "cd_sp_reservado": 2,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010328",
@@ -12666,7 +12743,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010327",
@@ -12695,7 +12774,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 1,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "009613",
@@ -12724,7 +12805,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010252",
@@ -14224,7 +14307,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 3,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010255",
@@ -15051,7 +15136,7 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "peso_kg": 0.375,
     "cd_sp": 56,
-    "matriz": 2524,
+    "matriz": 2523,
     "ativo": true,
     "vendas_sul_sudeste_30d": 42.0,
     "vendas_sul_sudeste_60d": 91.0,
@@ -15068,9 +15153,11 @@
     "id_produto": 3074682167,
     "valor_unitario": 54.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 5,
+    "matriz_reservado": 4,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "004943",
@@ -16086,7 +16173,9 @@
     "vendas_geral_90d": 28.0,
     "vendas_geral_180d": 31.0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "002429",
@@ -18733,7 +18822,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010472",
@@ -18762,7 +18853,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010473",
@@ -18791,7 +18884,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010474",
@@ -18820,7 +18915,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010476",
@@ -19220,7 +19317,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010561",
@@ -19249,7 +19348,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010562",
@@ -19278,7 +19379,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010563",
@@ -19288,7 +19391,7 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "peso_kg": 0.355,
     "cd_sp": 15,
-    "matriz": 857,
+    "matriz": 856,
     "ativo": true,
     "vendas_sul_sudeste_30d": 4.0,
     "vendas_sul_sudeste_60d": 5.0,
@@ -19305,9 +19408,11 @@
     "id_produto": 3074682759,
     "valor_unitario": 54.9,
     "cd_sp_reservado": 1,
-    "matriz_reservado": 14,
+    "matriz_reservado": 13,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010580",
@@ -19952,7 +20057,7 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "peso_kg": 0.345,
     "cd_sp": 13,
-    "matriz": 321,
+    "matriz": 320,
     "ativo": true,
     "vendas_sul_sudeste_30d": 6.0,
     "vendas_sul_sudeste_60d": 16.0,
@@ -19969,9 +20074,11 @@
     "id_produto": 3074682816,
     "valor_unitario": 32.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 1,
+    "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010614",
@@ -19981,7 +20088,7 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "peso_kg": 0.345,
     "cd_sp": 19,
-    "matriz": 128,
+    "matriz": 127,
     "ativo": true,
     "vendas_sul_sudeste_30d": 10.0,
     "vendas_sul_sudeste_60d": 34.0,
@@ -19998,9 +20105,11 @@
     "id_produto": 3074682822,
     "valor_unitario": 32.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 1,
+    "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010616",
@@ -20010,7 +20119,7 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "peso_kg": 0.345,
     "cd_sp": 26,
-    "matriz": 285,
+    "matriz": 284,
     "ativo": true,
     "vendas_sul_sudeste_30d": 4.0,
     "vendas_sul_sudeste_60d": 16.0,
@@ -20027,9 +20136,11 @@
     "id_produto": 3074682828,
     "valor_unitario": 32.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 1,
+    "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010620",
@@ -20058,7 +20169,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 1,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010621",
@@ -20087,7 +20200,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010622",
@@ -20116,7 +20231,9 @@
     "cd_sp_reservado": 1,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010660",
@@ -20346,7 +20463,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010668",
@@ -20375,7 +20494,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010669",
@@ -20404,7 +20525,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010672",
@@ -20435,7 +20558,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010673",
@@ -20466,7 +20591,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010674",
@@ -20497,7 +20624,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010675",
@@ -20727,7 +20856,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010773",
@@ -20758,7 +20889,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010774",
@@ -20789,7 +20922,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010775",
@@ -20820,7 +20955,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010776",
@@ -20851,7 +20988,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010777",
@@ -20882,7 +21021,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010778",
@@ -20913,7 +21054,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010779",
@@ -20944,7 +21087,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010780",
@@ -20975,7 +21120,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010781",
@@ -21006,7 +21153,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010782",
@@ -21037,7 +21186,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010783",
@@ -21338,7 +21489,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010840",
@@ -21367,7 +21520,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010841",
@@ -21396,7 +21551,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010842",
@@ -21427,7 +21584,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010826",
@@ -21672,7 +21831,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "010845",
@@ -23405,7 +23566,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "006601",
@@ -23577,7 +23740,7 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "peso_kg": 0.415,
     "cd_sp": 25,
-    "matriz": 123,
+    "matriz": 122,
     "ativo": true,
     "vendas_sul_sudeste_30d": 17.0,
     "vendas_sul_sudeste_60d": 40.0,
@@ -23594,7 +23757,7 @@
     "id_produto": 3074682972,
     "valor_unitario": 31.9,
     "cd_sp_reservado": 1,
-    "matriz_reservado": 6
+    "matriz_reservado": 5
   },
   {
     "sku": "010386",
@@ -24528,8 +24691,8 @@
     "marca": "Edições Shalom",
     "familia": "ACESSORIOS",
     "ultima_sincronizacao": "2026-10-06 10:55:17",
-    "matriz": 1,
-    "matriz_reservado": 1,
+    "matriz": 0,
+    "matriz_reservado": 0,
     "em_producao": true,
     "cd_sp": 3,
     "cd_sp_reservado": 0,
@@ -24554,7 +24717,7 @@
     "marca": "Edições Shalom",
     "peso_kg": 0.06,
     "cd_sp": 20,
-    "matriz": 8,
+    "matriz": 5,
     "ativo": true,
     "vendas_sul_sudeste_30d": 14.0,
     "vendas_sul_sudeste_60d": 18.0,
@@ -24571,7 +24734,7 @@
     "id_produto": 3074684253,
     "valor_unitario": 21.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 3,
+    "matriz_reservado": 0,
     "numero_pedido": "481",
     "fornecedor": "FORTALEZA BRINDES",
     "data_previsao": "10/10/2026",
@@ -25017,7 +25180,7 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "peso_kg": 0.415,
     "cd_sp": 82,
-    "matriz": 429,
+    "matriz": 427,
     "ativo": true,
     "vendas_sul_sudeste_30d": 21.0,
     "vendas_sul_sudeste_60d": 67.0,
@@ -25034,7 +25197,7 @@
     "id_produto": 3074684268,
     "valor_unitario": 31.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 4
+    "matriz_reservado": 2
   },
   {
     "sku": "PRD00043",
@@ -25044,7 +25207,7 @@
     "marca": "JP2",
     "peso_kg": 0.415,
     "cd_sp": 64,
-    "matriz": 418,
+    "matriz": 416,
     "ativo": true,
     "vendas_sul_sudeste_30d": 25.0,
     "vendas_sul_sudeste_60d": 79.0,
@@ -25061,7 +25224,7 @@
     "id_produto": 3074684277,
     "valor_unitario": 31.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 6
+    "matriz_reservado": 4
   },
   {
     "sku": "PRD00044",
@@ -25631,7 +25794,7 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "peso_kg": 0.315,
     "cd_sp": 53,
-    "matriz": 2445,
+    "matriz": 2444,
     "ativo": true,
     "vendas_sul_sudeste_30d": 21.0,
     "vendas_sul_sudeste_60d": 40.0,
@@ -25648,7 +25811,7 @@
     "id_produto": 3074684333,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 12
+    "matriz_reservado": 11
   },
   {
     "sku": "PRD00069",
@@ -25736,7 +25899,7 @@
     "marca": "Edições Shalom",
     "peso_kg": 0.06,
     "cd_sp": 14,
-    "matriz": 36,
+    "matriz": 33,
     "ativo": true,
     "vendas_sul_sudeste_30d": 5.0,
     "vendas_sul_sudeste_60d": 8.0,
@@ -25753,7 +25916,7 @@
     "id_produto": 3074684348,
     "valor_unitario": 21.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 3
+    "matriz_reservado": 0
   },
   {
     "sku": "PRD00073",
@@ -25763,7 +25926,7 @@
     "marca": "Edições Shalom",
     "peso_kg": 0.06,
     "cd_sp": 10,
-    "matriz": 39,
+    "matriz": 36,
     "ativo": true,
     "vendas_sul_sudeste_30d": 1.0,
     "vendas_sul_sudeste_60d": 7.0,
@@ -25780,7 +25943,7 @@
     "id_produto": 3074684356,
     "valor_unitario": 21.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 3
+    "matriz_reservado": 0
   },
   {
     "sku": "PRD00074",
@@ -26742,7 +26905,7 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "peso_kg": 0.415,
     "cd_sp": 20,
-    "matriz": 109,
+    "matriz": 108,
     "ativo": true,
     "vendas_sul_sudeste_30d": 3.0,
     "vendas_sul_sudeste_60d": 6.0,
@@ -26759,7 +26922,7 @@
     "id_produto": 3074684374,
     "valor_unitario": 31.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 2
+    "matriz_reservado": 1
   },
   {
     "sku": "PRD00109",
@@ -26769,7 +26932,7 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "peso_kg": 0.415,
     "cd_sp": 105,
-    "matriz": 237,
+    "matriz": 236,
     "ativo": true,
     "vendas_sul_sudeste_30d": 6.0,
     "vendas_sul_sudeste_60d": 29.0,
@@ -26786,7 +26949,7 @@
     "id_produto": 3074684379,
     "valor_unitario": 31.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 1
+    "matriz_reservado": 0
   },
   {
     "sku": "PRD00110",
@@ -26796,7 +26959,7 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "peso_kg": 0.415,
     "cd_sp": 24,
-    "matriz": 133,
+    "matriz": 132,
     "ativo": true,
     "vendas_sul_sudeste_30d": 7.0,
     "vendas_sul_sudeste_60d": 21.0,
@@ -26813,7 +26976,7 @@
     "id_produto": 3074684384,
     "valor_unitario": 31.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 1
+    "matriz_reservado": 0
   },
   {
     "sku": "PRD00111",
@@ -26850,7 +27013,7 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "peso_kg": 0.315,
     "cd_sp": 77,
-    "matriz": 1923,
+    "matriz": 1922,
     "ativo": true,
     "vendas_sul_sudeste_30d": 12.0,
     "vendas_sul_sudeste_60d": 34.0,
@@ -26867,7 +27030,7 @@
     "id_produto": 3074684389,
     "valor_unitario": 54.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 19
+    "matriz_reservado": 18
   },
   {
     "sku": "PRD00113",
@@ -26958,7 +27121,7 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "peso_kg": 0.755,
     "cd_sp": 19,
-    "matriz": 486,
+    "matriz": 485,
     "ativo": true,
     "vendas_sul_sudeste_30d": 17.0,
     "vendas_sul_sudeste_60d": 20.0,
@@ -26975,7 +27138,7 @@
     "id_produto": 3074683319,
     "valor_unitario": 49.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 1
+    "matriz_reservado": 0
   },
   {
     "sku": "PRD00117",
@@ -32339,8 +32502,8 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "familia": "ESCUTA",
     "ultima_sincronizacao": "2026-10-06 10:55:17",
-    "matriz": 2400,
-    "matriz_reservado": 2,
+    "matriz": 2398,
+    "matriz_reservado": 0,
     "em_producao": false,
     "cd_sp": 57,
     "cd_sp_reservado": 0,
@@ -32936,8 +33099,8 @@
     "marca": "JP2",
     "familia": "PAPELARIA",
     "ultima_sincronizacao": "2026-10-06 10:55:17",
-    "matriz": 8,
-    "matriz_reservado": 4,
+    "matriz": 7,
+    "matriz_reservado": 3,
     "em_producao": false,
     "cd_sp": 33,
     "cd_sp_reservado": 0,
@@ -32960,8 +33123,8 @@
     "marca": "JP2",
     "familia": "PAPELARIA",
     "ultima_sincronizacao": "2026-10-06 10:55:17",
-    "matriz": 222,
-    "matriz_reservado": 4,
+    "matriz": 221,
+    "matriz_reservado": 3,
     "em_producao": false,
     "cd_sp": 32,
     "cd_sp_reservado": 0,
@@ -33006,7 +33169,7 @@
     "marca": "JP2",
     "peso_kg": 0.415,
     "cd_sp": 106,
-    "matriz": 554,
+    "matriz": 553,
     "ativo": true,
     "vendas_sul_sudeste_30d": 7.0,
     "vendas_sul_sudeste_60d": 19.0,
@@ -33023,7 +33186,7 @@
     "id_produto": 3074684660,
     "valor_unitario": 31.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 1
+    "matriz_reservado": 0
   },
   {
     "sku": "PRD00386",
@@ -33060,7 +33223,7 @@
     "marca": "JP2",
     "peso_kg": 0.415,
     "cd_sp": 84,
-    "matriz": 316,
+    "matriz": 315,
     "ativo": true,
     "vendas_sul_sudeste_30d": 18.0,
     "vendas_sul_sudeste_60d": 47.0,
@@ -33077,7 +33240,7 @@
     "id_produto": 3074684676,
     "valor_unitario": 31.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 1
+    "matriz_reservado": 0
   },
   {
     "sku": "PRD00388",
@@ -33702,7 +33865,7 @@
     "marca": "JP2",
     "peso_kg": 0.415,
     "cd_sp": 27,
-    "matriz": 231,
+    "matriz": 230,
     "ativo": true,
     "vendas_sul_sudeste_30d": 19.0,
     "vendas_sul_sudeste_60d": 39.0,
@@ -33719,7 +33882,7 @@
     "id_produto": 3074684701,
     "valor_unitario": 31.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 3
+    "matriz_reservado": 2
   },
   {
     "sku": "PRD00412",
@@ -36208,7 +36371,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00509",
@@ -36239,7 +36404,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00510",
@@ -36270,7 +36437,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00511",
@@ -36301,7 +36470,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00512",
@@ -36332,7 +36503,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00513",
@@ -36363,7 +36536,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00514",
@@ -36394,7 +36569,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00515",
@@ -36425,7 +36602,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00516",
@@ -36456,7 +36635,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00517",
@@ -36487,7 +36668,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00518",
@@ -36518,7 +36701,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00519",
@@ -36549,7 +36734,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00520",
@@ -36580,7 +36767,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00521",
@@ -36611,7 +36800,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00522",
@@ -36642,7 +36833,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00523",
@@ -36673,7 +36866,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00524",
@@ -36704,7 +36899,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00525",
@@ -36783,7 +36980,9 @@
     "vendas_geral_90d": 7.0,
     "vendas_geral_180d": 10.0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00528",
@@ -36833,7 +37032,9 @@
     "vendas_geral_90d": 8.0,
     "vendas_geral_180d": 11.0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00530",
@@ -36923,7 +37124,7 @@
     "ultima_sincronizacao": "2026-10-06 10:55:17",
     "matriz": 19,
     "matriz_reservado": 19,
-    "em_producao": true,
+    "em_producao": false,
     "cd_sp": 111,
     "cd_sp_reservado": 0,
     "vendas_sul_sudeste_30d": 169.0,
@@ -36934,8 +37135,10 @@
     "vendas_geral_60d": 364.0,
     "vendas_geral_90d": 545.0,
     "vendas_geral_180d": 1387.0,
-    "data_previsao": "06/10/2026",
-    "numero_pedido": ""
+    "data_previsao": "",
+    "numero_pedido": "",
+    "qtd_producao": 0,
+    "fornecedor": ""
   },
   {
     "sku": "PRD00533",
@@ -37630,8 +37833,8 @@
     "nome": "OS EMBROMADORES",
     "descricao": "OS EMBROMADORES",
     "id_produto": 3074678676,
-    "matriz": 212,
-    "matriz_reservado": 19,
+    "matriz": 211,
+    "matriz_reservado": 18,
     "em_producao": false,
     "cd_sp": 82,
     "cd_sp_reservado": 0,
@@ -38526,7 +38729,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00590",
@@ -38556,7 +38761,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00591",
@@ -38586,7 +38793,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00592",
@@ -38616,7 +38825,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00593",
@@ -38646,7 +38857,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00594",
@@ -38676,7 +38889,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00595",
@@ -38706,7 +38921,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00596",
@@ -38736,7 +38953,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00597",
@@ -38766,7 +38985,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00598",
@@ -38796,7 +39017,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00599",
@@ -38818,7 +39041,7 @@
     "vendas_geral_180d": 14.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": true,
+    "em_producao": false,
     "tamanho": "PP",
     "modelo_base": "CAMISA RAINHA E MÃE - VINHO",
     "ultima_sincronizacao": "2026-09-10 11:16:50",
@@ -38826,7 +39049,8 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": ""
   },
   {
     "sku": "PRD00600",
@@ -38856,7 +39080,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00601",
@@ -38886,7 +39112,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00602",
@@ -38916,7 +39144,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00603",
@@ -38946,7 +39176,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00604",
@@ -39679,8 +39911,8 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "familia": "ESPIRITUALIDADE - EDIÇÕES",
     "ultima_sincronizacao": "2026-10-06 10:55:17",
-    "matriz": 358,
-    "matriz_reservado": 6,
+    "matriz": 357,
+    "matriz_reservado": 5,
     "em_producao": false,
     "cd_sp": 125,
     "cd_sp_reservado": 0,
@@ -39766,7 +39998,9 @@
     "vendas_geral_90d": 1.0,
     "vendas_geral_180d": 11.0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00634",
@@ -39818,10 +40052,10 @@
     "valor_unitario": 9.5,
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
-    "data_previsao": "13/11/2026",
+    "data_previsao": "13/10/2026",
     "numero_pedido": "476",
     "fornecedor": "PIA SOCIEDADE FILHAS DE SÃO PAULO",
-    "quantidade_producao": 0
+    "quantidade_producao": 8
   },
   {
     "sku": "274",
@@ -40334,8 +40568,8 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "familia": "ESPIRITUALIDADE - EDIÇÕES",
     "ultima_sincronizacao": "2026-10-06 10:55:17",
-    "matriz": 773,
-    "matriz_reservado": 8,
+    "matriz": 772,
+    "matriz_reservado": 7,
     "em_producao": false,
     "cd_sp": 74,
     "cd_sp_reservado": 0,
@@ -42653,8 +42887,8 @@
     "marca": "PAULUS",
     "familia": "BIBLIAS",
     "ultima_sincronizacao": "2026-10-06 10:55:17",
-    "matriz": 8,
-    "matriz_reservado": 1,
+    "matriz": 7,
+    "matriz_reservado": 0,
     "em_producao": false,
     "cd_sp": 5,
     "cd_sp_reservado": 0,
@@ -44035,7 +44269,9 @@
     "vendas_geral_90d": 361.0,
     "vendas_geral_180d": 361.0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00771",
@@ -44047,8 +44283,8 @@
     "marca": "JP2",
     "familia": "PAPELARIA",
     "ultima_sincronizacao": "2026-10-06 10:55:17",
-    "matriz": 304,
-    "matriz_reservado": 2,
+    "matriz": 303,
+    "matriz_reservado": 1,
     "em_producao": false,
     "cd_sp": 21,
     "cd_sp_reservado": 0,
@@ -44191,7 +44427,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00780",
@@ -44221,7 +44459,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00781",
@@ -44251,7 +44491,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00782",
@@ -44281,7 +44523,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00783",
@@ -44311,7 +44555,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "nan",
-    "numero_pedido": "nan"
+    "numero_pedido": "nan",
+    "fornecedor": "nan",
+    "quantidade_producao": 0
   },
   {
     "sku": "PRD00784",
@@ -46233,7 +46479,7 @@
     "marca": "Edições Shalom",
     "peso_kg": 0.215,
     "cd_sp": 0,
-    "matriz": 1224,
+    "matriz": 1223,
     "ativo": true,
     "vendas_sul_sudeste_30d": 0.0,
     "vendas_sul_sudeste_60d": 0.0,
@@ -46249,7 +46495,7 @@
     "ultima_sincronizacao": "2026-09-10 11:16:50",
     "id_produto": 3085654684,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 23,
+    "matriz_reservado": 22,
     "nCodProd": 2221223892,
     "descricao": "I FIORETTI COMENTADO",
     "valor_unitario": 79.9,
@@ -46291,7 +46537,7 @@
     "marca": "Edições Shalom",
     "peso_kg": 0.215,
     "cd_sp": 0,
-    "matriz": 1146,
+    "matriz": 1145,
     "ativo": true,
     "vendas_sul_sudeste_30d": 0.0,
     "vendas_sul_sudeste_60d": 0.0,
@@ -46307,7 +46553,7 @@
     "ultima_sincronizacao": "2026-09-10 11:16:50",
     "id_produto": 3086573357,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 33,
+    "matriz_reservado": 32,
     "nCodProd": 2223336371,
     "descricao": "FRANCISCO AMIGO DE DEUS E DOS HOMENS",
     "valor_unitario": 59.9,
@@ -46576,7 +46822,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "id_produto": 3074678806,
@@ -47148,7 +47396,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "id_produto": 3074684047,
@@ -47569,7 +47819,9 @@
     "matriz_reservado": 0,
     "data_previsao": "",
     "qtd_producao": 0,
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "id_produto": 3074680698,
@@ -47628,7 +47880,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "id_produto": 3074680707,
@@ -47649,7 +47903,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "id_produto": 3074680711,
@@ -47671,7 +47927,9 @@
     "matriz_reservado": 0,
     "data_previsao": "",
     "qtd_producao": 0,
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "id_produto": 3074684058,
@@ -47846,7 +48104,8 @@
     "data_previsao": "",
     "qtd_producao": 0,
     "numero_pedido": "",
-    "fornecedor": ""
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "id_produto": 3074684084,
@@ -48000,7 +48259,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "id_produto": 3074684835,
@@ -48363,7 +48624,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "id_produto": 3074684887,
@@ -72153,7 +72416,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "id_produto": 3074681481,
@@ -76943,7 +77208,9 @@
     "cd_sp_reservado": 0,
     "matriz_reservado": 0,
     "data_previsao": "",
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "id_produto": 3074682689,
@@ -77003,7 +77270,9 @@
     "matriz_reservado": 0,
     "data_previsao": "",
     "numero_pedido": "",
-    "qtd_producao": 0
+    "qtd_producao": 0,
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "id_produto": 3074682806,
@@ -77101,7 +77370,9 @@
     "matriz_reservado": 0,
     "data_previsao": "",
     "numero_pedido": "",
-    "qtd_producao": 0
+    "qtd_producao": 0,
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "id_produto": 3074682851,
@@ -77166,7 +77437,9 @@
     "matriz_reservado": 0,
     "data_previsao": "",
     "numero_pedido": "",
-    "qtd_producao": 0
+    "qtd_producao": 0,
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "id_produto": 3074687968,
@@ -77188,7 +77461,9 @@
     "matriz_reservado": 0,
     "data_previsao": "",
     "numero_pedido": "",
-    "qtd_producao": 0
+    "qtd_producao": 0,
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "id_produto": 3074687698,
@@ -77723,7 +77998,9 @@
     "matriz_reservado": 0,
     "data_previsao": "",
     "numero_pedido": "",
-    "qtd_producao": 0
+    "qtd_producao": 0,
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "id_produto": 3074687850,
@@ -77822,7 +78099,8 @@
     "data_previsao": "",
     "qtd_producao": 0,
     "numero_pedido": "",
-    "fornecedor": ""
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "id_produto": 3074688422,
@@ -79446,7 +79724,7 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "familia": "AGENDAS",
     "cd_sp": 0,
-    "matriz": 148,
+    "matriz": 146,
     "peso_kg": 0.59,
     "valor_unitario": 52.9,
     "vendas_sul_sudeste_30d": 0,
@@ -79455,7 +79733,7 @@
     "em_producao": false,
     "ultima_sincronizacao": "2026-10-06 10:55:17",
     "cd_sp_reservado": 0,
-    "matriz_reservado": 3
+    "matriz_reservado": 1
   },
   {
     "id_produto": 3100606283,
@@ -79464,7 +79742,7 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "familia": "AGENDAS",
     "cd_sp": 0,
-    "matriz": 348,
+    "matriz": 346,
     "peso_kg": 0.59,
     "valor_unitario": 52.9,
     "vendas_sul_sudeste_30d": 0,
@@ -79473,7 +79751,7 @@
     "em_producao": false,
     "ultima_sincronizacao": "2026-10-06 10:55:17",
     "cd_sp_reservado": 0,
-    "matriz_reservado": 3
+    "matriz_reservado": 1
   },
   {
     "id_produto": 3100606496,
@@ -79482,7 +79760,7 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "familia": "AGENDAS",
     "cd_sp": 0,
-    "matriz": 200,
+    "matriz": 198,
     "peso_kg": 0.59,
     "valor_unitario": 52.9,
     "vendas_sul_sudeste_30d": 0,
@@ -79491,7 +79769,7 @@
     "em_producao": false,
     "ultima_sincronizacao": "2026-10-06 10:55:17",
     "cd_sp_reservado": 0,
-    "matriz_reservado": 3
+    "matriz_reservado": 1
   },
   {
     "id_produto": 3100606497,
@@ -79500,7 +79778,7 @@
     "marca": "COMUNIDADE CATÓLICA SHALOM",
     "familia": "AGENDAS",
     "cd_sp": 0,
-    "matriz": 341,
+    "matriz": 339,
     "peso_kg": 0.59,
     "valor_unitario": 52.9,
     "vendas_sul_sudeste_30d": 0,
@@ -79509,7 +79787,7 @@
     "em_producao": false,
     "ultima_sincronizacao": "2026-10-06 10:55:17",
     "cd_sp_reservado": 0,
-    "matriz_reservado": 4
+    "matriz_reservado": 2
   },
   {
     "id_produto": 3100615610,
