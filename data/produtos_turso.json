@@ -2149,7 +2149,7 @@
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "matriz": 20,
     "matriz_reservado": 0,
-    "em_producao": false,
+    "em_producao": true,
     "cd_sp": 23,
     "cd_sp_reservado": 0,
     "vendas_sul_sudeste_30d": 5.0,
@@ -2159,7 +2159,11 @@
     "vendas_geral_30d": 5.0,
     "vendas_geral_60d": 9.0,
     "vendas_geral_90d": 10.0,
-    "vendas_geral_180d": 66.0
+    "vendas_geral_180d": 66.0,
+    "numero_pedido": "477",
+    "fornecedor": "CEDET EDITORA",
+    "data_previsao": "13/10/2026",
+    "quantidade_producao": 10
   },
   {
     "sku": "009434",
@@ -2173,7 +2177,7 @@
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "matriz": 9,
     "matriz_reservado": 0,
-    "em_producao": false,
+    "em_producao": true,
     "cd_sp": 12,
     "cd_sp_reservado": 0,
     "vendas_sul_sudeste_30d": 2.0,
@@ -2183,7 +2187,11 @@
     "vendas_geral_30d": 2.0,
     "vendas_geral_60d": 3.0,
     "vendas_geral_90d": 6.0,
-    "vendas_geral_180d": 23.0
+    "vendas_geral_180d": 23.0,
+    "numero_pedido": "477",
+    "fornecedor": "CEDET EDITORA",
+    "data_previsao": "13/10/2026",
+    "quantidade_producao": 10
   },
   {
     "sku": "009421",
@@ -2197,7 +2205,7 @@
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "matriz": 4,
     "matriz_reservado": 0,
-    "em_producao": false,
+    "em_producao": true,
     "cd_sp": 1,
     "cd_sp_reservado": 0,
     "vendas_sul_sudeste_30d": 0.0,
@@ -2207,7 +2215,11 @@
     "vendas_geral_30d": 0.0,
     "vendas_geral_60d": 3.0,
     "vendas_geral_90d": 3.0,
-    "vendas_geral_180d": 8.0
+    "vendas_geral_180d": 8.0,
+    "numero_pedido": "477",
+    "fornecedor": "CEDET EDITORA",
+    "data_previsao": "13/10/2026",
+    "quantidade_producao": 10
   },
   {
     "sku": "002940",
@@ -5208,7 +5220,11 @@
     "id_produto": 3074679914,
     "valor_unitario": 134.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 0
+    "matriz_reservado": 0,
+    "numero_pedido": "477",
+    "fornecedor": "CEDET EDITORA",
+    "data_previsao": "13/10/2026",
+    "quantidade_producao": 3
   },
   {
     "sku": "009429",
@@ -12097,7 +12113,7 @@
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "matriz": 1,
     "matriz_reservado": 0,
-    "em_producao": false,
+    "em_producao": true,
     "cd_sp": 2,
     "cd_sp_reservado": 0,
     "vendas_sul_sudeste_30d": 2.0,
@@ -12107,7 +12123,11 @@
     "vendas_geral_30d": 2.0,
     "vendas_geral_60d": 3.0,
     "vendas_geral_90d": 3.0,
-    "vendas_geral_180d": 3.0
+    "vendas_geral_180d": 3.0,
+    "numero_pedido": "477",
+    "fornecedor": "CEDET EDITORA",
+    "data_previsao": "13/10/2026",
+    "quantidade_producao": 4
   },
   {
     "sku": "001707",
@@ -12198,7 +12218,7 @@
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "matriz": 13,
     "matriz_reservado": 0,
-    "em_producao": false,
+    "em_producao": true,
     "cd_sp": 6,
     "cd_sp_reservado": 0,
     "vendas_sul_sudeste_30d": 0.0,
@@ -12208,7 +12228,11 @@
     "vendas_geral_30d": 0.0,
     "vendas_geral_60d": 0.0,
     "vendas_geral_90d": 5.0,
-    "vendas_geral_180d": 14.0
+    "vendas_geral_180d": 14.0,
+    "numero_pedido": "477",
+    "fornecedor": "CEDET EDITORA",
+    "data_previsao": "13/10/2026",
+    "quantidade_producao": 5
   },
   {
     "sku": "003556",
@@ -26506,7 +26530,7 @@
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "matriz": 9,
     "matriz_reservado": 0,
-    "em_producao": false,
+    "em_producao": true,
     "cd_sp": 8,
     "cd_sp_reservado": 0,
     "vendas_sul_sudeste_30d": 2.0,
@@ -26516,7 +26540,11 @@
     "vendas_geral_30d": 2.0,
     "vendas_geral_60d": 4.0,
     "vendas_geral_90d": 5.0,
-    "vendas_geral_180d": 13.0
+    "vendas_geral_180d": 13.0,
+    "numero_pedido": "477",
+    "fornecedor": "CEDET EDITORA",
+    "data_previsao": "13/10/2026",
+    "quantidade_producao": 10
   },
   {
     "sku": "PRD00107",
@@ -35171,12 +35199,16 @@
     "vendas_geral_180d": 1.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": false,
+    "em_producao": true,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074684795,
     "valor_unitario": 55.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 0
+    "matriz_reservado": 0,
+    "numero_pedido": "477",
+    "fornecedor": "CEDET EDITORA",
+    "data_previsao": "13/10/2026",
+    "quantidade_producao": 5
   },
   {
     "sku": "PRD00477",
