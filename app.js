@@ -500,6 +500,10 @@ async function carregarProdutos() {
                             p.em_producao = Boolean(det.em_producao);
                             if (det.data_previsao) p.data_previsao = det.data_previsao;
                             if (det.numero_pedido) p.numero_pedido = det.numero_pedido;
+                            if (det.fornecedor) p.fornecedor = det.fornecedor;
+                            if (det.quantidade_producao !== undefined && det.quantidade_producao !== null) {
+                                p.quantidade_producao = Number(det.quantidade_producao) || 0;
+                            }
                             if (p.em_producao) state.producao.add(p.sku);
                             else state.producao.delete(p.sku);
                         }

@@ -46,12 +46,16 @@
     "vendas_geral_180d": 7.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": false,
+    "em_producao": true,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074678694,
     "valor_unitario": 99.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 0
+    "matriz_reservado": 0,
+    "numero_pedido": "483",
+    "fornecedor": "EDITORA AVE MARIA",
+    "data_previsao": "15/10/2026",
+    "quantidade_producao": 10
   },
   {
     "sku": "002767",
@@ -73,12 +77,16 @@
     "vendas_geral_180d": 69.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": false,
+    "em_producao": true,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074678700,
     "valor_unitario": 123.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 10
+    "matriz_reservado": 10,
+    "numero_pedido": "483",
+    "fornecedor": "EDITORA AVE MARIA",
+    "data_previsao": "15/10/2026",
+    "quantidade_producao": 25
   },
   {
     "sku": "002914",
@@ -100,12 +108,16 @@
     "vendas_geral_180d": 11.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": false,
+    "em_producao": true,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074678707,
     "valor_unitario": 123.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 0
+    "matriz_reservado": 0,
+    "numero_pedido": "483",
+    "fornecedor": "EDITORA AVE MARIA",
+    "data_previsao": "15/10/2026",
+    "quantidade_producao": 5
   },
   {
     "sku": "002770",
@@ -154,12 +166,16 @@
     "vendas_geral_180d": 73.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": false,
+    "em_producao": true,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074678719,
     "valor_unitario": 86.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 0
+    "matriz_reservado": 0,
+    "numero_pedido": "483",
+    "fornecedor": "EDITORA AVE MARIA",
+    "data_previsao": "15/10/2026",
+    "quantidade_producao": 30
   },
   {
     "sku": "002769",
@@ -181,12 +197,16 @@
     "vendas_geral_180d": 78.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": false,
+    "em_producao": true,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074678725,
     "valor_unitario": 92.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 8
+    "matriz_reservado": 8,
+    "numero_pedido": "483",
+    "fornecedor": "EDITORA AVE MARIA",
+    "data_previsao": "15/10/2026",
+    "quantidade_producao": 25
   },
   {
     "sku": "001151",
@@ -1812,12 +1832,16 @@
     "vendas_geral_180d": 67.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": false,
+    "em_producao": true,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074679089,
     "valor_unitario": 74.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 4
+    "matriz_reservado": 4,
+    "numero_pedido": "482",
+    "fornecedor": "DISTRIBUIDORA LOYOLA",
+    "data_previsao": "15/10/2026",
+    "quantidade_producao": 10
   },
   {
     "sku": "002039",
@@ -1839,12 +1863,16 @@
     "vendas_geral_180d": 40.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": false,
+    "em_producao": true,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074679095,
     "valor_unitario": 92.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 3
+    "matriz_reservado": 3,
+    "numero_pedido": "482",
+    "fornecedor": "DISTRIBUIDORA LOYOLA",
+    "data_previsao": "15/10/2026",
+    "quantidade_producao": 20
   },
   {
     "sku": "002743",
@@ -1898,7 +1926,8 @@
     "vendas_geral_180d": 3.0,
     "data_previsao": "13/11/2026",
     "numero_pedido": "476",
-    "fornecedor": "PIA SOCIEDADE FILHAS DE SÃO PAULO"
+    "fornecedor": "PIA SOCIEDADE FILHAS DE SÃO PAULO",
+    "quantidade_producao": 0
   },
   {
     "sku": "003929",
@@ -2657,12 +2686,16 @@
     "vendas_geral_180d": 22.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": false,
+    "em_producao": true,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074679260,
     "valor_unitario": 48.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 7
+    "matriz_reservado": 7,
+    "numero_pedido": "482",
+    "fornecedor": "DISTRIBUIDORA LOYOLA",
+    "data_previsao": "15/10/2026",
+    "quantidade_producao": 10
   },
   {
     "sku": "009233",
@@ -2967,7 +3000,7 @@
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "matriz": 12,
     "matriz_reservado": 3,
-    "em_producao": false,
+    "em_producao": true,
     "cd_sp": 0,
     "cd_sp_reservado": 0,
     "vendas_sul_sudeste_30d": 1.0,
@@ -2977,7 +3010,11 @@
     "vendas_geral_30d": 1.0,
     "vendas_geral_60d": 2.0,
     "vendas_geral_90d": 2.0,
-    "vendas_geral_180d": 7.0
+    "vendas_geral_180d": 7.0,
+    "numero_pedido": "482",
+    "fornecedor": "DISTRIBUIDORA LOYOLA",
+    "data_previsao": "15/10/2026",
+    "quantidade_producao": 5
   },
   {
     "sku": "009543",
@@ -3389,12 +3426,16 @@
     "vendas_geral_180d": 7.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": false,
+    "em_producao": true,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074679430,
     "valor_unitario": 59.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 0
+    "matriz_reservado": 0,
+    "numero_pedido": "478",
+    "fornecedor": "APOSTOLADO DIVINA MISERICÓRDIA",
+    "data_previsao": "13/10/2026",
+    "quantidade_producao": 3
   },
   {
     "sku": "009624",
@@ -3556,7 +3597,8 @@
     "matriz_reservado": 2,
     "data_previsao": "13/11/2026",
     "numero_pedido": "476",
-    "fornecedor": "PIA SOCIEDADE FILHAS DE SÃO PAULO"
+    "fornecedor": "PIA SOCIEDADE FILHAS DE SÃO PAULO",
+    "quantidade_producao": 0
   },
   {
     "sku": "009245",
@@ -3960,7 +4002,8 @@
     "matriz_reservado": 4,
     "data_previsao": "13/11/2026",
     "numero_pedido": "476",
-    "fornecedor": "PIA SOCIEDADE FILHAS DE SÃO PAULO"
+    "fornecedor": "PIA SOCIEDADE FILHAS DE SÃO PAULO",
+    "quantidade_producao": 0
   },
   {
     "sku": "000556",
@@ -4480,12 +4523,16 @@
     "vendas_geral_180d": 8.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": false,
+    "em_producao": true,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074679730,
     "valor_unitario": 42.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 0
+    "matriz_reservado": 0,
+    "numero_pedido": "482",
+    "fornecedor": "DISTRIBUIDORA LOYOLA",
+    "data_previsao": "15/10/2026",
+    "quantidade_producao": 8
   },
   {
     "sku": "008694",
@@ -4623,7 +4670,8 @@
     "matriz_reservado": 14,
     "data_previsao": "13/11/2026",
     "numero_pedido": "476",
-    "fornecedor": "PIA SOCIEDADE FILHAS DE SÃO PAULO"
+    "fornecedor": "PIA SOCIEDADE FILHAS DE SÃO PAULO",
+    "quantidade_producao": 0
   },
   {
     "sku": "009481",
@@ -5300,12 +5348,16 @@
     "vendas_geral_180d": 18.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": false,
+    "em_producao": true,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074684050,
     "valor_unitario": 24.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 0
+    "matriz_reservado": 0,
+    "numero_pedido": "479",
+    "fornecedor": "SANTA CRUZ EDITORA",
+    "data_previsao": "29/09/2026",
+    "quantidade_producao": 15
   },
   {
     "sku": "001210",
@@ -5434,7 +5486,8 @@
     "vendas_geral_180d": 7.0,
     "data_previsao": "13/11/2026",
     "numero_pedido": "476",
-    "fornecedor": "PIA SOCIEDADE FILHAS DE SÃO PAULO"
+    "fornecedor": "PIA SOCIEDADE FILHAS DE SÃO PAULO",
+    "quantidade_producao": 0
   },
   {
     "sku": "002543",
@@ -9367,12 +9420,16 @@
     "vendas_geral_180d": 3.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": false,
+    "em_producao": true,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074680718,
     "valor_unitario": 96.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 2
+    "matriz_reservado": 2,
+    "numero_pedido": "478",
+    "fornecedor": "APOSTOLADO DIVINA MISERICÓRDIA",
+    "data_previsao": "13/10/2026",
+    "quantidade_producao": 10
   },
   {
     "sku": "000541",
@@ -11619,11 +11676,15 @@
     "vendas_geral_180d": 47.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": false,
+    "em_producao": true,
     "ultima_sincronizacao": "2026-09-10 11:16:50",
     "id_produto": 3074677728,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 0
+    "matriz_reservado": 0,
+    "numero_pedido": "481",
+    "fornecedor": "FORTALEZA BRINDES",
+    "data_previsao": "10/10/2026",
+    "quantidade_producao": 30
   },
   {
     "sku": "001679",
@@ -14182,12 +14243,16 @@
     "vendas_geral_180d": 19.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": false,
+    "em_producao": true,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074681978,
     "valor_unitario": 89.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 0
+    "matriz_reservado": 0,
+    "numero_pedido": "478",
+    "fornecedor": "APOSTOLADO DIVINA MISERICÓRDIA",
+    "data_previsao": "13/10/2026",
+    "quantidade_producao": 15
   },
   {
     "sku": "010121",
@@ -24377,7 +24442,7 @@
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "matriz": 1,
     "matriz_reservado": 0,
-    "em_producao": false,
+    "em_producao": true,
     "cd_sp": 3,
     "cd_sp_reservado": 0,
     "vendas_sul_sudeste_30d": 4.0,
@@ -24387,7 +24452,11 @@
     "vendas_geral_30d": 4.0,
     "vendas_geral_60d": 9.0,
     "vendas_geral_90d": 20.0,
-    "vendas_geral_180d": 96.0
+    "vendas_geral_180d": 96.0,
+    "numero_pedido": "481",
+    "fornecedor": "FORTALEZA BRINDES",
+    "data_previsao": "10/10/2026",
+    "quantidade_producao": 25
   },
   {
     "sku": "PRD00022",
@@ -24409,12 +24478,16 @@
     "vendas_geral_180d": 65.0,
     "em_transito": 0,
     "qtd_producao": 0,
-    "em_producao": false,
+    "em_producao": true,
     "ultima_sincronizacao": "2026-10-05 14:39:03",
     "id_produto": 3074684253,
     "valor_unitario": 21.9,
     "cd_sp_reservado": 0,
-    "matriz_reservado": 0
+    "matriz_reservado": 0,
+    "numero_pedido": "481",
+    "fornecedor": "FORTALEZA BRINDES",
+    "data_previsao": "10/10/2026",
+    "quantidade_producao": 25
   },
   {
     "sku": "PRD00023",
@@ -39583,7 +39656,8 @@
     "matriz_reservado": 0,
     "data_previsao": "13/11/2026",
     "numero_pedido": "476",
-    "fornecedor": "PIA SOCIEDADE FILHAS DE SÃO PAULO"
+    "fornecedor": "PIA SOCIEDADE FILHAS DE SÃO PAULO",
+    "quantidade_producao": 0
   },
   {
     "sku": "274",
@@ -76876,7 +76950,9 @@
     "matriz_reservado": 0,
     "data_previsao": "",
     "qtd_producao": 0,
-    "numero_pedido": ""
+    "numero_pedido": "",
+    "fornecedor": "",
+    "quantidade_producao": 0
   },
   {
     "id_produto": 3074687961,
