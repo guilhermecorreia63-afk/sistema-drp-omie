@@ -332,12 +332,16 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 from omie_client import OmieClient
                 client = OmieClient("MATRIZ")
                 ncod_prod = None
-                if id_produto and str(id_produto).isdigit():
+                if sku:
+                    try:
+                        res_prod = client.executar('geral/produtos/', 'ConsultarProduto', [{'codigo': str(sku).strip()}])
+                        if res_prod and isinstance(res_prod, dict) and 'codigo_produto' in res_prod:
+                            ncod_prod = res_prod['codigo_produto']
+                    except Exception as e_cprod:
+                        print(f"[API SERVER] Erro ao consultar SKU {sku} no Omie: {e_cprod}")
+
+                if not ncod_prod and id_produto and str(id_produto).isdigit():
                     ncod_prod = int(id_produto)
-                else:
-                    res_prod = client.executar('geral/produtos/', 'ConsultarProduto', [{'codigo': sku}])
-                    if res_prod and 'codigo_produto' in res_prod:
-                        ncod_prod = res_prod['codigo_produto']
 
                 if ncod_prod:
                     payload = {
