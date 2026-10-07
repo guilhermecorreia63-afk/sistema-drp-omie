@@ -153,6 +153,10 @@ function setupEventListeners() {
                 document.getElementById('page-heading').innerText = '📦 Aba 6 — Gestão de Combos & Kits Omie';
                 document.getElementById('page-subheading').innerHTML = 'Monitoramento de componentes e automação de redefinição de valor de venda do <strong>Kit Assinatura Pão da Vida (SKU 000223)</strong>';
                 carregarDetalhesCombo();
+            } else if (tabId === 'tab-inteligencia-matriz') {
+                document.getElementById('page-heading').innerText = '🧬 Aba 7 — Inteligência de Produção & Compras (Matriz)';
+                document.getElementById('page-subheading').innerHTML = 'Curva ABC por Família, Ruptura Isolada por Grade (PP..3G e A3..A7) e Avaliação de Encalhe por Lote Mínimo';
+                carregarInteligenciaMatriz();
             }
         });
     });
@@ -4067,4 +4071,153 @@ async function redefinirPrecoCombo() {
         console.error('Erro ao alterar preço:', e);
     }
 }
+
+// ==========================================
+// ABA 7: INTELIGÊNCIA DE PRODUÇÃO MATRIZ
+// ==========================================
+let stateInteligenciaMatriz = {
+    produtos: [],
+    kpis: {},
+    familias: []
+};
+
+async function carregarInteligenciaMatriz(forceReload = false) {
+    const tbody = document.getElementById('tbody-inteligencia-matriz');
+    if (!tbody) return;
+
+    if (stateInteligenciaMatriz.produtos.length > 0 && !forceReload) {
+        renderTabelaInteligenciaMatriz(stateInteligenciaMatriz.produtos);
+        return;
+    }
+
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 25px;"><i class="fa-solid fa-spinner fa-spin"></i> Processando inteligência de produção da Matriz...</td></tr>`;
+
+    try {
+        const resp = await fetch('/api/inteligencia_matriz');
+        const res = await resp.json();
+        if (resp.ok && res.success && res.data) {
+            stateInteligenciaMatriz.produtos = res.data.produtos || [];
+            stateInteligenciaMatriz.kpis = res.data.kpis || {};
+            stateInteligenciaMatriz.familias = res.data.familias || [];
+
+            // Atualizar KPIs de Topo
+            const k = stateInteligenciaMatriz.kpis;
+            document.getElementById('kpi-intel-rupturas-grade').innerText = k.tot_rupturas_isoladas || 0;
+            document.getElementById('kpi-intel-classe-a').innerText = k.tot_classe_a_alta || 0;
+            document.getElementById('kpi-intel-risco-encalhe').innerText = k.tot_risco_encalhe || 0;
+            document.getElementById('kpi-intel-total-prods').innerText = k.tot_produtos || 0;
+
+            // Popular Seletor de Famílias
+            const selFam = document.getElementById('filter-familia-inteligencia');
+            if (selFam) {
+                const valAtual = selFam.value;
+                selFam.innerHTML = `<option value="TODAS">Todas as Famílias (${stateInteligenciaMatriz.familias.length})</option>`;
+                stateInteligenciaMatriz.familias.forEach(f => {
+                    const opt = document.createElement('option');
+                    opt.value = f;
+                    opt.innerText = f;
+                    selFam.appendChild(opt);
+                });
+                selFam.value = valAtual || 'TODAS';
+            }
+
+            renderTabelaInteligenciaMatriz(stateInteligenciaMatriz.produtos);
+        } else {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #f87171; padding: 25px;">Erro ao carregar inteligência: ${res.message || 'Falha'}</td></tr>`;
+        }
+    } catch (e) {
+        console.error('Erro ao carregar inteligência matriz:', e);
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #f87171; padding: 25px;">Erro de conexão ao carregar inteligência de produção.</td></tr>`;
+    }
+}
+
+function filtrarTabelaInteligenciaMatriz() {
+    const busca = (document.getElementById('search-inteligencia-matriz')?.value || '').toLowerCase().trim();
+    const famFiltro = document.getElementById('filter-familia-inteligencia')?.value || 'TODAS';
+    const abcFiltro = document.getElementById('filter-abc-inteligencia')?.value || 'TODOS';
+    const acaoFiltro = document.getElementById('filter-acao-inteligencia')?.value || 'TODOS';
+
+    const prodsFiltrados = stateInteligenciaMatriz.produtos.filter(p => {
+        const txt = `${p.sku} ${p.nome} ${p.modelo_base || ''}`.toLowerCase();
+        if (busca && !txt.includes(busca)) return false;
+        if (famFiltro !== 'TODAS' && (p.familia || '').toUpperCase() !== famFiltro.toUpperCase()) return false;
+        if (abcFiltro !== 'TODOS' && p.classe_abc_familia !== abcFiltro) return false;
+        
+        if (acaoFiltro === 'RUPTURA_GRADE' && !(p.status_grade || '').includes('Ruptura Isolada')) return false;
+        if (acaoFiltro === 'PRODUZIR' && !(p.acao_recomendada || '').includes('Produzir') && !(p.acao_recomendada || '').includes('Reposição') && !(p.acao_recomendada || '').includes('Prioridade')) return false;
+        if (acaoFiltro === 'ENCALHE' && !p.risco_encalhe) return false;
+
+        return true;
+    });
+
+    renderTabelaInteligenciaMatriz(prodsFiltrados);
+}
+
+function renderTabelaInteligenciaMatriz(lista) {
+    const tbody = document.getElementById('tbody-inteligencia-matriz');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (!lista || lista.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 25px;">Nenhum produto encontrado com os filtros aplicados.</td></tr>`;
+        return;
+    }
+
+    lista.slice(0, 150).forEach(p => {
+        const tr = document.createElement('tr');
+        
+        // Badge Classe ABC
+        let abcBadge = '<span class="badge" style="background: rgba(100, 116, 139, 0.2); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.4);">Classe C</span>';
+        if (p.classe_abc_familia === 'A') {
+            abcBadge = '<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); font-weight: 700;">⭐ Classe A</span>';
+        } else if (p.classe_abc_familia === 'B') {
+            abcBadge = '<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);">🟡 Classe B</span>';
+        }
+
+        // Badge Status Grade
+        let stGradeBadge = `<span style="font-size: 0.85rem; color: #94a3b8;">${p.status_grade || 'Normal'}</span>`;
+        if ((p.status_grade || '').includes('Ruptura Isolada')) {
+            stGradeBadge = `<span class="badge badge-alerta" style="font-weight:700;">${p.status_grade}</span>`;
+        } else if ((p.status_grade || '').includes('Ruptura Total')) {
+            stGradeBadge = `<span class="badge badge-ruptura" style="font-weight:700;">${p.status_grade}</span>`;
+        }
+
+        // Badge Cobertura Lote
+        let cobText = `${p.meses_cobertura_lote || 0} meses`;
+        if (p.meses_cobertura_lote >= 99) cobText = 'Sem vendas recentes';
+        let cobColor = '#94a3b8';
+        if (p.risco_encalhe) cobColor = '#f87171';
+        else if (p.meses_cobertura_lote < 6) cobColor = '#34d399';
+
+        // Badge Ação Recomendada
+        let acaoBadge = `<span style="font-size: 0.85rem; color: #cbd5e1;">${p.acao_recomendada || '-'}</span>`;
+        if ((p.acao_recomendada || '').includes('Produzir') || (p.acao_recomendada || '').includes('Prioridade')) {
+            acaoBadge = `<span class="badge badge-estavel" style="font-size: 0.82rem; padding: 6px 12px; font-weight: 700;">${p.acao_recomendada}</span>`;
+        } else if ((p.acao_recomendada || '').includes('Não Repor') || (p.acao_recomendada || '').includes('Cauda Longa')) {
+            acaoBadge = `<span class="badge badge-ruptura" style="font-size: 0.82rem; padding: 6px 12px;">${p.acao_recomendada}</span>`;
+        } else if ((p.acao_recomendada || '').includes('Aguardar')) {
+            acaoBadge = `<span class="badge badge-alerta" style="font-size: 0.82rem; padding: 6px 12px;">${p.acao_recomendada}</span>`;
+        }
+
+        tr.innerHTML = `
+            <td>
+                <strong>${p.sku}</strong>
+                ${p.tamanho_grade ? `<br><span class="badge" style="background:rgba(59,130,246,0.2); color:#60a5fa; font-size:0.75rem;">Tam: ${p.tamanho_grade}</span>` : ''}
+            </td>
+            <td>
+                <strong>${p.nome || p.descricao}</strong>
+                ${p.modelo_base && p.modelo_base !== p.nome ? `<br><small style="color:var(--text-muted);">Modelo: ${p.modelo_base}</small>` : ''}
+            </td>
+            <td><span class="badge" style="background:rgba(255,255,255,0.05); color:#e2e8f0;">${p.familia || 'OUTROS'}</span></td>
+            <td style="text-align:center;"><strong>${p.matriz || 0} un</strong></td>
+            <td style="text-align:center;">${abcBadge}</td>
+            <td style="text-align:center;">${stGradeBadge}</td>
+            <td style="text-align:center;"><strong style="font-size:0.85rem;">${p.tendencia_vendas || 'Estável ➡️'}</strong></td>
+            <td style="text-align:center; color: ${cobColor}; font-weight:600;">${cobText}<br><small style="color:var(--text-muted);">(Lote Mín: ${p.lote_minimo || 100})</small></td>
+            <td style="text-align:center;">${acaoBadge}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
 

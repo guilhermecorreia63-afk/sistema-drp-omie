@@ -66,6 +66,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self.handle_api_depositos_enderecos_get()
         elif url_path == '/api/combo/detalhes':
             self.handle_api_combo_detalhes()
+        elif url_path in ['/api/inteligencia_matriz', '/api/drp/inteligencia_matriz']:
+            self.handle_api_inteligencia_matriz()
         else:
             super().do_GET()
 
@@ -634,6 +636,20 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             print(f"[API SERVER] Erro ao salvar status_remessas.json: {e}")
             
         self._send_json({"success": True, "remessa_id": remessa_id, "status_transito": novo_status, "status_map": status_map})
+
+    def handle_api_inteligencia_matriz(self):
+        try:
+            import json
+            import inteligencia_matriz
+            json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'produtos_turso.json')
+            prods = []
+            if os.path.exists(json_path):
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    prods = json.load(f)
+            resultado = inteligencia_matriz.calcular_inteligencia_matriz(prods)
+            self._send_json({"success": True, "data": resultado})
+        except Exception as e:
+            self._send_json({"success": False, "message": str(e)}, status=500)
 
     def handle_api_cron_sync(self):
         """

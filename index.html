@@ -53,6 +53,10 @@
                     <i class="fa-solid fa-boxes-packing" style="color: #f59e0b;"></i>
                     <span>6. Gestão de Combos & Kits</span>
                 </button>
+                <button class="nav-tab" data-tab="tab-inteligencia-matriz">
+                    <i class="fa-solid fa-dna" style="color: #34d399;"></i>
+                    <span>7. Inteligência Matriz 🧬</span>
+                </button>
             </nav>
 
             <div class="filter-section">
@@ -739,6 +743,105 @@
                             </thead>
                             <tbody id="tbody-componentes-combo">
                                 <tr><td colspan="5" style="text-align:center; padding: 25px; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Carregando componentes do combo...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA 7: INTELIGÊNCIA DE PRODUÇÃO & COMPRAS MATRIZ -->
+            <section id="tab-inteligencia-matriz" class="tab-content">
+                <div class="card mb-4">
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h3 style="display: flex; align-items: center; gap: 10px; color: #34d399;">
+                                <i class="fa-solid fa-dna"></i> Aba 7 — Inteligência de Produção & Compras (Matriz) 🧬
+                            </h3>
+                            <p style="margin:0; font-size:0.85rem; color:var(--text-muted);">
+                                Curva ABC Relativa por Família, Alerta de Ruptura Isolada por Grade (PP..3G e A3..A7), Velocidade da Família e Avaliação de Encalhe por Lote Mínimo.
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button id="btn-recarregar-inteligencia" class="btn btn-secondary" onclick="carregarInteligenciaMatriz(true)" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399; font-weight: 600;">
+                                <i class="fa-solid fa-arrows-rotate"></i> Recarregar Inteligência 🔄
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Cards KPI Inteligência -->
+                    <div class="kpi-grid" style="margin-top: 20px;">
+                        <div class="kpi-card" style="border-top: 3px solid #f59e0b;">
+                            <div class="kpi-title">RUPTURAS ISOLADAS DE GRADE</div>
+                            <div class="kpi-value" id="kpi-intel-rupturas-grade">0</div>
+                            <div class="kpi-sub">1 ou 2 tamanhos zerados</div>
+                        </div>
+                        <div class="kpi-card" style="border-top: 3px solid #10b981;">
+                            <div class="kpi-title">PRODUTOS CLASSE A EM ALTA</div>
+                            <div class="kpi-value" id="kpi-intel-classe-a">0</div>
+                            <div class="kpi-sub">Prioridade Máxima de Produção</div>
+                        </div>
+                        <div class="kpi-card" style="border-top: 3px solid #ef4444;">
+                            <div class="kpi-title">RISCO DE ENCALHE (LOTE MÍN.)</div>
+                            <div class="kpi-value" id="kpi-intel-risco-encalhe">0</div>
+                            <div class="kpi-sub">>24 meses de cobertura p/ lote</div>
+                        </div>
+                        <div class="kpi-card" style="border-top: 3px solid #3b82f6;">
+                            <div class="kpi-title">TOTAL DE PRODUTOS MATRIZ</div>
+                            <div class="kpi-value" id="kpi-intel-total-prods">0</div>
+                            <div class="kpi-sub">Analisados em lote</div>
+                        </div>
+                    </div>
+
+                    <!-- Filtros Inteligência -->
+                    <div class="filter-bar" style="display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; align-items: center;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <input type="text" id="search-inteligencia-matriz" class="form-control" placeholder="🔍 Buscar por SKU, Produto ou Modelo Base..." onkeyup="filtrarTabelaInteligenciaMatriz()">
+                        </div>
+                        <div style="width: 220px;">
+                            <select id="filter-familia-inteligencia" class="form-control" onchange="filtrarTabelaInteligenciaMatriz()">
+                                <option value="TODAS" selected>Todas as Famílias</option>
+                            </select>
+                        </div>
+                        <div style="width: 180px;">
+                            <select id="filter-abc-inteligencia" class="form-control" onchange="filtrarTabelaInteligenciaMatriz()">
+                                <option value="TODOS" selected>Todas as Classes ABC</option>
+                                <option value="A">⭐ Classe A (Top Família)</option>
+                                <option value="B">🟡 Classe B (Intermediário)</option>
+                                <option value="C">⚪ Classe C (Cauda Longa)</option>
+                            </select>
+                        </div>
+                        <div style="width: 200px;">
+                            <select id="filter-acao-inteligencia" class="form-control" onchange="filtrarTabelaInteligenciaMatriz()">
+                                <option value="TODOS" selected>Todas as Ações</option>
+                                <option value="RUPTURA_GRADE">⚠️ Ruptura Isolada de Grade</option>
+                                <option value="PRODUZIR">🟢 Reposição / Produção</option>
+                                <option value="ENCALHE">🔴 Risco de Encalhe</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Tabela de Inteligência -->
+                    <div class="table-responsive" style="margin-top: 15px;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>SKU / Modelo</th>
+                                    <th>Produto (Matriz)</th>
+                                    <th>Família</th>
+                                    <th style="text-align:center;">Estoque Matriz</th>
+                                    <th style="text-align:center;">Classe ABC (Família)</th>
+                                    <th style="text-align:center;">Status de Grade</th>
+                                    <th style="text-align:center;">Tendência Vendas</th>
+                                    <th style="text-align:center;">Cobertura c/ Lote Mínimo</th>
+                                    <th style="text-align:center;">Ação Recomendada (Produção/Compra)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-inteligencia-matriz">
+                                <tr>
+                                    <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 25px;">
+                                        <i class="fa-solid fa-spinner fa-spin"></i> Processando inteligência de produção da Matriz...
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
