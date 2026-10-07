@@ -239,6 +239,14 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
 
             p_copia["risco_encalhe"] = risco_encalhe
 
+            # Explicação textual amigável do status de tendência
+            if tendencia == "Acelerando 🔥":
+                explicacao_status = f"Acelerando 🔥: A demanda dos últimos 30 dias ({round(v30)} un) superou a média histórica ({round(v_media_mensal_90, 1)} un/mês) em +{variacao_pct}%. O produto está em alta rotação."
+            elif tendencia == "Desacelerando 📉":
+                explicacao_status = f"Desacelerando 📉: A demanda dos últimos 30 dias ({round(v30)} un) caiu {variacao_pct}% em relação à média recente ({round(v_media_mensal_90, 1)} un/mês). Alerta para evitar lote excessivo."
+            else:
+                explicacao_status = f"Estável ➡️: A demanda recente ({round(v30)} un/mês) está alinhada à média histórica ({round(v_media_mensal_90, 1)} un/mês) com variação de {variacao_pct}%."
+
             # Detalhamento completo do cálculo para o Modal de Diagnóstico
             p_copia["detalhes_calculo"] = {
                 "sku": sku,
@@ -254,9 +262,15 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
                 "vendas_diretas_30d": float(p.get("vendas_geral_30d", 0)),
                 "remessas_cd_sp_30d": float(p.get("remessas_cd_sp_30d", 0)),
                 "demanda_total_matriz_30d": round(v30, 1),
+                "v30_total": round(v30, 1),
+                "v60_total": round(float(p.get("vendas_geral_60d", 0)) + rem_qtd, 1),
                 "v90_total": round(v90, 1),
+                "v180_total": round(float(p.get("vendas_geral_180d", 0)) + rem_qtd, 1),
+                "v365_total": round(float(p.get("vendas_geral_365d", 0)) + rem_qtd, 1),
                 "media_mensal_90d": round(v_media_mensal_90, 1),
                 "variacao_tendencia_pct": variacao_pct,
+                "tendencia": tendencia,
+                "explicacao_status": explicacao_status,
                 "estoque_matriz": est_matriz,
                 "lote_minimo": lote_minimo,
                 "origem_lote": origem_lote,

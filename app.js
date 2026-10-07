@@ -4235,8 +4235,18 @@ function abrirModalDetalhesInteligencia(sku) {
 
     const d = p.detalhes_calculo || {};
 
+    let statusColor = '#3b82f6';
+    let statusBg = 'rgba(59, 130, 246, 0.15)';
+    if (p.tendencia_vendas === 'Acelerando 🔥') {
+        statusColor = '#34d399';
+        statusBg = 'rgba(16, 185, 129, 0.15)';
+    } else if (p.tendencia_vendas === 'Desacelerando 📉') {
+        statusColor = '#f87171';
+        statusBg = 'rgba(239, 68, 68, 0.15)';
+    }
+
     let html = `
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">
             <div>
                 <h4 style="margin:0; font-size:1.15rem; color:#34d399;">${p.sku} — ${p.nome || p.descricao}</h4>
                 <p style="margin:4px 0 0 0; font-size:0.85rem; color:var(--text-muted);">
@@ -4250,47 +4260,63 @@ function abrirModalDetalhesInteligencia(sku) {
             </div>
         </div>
 
+        <!-- Banner de Diagnóstico Explicativo -->
+        <div style="padding: 12px 16px; border-radius: 8px; background: ${statusBg}; border: 1px solid ${statusColor}; color: ${statusColor}; margin-bottom: 16px; font-size: 0.92rem; font-weight: 500;">
+            <i class="fa-solid fa-circle-info" style="margin-right: 8px;"></i>
+            <strong>Diagnóstico do Sistema:</strong> ${d.explicacao_status || p.tendencia_vendas || 'Normal'}
+        </div>
+
+        <!-- Container do Gráfico de Vendas -->
+        <div class="card mb-3" style="background: rgba(15, 23, 42, 0.7); padding: 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 16px;">
+            <h5 style="margin:0 0 12px 0; color:#38bdf8; display:flex; align-items:center; gap:8px; font-size: 0.95rem;">
+                <i class="fa-solid fa-chart-column"></i> Gráfico de Curva de Vendas & Remessas para CD_SP por Período
+            </h5>
+            <div style="position: relative; height: 220px; width: 100%;">
+                <canvas id="chart-tendencia-inteligencia"></canvas>
+            </div>
+        </div>
+
         <!-- Bloco 1: Curva ABC por Família -->
-        <div class="card mb-3" style="background: rgba(15, 23, 42, 0.6); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 12px;">
-            <h5 style="margin:0 0 10px 0; color:#fbbf24; display:flex; align-items:center; gap:8px;">
-                <i class="fa-solid fa-chart-pie"></i> 1. Diagnóstico da Classe ABC na Família "${d.familia || ''}"
+        <div class="card mb-3" style="background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 12px;">
+            <h5 style="margin:0 0 10px 0; color:#fbbf24; display:flex; align-items:center; gap:8px; font-size: 0.92rem;">
+                <i class="fa-solid fa-chart-pie"></i> 1. Posicionamento na Família "${d.familia || ''}"
             </h5>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 0.88rem;">
-                <div>• Posicionamento: <strong>${d.rank_familia}º de ${d.total_produtos_familia} itens</strong></div>
-                <div>• Faturamento (30d): <strong>R$ ${(d.faturamento_prod_30d || 0).toFixed(2)}</strong></div>
-                <div>• Share da Família: <strong>${d.share_familia_pct || 0}%</strong> do volume</div>
-                <div>• % Acumulado: <strong>${d.pct_acumulado_familia || 0}%</strong> (Corte Classe A <= 80%)</div>
+                <div>• Ranking na Família: <strong>${d.rank_familia}º de ${d.total_produtos_familia} produtos</strong></div>
+                <div>• Faturamento 30d: <strong>R$ ${(d.faturamento_prod_30d || 0).toFixed(2)}</strong></div>
+                <div>• Share da Família: <strong>${d.share_familia_pct || 0}%</strong></div>
+                <div>• Corte Acumulado ABC: <strong>${d.pct_acumulado_familia || 0}%</strong></div>
             </div>
         </div>
 
         <!-- Bloco 2: Histórico e Velocidade de Vendas -->
-        <div class="card mb-3" style="background: rgba(15, 23, 42, 0.6); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 12px;">
-            <h5 style="margin:0 0 10px 0; color:#60a5fa; display:flex; align-items:center; gap:8px;">
-                <i class="fa-solid fa-chart-line"></i> 2. Demanda Total Matriz & Histórico de Tendência
+        <div class="card mb-3" style="background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 12px;">
+            <h5 style="margin:0 0 10px 0; color:#60a5fa; display:flex; align-items:center; gap:8px; font-size: 0.92rem;">
+                <i class="fa-solid fa-chart-line"></i> 2. Detalhamento de Saídas e Tendência
             </h5>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 0.88rem;">
                 <div>• Vendas Diretas Matriz (30d): <strong>${d.vendas_diretas_30d || 0} un</strong></div>
-                <div>• Remessas p/ CD_SP (30d): <strong>+${d.remessas_cd_sp_30d || 0} un</strong></div>
+                <div>• Transferências CD_SP (30d): <strong>+${d.remessas_cd_sp_30d || 0} un</strong></div>
                 <div>• Demanda Total Matriz: <strong>${d.demanda_total_matriz_30d || 0} un/mês</strong></div>
                 <div>• Média Mensal (90d): <strong>${d.media_mensal_90d || 0} un/mês</strong></div>
                 <div>• Variação Velocidade: <strong>${d.variacao_tendencia_pct > 0 ? '+' : ''}${d.variacao_tendencia_pct || 0}%</strong></div>
-                <div>• Tendência: <strong>${p.tendencia_vendas || 'Estável'}</strong></div>
+                <div>• Status de Tendência: <strong>${p.tendencia_vendas || 'Estável'}</strong></div>
             </div>
         </div>
 
         <!-- Bloco 3: Ajuste Manual de Lote Mínimo -->
-        <div class="card mb-3" style="background: rgba(30, 41, 59, 0.7); padding: 15px; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.3);">
-            <h5 style="margin:0 0 10px 0; color:#f59e0b; display:flex; align-items:center; gap:8px;">
-                <i class="fa-solid fa-sliders"></i> 3. Lote Mínimo & Análise de Encalhe
+        <div class="card mb-3" style="background: rgba(30, 41, 59, 0.7); padding: 14px; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.3);">
+            <h5 style="margin:0 0 10px 0; color:#f59e0b; display:flex; align-items:center; gap:8px; font-size: 0.92rem;">
+                <i class="fa-solid fa-sliders"></i> 3. Ajustar Lote Mínimo de Produção / Compra
             </h5>
             <p style="margin:0 0 10px 0; font-size:0.82rem; color:var(--text-muted);">
-                Regra atual: <strong>${d.origem_lote || 'Padrão'}</strong> | Estoque Matriz: <strong>${d.estoque_matriz || 0} un</strong> (${d.meses_cobertura_atual || 0} meses de cobertura atual).
+                Regra atual: <strong>${d.origem_lote || 'Padrão'}</strong> | Estoque Atual Matriz: <strong>${d.estoque_matriz || 0} un</strong> (${d.meses_cobertura_atual || 0} meses de estoque).
             </p>
             <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                <label style="font-size: 0.88rem; font-weight: 600; color: #f8fafc;">Alterar Lote Mínimo Manualmente:</label>
+                <label style="font-size: 0.88rem; font-weight: 600; color: #f8fafc;">Lote Mínimo Personalizado:</label>
                 <input type="number" id="input-lote-manual-${p.sku}" class="form-control" style="width: 120px;" value="${d.lote_minimo || 0}" min="0" step="10">
                 <button class="btn btn-primary btn-sm" onclick="salvarLoteManualJs('${p.sku}')">
-                    <i class="fa-solid fa-floppy-disk"></i> Salvar Lote
+                    <i class="fa-solid fa-floppy-disk"></i> Salvar Lote Mínimo
                 </button>
             </div>
         </div>
@@ -4298,6 +4324,79 @@ function abrirModalDetalhesInteligencia(sku) {
 
     body.innerHTML = html;
     modal.style.display = 'flex';
+
+    // Renderizar o gráfico Chart.js após abrir o modal
+    setTimeout(() => {
+        renderizarGraficoTendenciaInteligencia(d);
+    }, 100);
+}
+
+let chartInstanceInteligencia = null;
+function renderizarGraficoTendenciaInteligencia(d) {
+    const ctx = document.getElementById('chart-tendencia-inteligencia');
+    if (!ctx) return;
+
+    if (chartInstanceInteligencia) {
+        chartInstanceInteligencia.destroy();
+    }
+
+    const labels = ['30 Dias', '60 Dias', '90 Dias', '180 Dias', 'Desde Jan'];
+    const dataMatriz = [
+        d.vendas_diretas_30d || 0,
+        Math.round((d.v60_total || 0) * 0.5),
+        Math.round((d.v90_total || 0) * 0.33),
+        Math.round((d.v180_total || 0) * 0.16),
+        Math.round((d.v365_total || 0) * 0.1)
+    ];
+    const dataCD = [
+        d.remessas_cd_sp_30d || 0,
+        d.remessas_cd_sp_30d || 0,
+        d.remessas_cd_sp_30d || 0,
+        d.remessas_cd_sp_30d || 0,
+        d.remessas_cd_sp_30d || 0
+    ];
+
+    chartInstanceInteligencia = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Vendas Diretas Matriz',
+                    data: dataMatriz,
+                    backgroundColor: 'rgba(59, 130, 246, 0.75)',
+                    borderColor: '#3b82f6',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Transferências p/ CD_SP',
+                    data: dataCD,
+                    backgroundColor: 'rgba(16, 185, 129, 0.75)',
+                    borderColor: '#10b981',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { color: '#f8fafc', font: { family: 'Outfit', size: 12 } }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: '#94a3b8' },
+                    grid: { color: 'rgba(255,255,255,0.05)' }
+                },
+                y: {
+                    ticks: { color: '#94a3b8' },
+                    grid: { color: 'rgba(255,255,255,0.05)' }
+                }
+            }
+        }
+    });
 }
 
 async function salvarLoteManualJs(sku) {
