@@ -100,12 +100,35 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
     if not produtos:
         return {"produtos": [], "kpis": {}, "familias": []}
 
-    # 1. Carregar Blacklist
-    blacklist = set()
+    # 1. Carregar e Normalizar Blacklist
+    blacklist_raw = set()
     try:
-        blacklist = db.obter_blacklist()
+        blacklist_raw = db.obter_blacklist()
     except Exception:
         pass
+
+    json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'blacklist.json')
+    if os.path.exists(json_path):
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    blacklist_raw.update(data)
+        except Exception:
+            pass
+
+    blacklist_norm = set()
+    for item in blacklist_raw:
+        s = str(item).strip().upper()
+        if s:
+            blacklist_norm.add(s)
+            blacklist_norm.add(s.zfill(6))
+            digits = re.sub(r'[^0-9]', '', s)
+            if digits:
+                blacklist_norm.add(digits)
+                blacklist_norm.add(digits.zfill(6))
+                blacklist_norm.add(f"PRD{digits.zfill(5)}")
+                blacklist_norm.add(f"PRD{digits.zfill(6)}")
 
     # 2. Carregar Lotes Manuais Customizados
     lotes_manuais = carregar_lotes_manuais()
@@ -113,12 +136,22 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
     # 3. Carregar Remessas CD_SP
     remessas_cd_sp = obter_remessas_por_sku()
 
-    # 4. Filtrar produtos fora da Blacklist
+    # 4. Filtrar produtos fora da Blacklist (100% de exclusão)
     produtos_validos = []
     for p in produtos:
-        sku = str(p.get("sku", "")).strip()
+        sku = str(p.get("sku", "")).strip().upper()
         sku_pad = sku.zfill(6)
-        if sku in blacklist or sku_pad in blacklist:
+        digits = re.sub(r'[^0-9]', '', sku)
+        digits_pad = digits.zfill(6) if digits else ""
+
+        is_blacklisted = (
+            sku in blacklist_norm or
+            sku_pad in blacklist_norm or
+            (digits and digits in blacklist_norm) or
+            (digits_pad and digits_pad in blacklist_norm) or
+            (digits_pad and f"PRD{digits_pad}" in blacklist_norm)
+        )
+        if is_blacklisted:
             continue
         produtos_validos.append(p)
 

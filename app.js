@@ -4200,10 +4200,6 @@ function renderTabelaInteligenciaMatriz(lista) {
             acaoBadge = `<span class="badge badge-alerta" style="font-size: 0.82rem; padding: 6px 12px;">${p.acao_recomendada}</span>`;
         }
 
-        tr.style.cursor = 'pointer';
-        tr.title = 'Clique para ver o diagnóstico completo e ajustar o lote mínimo';
-        tr.onclick = () => abrirModalDetalhesInteligencia(p.sku);
-
         tr.innerHTML = `
             <td>
                 <strong>${p.sku}</strong>
@@ -4221,13 +4217,36 @@ function renderTabelaInteligenciaMatriz(lista) {
             <td style="text-align:center; color: ${cobColor}; font-weight:600;">${cobText}<br><small style="color:var(--text-muted);">(Lote Mín: ${p.lote_minimo || 'N/A'})</small></td>
             <td style="text-align:center;">${acaoBadge}</td>
         `;
+
+        tr.style.cursor = 'pointer';
+        tr.title = 'Clique para ver o diagnóstico completo e ajustar o lote mínimo';
+        const prodSku = p.sku;
+        tr.onclick = (e) => {
+            e.stopPropagation();
+            abrirModalDetalhesInteligencia(prodSku);
+        };
+        tr.addEventListener('click', (e) => {
+            e.stopPropagation();
+            abrirModalDetalhesInteligencia(prodSku);
+        });
+
         tbody.appendChild(tr);
     });
 }
 
 function abrirModalDetalhesInteligencia(sku) {
-    const p = stateInteligenciaMatriz.produtos.find(x => String(x.sku) === String(sku));
-    if (!p) return;
+    if (!sku || !stateInteligenciaMatriz.produtos) return;
+    const targetSku = String(sku).trim().toUpperCase();
+    const p = stateInteligenciaMatriz.produtos.find(x => {
+        const s = String(x.sku || '').trim().toUpperCase();
+        return s === targetSku ||
+               s.padStart(6, '0') === targetSku.padStart(6, '0') ||
+               s.replace(/\D/g, '') === targetSku.replace(/\D/g, '');
+    });
+    if (!p) {
+        console.warn("[INTELIGENCIA] Produto não encontrado no estado local:", sku);
+        return;
+    }
 
     const modal = document.getElementById('modal-detalhes-inteligencia');
     const body = document.getElementById('body-detalhes-inteligencia');

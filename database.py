@@ -424,13 +424,24 @@ def atualizar_status_transito_db(remessa_id: str, status_transito: str, cod_rem:
         print(f"[DB] Erro ao atualizar status de transito {remessa_id}: {e}")
 
 def obter_blacklist() -> set[str]:
+    skus = set()
     try:
         df = executar_query("SELECT sku FROM drp_blacklist")
         if df is not None and not df.empty:
-            return set(df['sku'].dropna().astype(str).tolist())
+            skus.update(df['sku'].dropna().astype(str).tolist())
     except Exception:
         pass
-    return set()
+
+    json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'blacklist.json')
+    if os.path.exists(json_path):
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    skus.update(data)
+        except Exception:
+            pass
+    return skus
 
 def salvar_blacklist(skus: set[str]):
     try:
@@ -439,6 +450,14 @@ def salvar_blacklist(skus: set[str]):
             executar_query("INSERT OR REPLACE INTO drp_blacklist (sku, data_adicao) VALUES (?, datetime('now'))", (sku,), is_select=False)
     except Exception:
         pass
+
+    json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'blacklist.json')
+    try:
+        os.makedirs(os.path.dirname(json_path), exist_ok=True)
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump(sorted(list(skus)), f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"[DB] Erro ao salvar blacklist json: {e}")
 
 def obter_status_producao() -> dict[str, bool]:
     try:
