@@ -194,8 +194,11 @@ class ControleDRP:
                 df_vendas['sku'] = df_vendas['id_produto'].map(id_para_sku)
                 df_vendas['eh_ss'] = df_vendas['uf_destino'].isin(UFS_SUL_SUDESTE)
 
-                for d in [30, 60, 90, 180]:
-                    cutoff = data_max - pd.Timedelta(days=d)
+                for d in [30, 60, 90, 180, 365]:
+                    if d == 365:
+                        cutoff = pd.Timestamp(f"{data_max.year}-01-01")
+                    else:
+                        cutoff = data_max - pd.Timedelta(days=d)
                     df_sub = df_vendas[df_vendas['data_pedido_dt'] >= cutoff]
 
                     grp_geral = df_sub.groupby('sku')['quantidade'].sum().to_dict()

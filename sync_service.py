@@ -267,10 +267,12 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
                 p["vendas_sul_sudeste_60d"] = v.get("vendas_sul_sudeste_60d", 0)
                 p["vendas_sul_sudeste_90d"] = v.get("vendas_sul_sudeste_90d", 0)
                 p["vendas_sul_sudeste_180d"] = v.get("vendas_sul_sudeste_180d", 0)
+                p["vendas_sul_sudeste_365d"] = v.get("vendas_sul_sudeste_365d", 0)
                 p["vendas_geral_30d"] = v.get("vendas_geral_30d", 0)
                 p["vendas_geral_60d"] = v.get("vendas_geral_60d", 0)
                 p["vendas_geral_90d"] = v.get("vendas_geral_90d", 0)
                 p["vendas_geral_180d"] = v.get("vendas_geral_180d", 0)
+                p["vendas_geral_365d"] = v.get("vendas_geral_365d", 0)
     except Exception as e:
         print(f"[SYNC] Erro ao mesclar vendas do ControleDRP: {e}")
 
