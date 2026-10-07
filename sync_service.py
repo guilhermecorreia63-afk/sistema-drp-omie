@@ -114,12 +114,13 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
                 for item in res.get("produtos", []):
                     sku = str(item.get("cCodigo", "")).strip()
                     cod_prod = item.get("nCodProd")
-                    saldo_fisico = int(item.get("fisico", item.get("nSaldo", 0)))
-                    saldo_reservado = int(item.get("reservado", 0))
+                    saldo_disp = int(item.get("nSaldo") if item.get("nSaldo") is not None else item.get("saldo", 0))
+                    saldo_res = int(item.get("nReservado") if item.get("nReservado") is not None else item.get("reservado", 0))
+                    saldo_fis = int(item.get("nFisico") if item.get("nFisico") is not None else (saldo_disp + saldo_res))
                     p = produtos_by_sku.get(sku)
                     if p:
-                        p["matriz"] = saldo_fisico
-                        p["matriz_reservado"] = saldo_reservado
+                        p["matriz"] = saldo_fis
+                        p["matriz_reservado"] = saldo_res
                         if cod_prod:
                             p["id_produto"] = cod_prod
                 pag += 1
@@ -149,12 +150,13 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
                 for item in res.get("produtos", []):
                     sku = str(item.get("cCodigo", "")).strip()
                     cod_prod = item.get("nCodProd")
-                    saldo_fisico = int(item.get("fisico", item.get("nSaldo", 0)))
-                    saldo_reservado = int(item.get("reservado", 0))
+                    saldo_disp = int(item.get("nSaldo") if item.get("nSaldo") is not None else item.get("saldo", 0))
+                    saldo_res = int(item.get("nReservado") if item.get("nReservado") is not None else item.get("reservado", 0))
+                    saldo_fis = int(item.get("nFisico") if item.get("nFisico") is not None else (saldo_disp + saldo_res))
                     p = produtos_by_sku.get(sku)
                     if p:
-                        p["cd_sp"] = saldo_fisico
-                        p["cd_sp_reservado"] = saldo_reservado
+                        p["cd_sp"] = saldo_fis
+                        p["cd_sp_reservado"] = saldo_res
                         if cod_prod:
                             p["id_produto"] = cod_prod
                 pag += 1
