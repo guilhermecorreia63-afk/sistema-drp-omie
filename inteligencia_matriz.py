@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-inteligencia_matriz.py - Motor de Inteligência de Produção e Compras (Matriz)
-=============================================================================
-- Curva ABC por Família (Classe A, B, C relativa dentro da família)
-- Análise de Grade para Rupturas Isoladas (Vestuário: PP..3G, Ícones: A3..A7)
-- Ritmo e Tendência de Vendas (Acelerando, Estável, Desacelerando)
-- Análise de Lote Mínimo & Anos/Meses de Cobertura
-- Ação Recomendada de Reposição/Produção
+inteligencia_matriz.py - Motor de Inteligência de Produção e Compras (Matriz v2)
+=================================================================================
+- Filtragem automática da Blacklist
+- Lote Mínimo específico por regra de Família:
+    - ESPIRITUALIDADE - EDIÇÕES: 500 un
+    - CAMISAS / VESTUÁRIO: 20 un (por grade)
+    - Demais famílias (Ícones, Bíblias, Acessórios, Philippos, Escuta, etc.): 0 un (Sem lote limite)
+    - Suporte a ajuste manual customizado de Lote Mínimo por produto
+- Incorporação de Remessas/Transferências enviadas ao CD_SP na demanda da Matriz
+- Detalhamento completo do cálculo para Modal de Diagnóstico
+- Ruptura isolada de grade (PP..3G e A3..A7)
 """
 
 import json
@@ -14,26 +18,45 @@ import os
 import re
 from typing import Dict, List, Any
 
+import database as db
+
 # Tamanhos de Grade Conhecidos
 TAMANHOS_VESTUARIO = ["PP", "P", "M", "G", "GG", "XG", "2G", "3G"]
 TAMANHOS_ICONES = ["A3", "A4", "A5", "A6", "A7"]
 
+# Caminho para arquivo de sobreposição manual de lote mínimo
+CAMINHO_LOTES_MANUAIS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'lotes_minimos_custom.json')
+
+def carregar_lotes_manuais() -> Dict[str, int]:
+    if os.path.exists(CAMINHO_LOTES_MANUAIS):
+        try:
+            with open(CAMINHO_LOTES_MANUAIS, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+def salvar_lote_manual(sku: str, lote: int) -> bool:
+    lotes = carregar_lotes_manuais()
+    lotes[sku.strip()] = max(0, int(lote))
+    try:
+        os.makedirs(os.path.dirname(CAMINHO_LOTES_MANUAIS), exist_ok=True)
+        with open(CAMINHO_LOTES_MANUAIS, 'w', encoding='utf-8') as f:
+            json.dump(lotes, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception as e:
+        print(f"[INTELIGENCIA] Erro ao salvar lote manual: {e}")
+        return False
+
 def extrair_base_e_tamanho(nome_prod: str) -> tuple[str, str]:
-    """
-    Extrai o nome base do modelo e o tamanho do produto (Vestuário ou Ícones).
-    Ex: "CAMISA DEUS E FIEL M" -> ("CAMISA DEUS E FIEL", "M")
-    Ex: "ICONE NOSSA SENHORA A4" -> ("ICONE NOSSA SENHORA", "A4")
-    """
     nome_up = (nome_prod or "").upper().strip()
     
-    # Check Vestuário
     for tam in sorted(TAMANHOS_VESTUARIO, key=len, reverse=True):
         pattern = r'(?:\s+|-|_)' + re.escape(tam) + r'(?:\s+|$)'
         if re.search(pattern, nome_up):
             base = re.sub(pattern, ' ', nome_up).strip()
             return base, tam
 
-    # Check Ícones
     for tam in sorted(TAMANHOS_ICONES, key=len, reverse=True):
         pattern = r'(?:\s+|-|_)' + re.escape(tam) + r'(?:\s+|$)'
         if re.search(pattern, nome_up):
@@ -42,16 +65,66 @@ def extrair_base_e_tamanho(nome_prod: str) -> tuple[str, str]:
 
     return nome_up, ""
 
+def obter_remessas_por_sku() -> Dict[str, float]:
+    """
+    Calcula a soma de remessas/transferências enviadas pela Matriz para o CD_SP
+    nos últimos 30 dias a partir da tabela drp_remessas.
+    """
+    remessas_map = {}
+    try:
+        df = db.executar_query("SELECT itens_json, status_transito, ultima_atualizacao FROM drp_remessas")
+        if df is not None and not df.empty:
+            for _, row in df.iterrows():
+                st = (row.get('status_transito') or '').upper()
+                # Considera remessas ativas (Pendente, Coletado, Em Transporte, Entregue)
+                if st in ['EM_TRANSPORTE', 'COLETADO', 'ENTREGUE', 'PENDENTE']:
+                    itens_str = row.get('itens_json')
+                    if itens_str and isinstance(itens_str, str) and len(itens_str) > 5:
+                        try:
+                            itens = json.loads(itens_str)
+                            for it in itens:
+                                prod = it.get('produto') or it
+                                sku = str(it.get('cCodItInt') or prod.get('cCodItInt') or prod.get('cCodigo') or prod.get('codigo_produto') or prod.get('cSKU') or '').strip()
+                                qtd = float(it.get('nQtde') or it.get('nQtd') or it.get('quantidade') or prod.get('nQtde') or prod.get('nQtd') or 0)
+                                if sku and qtd > 0:
+                                    remessas_map[sku] = remessas_map.get(sku, 0.0) + qtd
+                                    sku_pad = sku.padStart(6, '0') if hasattr(sku, 'padStart') else str(sku).zfill(6)
+                                    remessas_map[sku_pad] = remessas_map.get(sku_pad, 0.0) + qtd
+                        except Exception:
+                            pass
+    except Exception as e:
+        print(f"[INTELIGENCIA] Erro ao carregar remessas por SKU: {e}")
+    return remessas_map
+
 def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """
-    Executa o cálculo completo de inteligência para os produtos da Matriz.
-    """
     if not produtos:
         return {"produtos": [], "kpis": {}, "familias": []}
 
-    # 1. Agrupar produtos por Família para Curva ABC Relativa
-    familias_map: Dict[str, List[Dict[str, Any]]] = {}
+    # 1. Carregar Blacklist
+    blacklist = set()
+    try:
+        blacklist = db.obter_blacklist()
+    except Exception:
+        pass
+
+    # 2. Carregar Lotes Manuais Customizados
+    lotes_manuais = carregar_lotes_manuais()
+
+    # 3. Carregar Remessas CD_SP
+    remessas_cd_sp = obter_remessas_por_sku()
+
+    # 4. Filtrar produtos fora da Blacklist
+    produtos_validos = []
     for p in produtos:
+        sku = str(p.get("sku", "")).strip()
+        sku_pad = sku.zfill(6)
+        if sku in blacklist or sku_pad in blacklist:
+            continue
+        produtos_validos.append(p)
+
+    # 5. Agrupar produtos por Família para Curva ABC Relativa
+    familias_map: Dict[str, List[Dict[str, Any]]] = {}
+    for p in produtos_validos:
         fam = (p.get("familia") or "OUTROS").strip().upper()
         if fam not in familias_map:
             familias_map[fam] = []
@@ -62,27 +135,43 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
     tot_classe_a_alta = 0
     tot_risco_encalhe = 0
 
-    # 2. Processar cada família separadamente (Curva ABC por Família)
+    # 6. Processar cada família
     for fam_nome, prods_fam in familias_map.items():
-        # Ordenar produtos da família pelo volume de vendas (ou faturamento) últimos 30d/60d
+        # Calcular demanda total da Matriz = Vendas Diretas Matriz Geral + Remessas para CD_SP
+        for p in prods_fam:
+            sku = str(p.get("sku", "")).strip()
+            sku_pad = sku.zfill(6)
+            rem_qtd = remessas_cd_sp.get(sku, 0.0) or remessas_cd_sp.get(sku_pad, 0.0)
+            
+            v30_direto = float(p.get("vendas_geral_30d", 0))
+            v60_direto = float(p.get("vendas_geral_60d", 0))
+            v90_direto = float(p.get("vendas_geral_90d", 0))
+            v180_direto = float(p.get("vendas_geral_180d", 0))
+
+            # Adiciona movimentação de remessas como demanda da Matriz
+            demanda_matriz_30d = v30_direto + rem_qtd
+            p["_demanda_30d"] = demanda_matriz_30d
+            p["remessas_cd_sp_30d"] = rem_qtd
+
+        # Ordenar produtos da família pela demanda/faturamento total da Matriz
         prods_sorted = sorted(
             prods_fam,
-            key=lambda x: (x.get("vendas_geral_30d", 0) * x.get("valor_unitario", 1.0)),
+            key=lambda x: (x["_demanda_30d"] * float(x.get("valor_unitario", 1.0))),
             reverse=True
         )
 
-        tot_vendas_fam = sum(p.get("vendas_geral_30d", 0) for p in prods_sorted)
-        tot_val_fam = sum(p.get("vendas_geral_30d", 0) * p.get("valor_unitario", 1.0) for p in prods_sorted)
-
-        acum_val = 0.0
+        tot_val_fam = sum(p["_demanda_30d"] * float(p.get("valor_unitario", 1.0)) for p in prods_sorted)
+        tot_qtd_fam = sum(p["_demanda_30d"] for p in prods_sorted)
         n_prods = len(prods_sorted)
 
+        acum_val = 0.0
         for idx, p in enumerate(prods_sorted):
-            val_p = p.get("vendas_geral_30d", 0) * p.get("valor_unitario", 1.0)
+            sku = str(p.get("sku", "")).strip()
+            val_p = p["_demanda_30d"] * float(p.get("valor_unitario", 1.0))
             acum_val += val_p
             pct_acum = (acum_val / tot_val_fam) if tot_val_fam > 0 else (idx + 1) / n_prods
 
-            # Definir Classe ABC por Família
+            # Definir Classe ABC da Família
             if pct_acum <= 0.80 or (n_prods <= 3 and idx == 0):
                 classe_abc = "A"
             elif pct_acum <= 0.95 or (n_prods <= 5 and idx <= 1):
@@ -93,10 +182,29 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
             p_copia = dict(p)
             p_copia["classe_abc_familia"] = classe_abc
 
-            # 3. Tendência de Vendas (30d vs Média 90d/180d)
-            v30 = p.get("vendas_geral_30d", 0)
-            v90 = p.get("vendas_geral_90d", 0)
+            # Regras Específicas de Lote Mínimo
+            fam_up = fam_nome.upper()
+            if sku in lotes_manuais:
+                lote_minimo = lotes_manuais[sku]
+                origem_lote = "Manual"
+            elif "ESPIRITUALIDADE" in fam_up and ("EDIÇ" in fam_up or "EDIC" in fam_up):
+                lote_minimo = 500
+                origem_lote = "Padrão Edições (500 un)"
+            elif "CAMISA" in fam_up or "VESTUARIO" in fam_up or "BLUSA" in fam_up:
+                lote_minimo = 20
+                origem_lote = "Padrão Camisas (20 un)"
+            else:
+                lote_minimo = 0
+                origem_lote = "Sem Lote Mínimo"
+
+            # Tendência de Vendas (30d vs Média 90d/180d)
+            v30 = p["_demanda_30d"]
+            v90 = float(p.get("vendas_geral_90d", 0)) + p["remessas_cd_sp_30d"]
             v_media_mensal_90 = v90 / 3.0 if v90 > 0 else 0.0
+
+            variacao_pct = 0.0
+            if v_media_mensal_90 > 0:
+                variacao_pct = round(((v30 - v_media_mensal_90) / v_media_mensal_90) * 100, 1)
 
             if v30 > (v_media_mensal_90 * 1.25) and v30 >= 5:
                 tendencia = "Acelerando 🔥"
@@ -109,34 +217,56 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
 
             p_copia["tendencia_vendas"] = tendencia
 
-            # 4. Lote Mínimo & Anos/Meses de Cobertura
-            fam_up = fam_nome.upper()
-            if "VESTUARIO" in fam_up or "CAMISA" in fam_up or "BLUSA" in fam_up:
-                lote_minimo = 100
-            elif "ICONE" in fam_up or "QUADRO" in fam_up:
-                lote_minimo = 50
-            else:
-                lote_minimo = 500
-
+            # Cobertura c/ Lote Mínimo
             v30_diaria = max(0.033, v30 / 30.0)
             est_matriz = p.get("matriz", 0)
             meses_cobertura_atual = round((est_matriz / (v30_diaria * 30.0)), 1) if v30 > 0 else (99.0 if est_matriz > 0 else 0.0)
-            meses_cobertura_lote = round((lote_minimo / (v30_diaria * 30.0)), 1) if v30 > 0 else 99.0
+            
+            if lote_minimo > 0:
+                meses_cobertura_lote = round((lote_minimo / (v30_diaria * 30.0)), 1) if v30 > 0 else 99.0
+            else:
+                meses_cobertura_lote = 0.0
 
             p_copia["lote_minimo"] = lote_minimo
+            p_copia["origem_lote"] = origem_lote
             p_copia["meses_cobertura_atual"] = meses_cobertura_atual
             p_copia["meses_cobertura_lote"] = meses_cobertura_lote
 
             risco_encalhe = False
-            if meses_cobertura_lote > 24 and tendencia == "Desacelerando 📉":
+            if lote_minimo > 0 and meses_cobertura_lote > 24 and tendencia == "Desacelerando 📉":
                 risco_encalhe = True
                 tot_risco_encalhe += 1
 
             p_copia["risco_encalhe"] = risco_encalhe
 
+            # Detalhamento completo do cálculo para o Modal de Diagnóstico
+            p_copia["detalhes_calculo"] = {
+                "sku": sku,
+                "nome": p.get("nome", ""),
+                "familia": fam_nome,
+                "classe_abc": classe_abc,
+                "rank_familia": idx + 1,
+                "total_produtos_familia": n_prods,
+                "faturamento_prod_30d": round(val_p, 2),
+                "faturamento_familia_30d": round(tot_val_fam, 2),
+                "share_familia_pct": round((val_p / tot_val_fam * 100) if tot_val_fam > 0 else 0.0, 2),
+                "pct_acumulado_familia": round(pct_acum * 100, 1),
+                "vendas_diretas_30d": float(p.get("vendas_geral_30d", 0)),
+                "remessas_cd_sp_30d": float(p.get("remessas_cd_sp_30d", 0)),
+                "demanda_total_matriz_30d": round(v30, 1),
+                "v90_total": round(v90, 1),
+                "media_mensal_90d": round(v_media_mensal_90, 1),
+                "variacao_tendencia_pct": variacao_pct,
+                "estoque_matriz": est_matriz,
+                "lote_minimo": lote_minimo,
+                "origem_lote": origem_lote,
+                "meses_cobertura_atual": meses_cobertura_atual,
+                "meses_cobertura_lote": meses_cobertura_lote
+            }
+
             produtos_analisados.append(p_copia)
 
-    # 5. Agrupamento de Grades (Vestuário e Ícones) para Ruptura Isolada
+    # 7. Agrupamento de Grades (Vestuário e Ícones) para Ruptura Isolada
     modelos_grade: Dict[str, List[Dict[str, Any]]] = {}
     for p in produtos_analisados:
         base, tam = extrair_base_e_tamanho(p.get("nome", ""))
@@ -155,7 +285,6 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
         tam_zerados = [i for i in itens if i.get("matriz", 0) <= 2]
 
         if len(tam_zerados) > 0 and len(tam_com_estoque) > 0:
-            # Temos Ruptura Isolada!
             tamanhos_zerados_str = ", ".join(i.get("tamanho_grade") for i in tam_zerados)
             for i in itens:
                 i["status_grade"] = f"⚠️ Ruptura Isolada ({tamanhos_zerados_str})"
@@ -180,7 +309,7 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
     for p in produtos_analisados:
         if "acao_recomendada" not in p:
             st_matriz = p.get("matriz", 0)
-            v30 = p.get("vendas_geral_30d", 0)
+            v30 = p.get("_demanda_30d", 0)
             abc = p.get("classe_abc_familia", "C")
             risco = p.get("risco_encalhe", False)
 
@@ -188,7 +317,7 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
                 p["acao_recomendada"] = "🟢 Prioridade de Produção/Compra (Classe A/B)"
                 p["status_grade"] = "🚨 Ruptura / Estoque Baixo"
             elif risco:
-                p["acao_recomendada"] = "🔴 Não Repor em Lote Padrão (Cauda Longa / Risco Encalhe)"
+                p["acao_recomendada"] = "🔴 Não Repor em Lote Padrão (Risco Encalhe)"
                 p["status_grade"] = "⚠️ Desacelerando"
             elif st_matriz > 50 and v30 < 5:
                 p["acao_recomendada"] = "🟡 Excesso / Baixa Rotação (Sem Ação)"

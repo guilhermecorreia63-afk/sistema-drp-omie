@@ -1260,6 +1260,23 @@
 
     <!-- Modal Alertas por E-mail & Agendamento -->
     <div id="modal-email-alert" class="modal-backdrop">
+
+    <!-- Modal Diagnóstico de Inteligência & Ajuste de Lote Mínimo -->
+    <div id="modal-detalhes-inteligencia" class="modal-backdrop">
+        <div class="modal-box modal-lg">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-microscope"></i> Diagnóstico de Inteligência & Histórico Matriz</h3>
+                <button class="modal-close" onclick="document.getElementById('modal-detalhes-inteligencia').style.display='none'">&times;</button>
+            </div>
+            <div class="modal-body" id="body-detalhes-inteligencia">
+                <!-- Preenchido via JS -->
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.8rem; color: var(--text-muted);">Demanda Matriz = Vendas Diretas + Remessas para CD_SP</span>
+                <button class="btn btn-secondary" onclick="document.getElementById('modal-detalhes-inteligencia').style.display='none'">Fechar</button>
+            </div>
+        </div>
+    </div>
         <div class="modal-box">
             <div class="modal-header">
                 <h3><i class="fa-solid fa-envelope"></i> Alertas por E-mail & Agendamento Automático</h3>

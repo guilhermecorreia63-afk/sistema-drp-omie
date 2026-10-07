@@ -97,6 +97,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_remessas_alterar()
         elif url_path == '/api/remessas/devolver':
             self.handle_api_remessas_devolver()
+        elif url_path in ['/api/salvar_lote_manual', '/api/drp/salvar_lote_manual']:
+            self.handle_api_salvar_lote_manual()
         elif url_path == '/api/depara':
             self.handle_api_depara_save()
         elif url_path in ['/api/depositos/salvar', '/api/depositos']:
@@ -648,6 +650,20 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                     prods = json.load(f)
             resultado = inteligencia_matriz.calcular_inteligencia_matriz(prods)
             self._send_json({"success": True, "data": resultado})
+        except Exception as e:
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_salvar_lote_manual(self):
+        try:
+            body = self._read_body()
+            sku = str(body.get('sku') or '').strip()
+            lote = int(body.get('lote_minimo') or 0)
+            if not sku:
+                self._send_json({"success": False, "message": "SKU obrigatório"}, status=400)
+                return
+            import inteligencia_matriz
+            ok = inteligencia_matriz.salvar_lote_manual(sku, lote)
+            self._send_json({"success": ok, "message": f"Lote mínimo do SKU {sku} atualizado para {lote} un."})
         except Exception as e:
             self._send_json({"success": False, "message": str(e)}, status=500)
 

@@ -4184,10 +4184,11 @@ function renderTabelaInteligenciaMatriz(lista) {
 
         // Badge Cobertura Lote
         let cobText = `${p.meses_cobertura_lote || 0} meses`;
-        if (p.meses_cobertura_lote >= 99) cobText = 'Sem vendas recentes';
+        if (p.lote_minimo === 0) cobText = 'Sem Lote Mínimo';
+        else if (p.meses_cobertura_lote >= 99) cobText = 'Sem vendas recentes';
         let cobColor = '#94a3b8';
         if (p.risco_encalhe) cobColor = '#f87171';
-        else if (p.meses_cobertura_lote < 6) cobColor = '#34d399';
+        else if (p.lote_minimo > 0 && p.meses_cobertura_lote < 6) cobColor = '#34d399';
 
         // Badge Ação Recomendada
         let acaoBadge = `<span style="font-size: 0.85rem; color: #cbd5e1;">${p.acao_recomendada || '-'}</span>`;
@@ -4198,6 +4199,10 @@ function renderTabelaInteligenciaMatriz(lista) {
         } else if ((p.acao_recomendada || '').includes('Aguardar')) {
             acaoBadge = `<span class="badge badge-alerta" style="font-size: 0.82rem; padding: 6px 12px;">${p.acao_recomendada}</span>`;
         }
+
+        tr.style.cursor = 'pointer';
+        tr.title = 'Clique para ver o diagnóstico completo e ajustar o lote mínimo';
+        tr.onclick = () => abrirModalDetalhesInteligencia(p.sku);
 
         tr.innerHTML = `
             <td>
@@ -4213,11 +4218,111 @@ function renderTabelaInteligenciaMatriz(lista) {
             <td style="text-align:center;">${abcBadge}</td>
             <td style="text-align:center;">${stGradeBadge}</td>
             <td style="text-align:center;"><strong style="font-size:0.85rem;">${p.tendencia_vendas || 'Estável ➡️'}</strong></td>
-            <td style="text-align:center; color: ${cobColor}; font-weight:600;">${cobText}<br><small style="color:var(--text-muted);">(Lote Mín: ${p.lote_minimo || 100})</small></td>
+            <td style="text-align:center; color: ${cobColor}; font-weight:600;">${cobText}<br><small style="color:var(--text-muted);">(Lote Mín: ${p.lote_minimo || 'N/A'})</small></td>
             <td style="text-align:center;">${acaoBadge}</td>
         `;
         tbody.appendChild(tr);
     });
+}
+
+function abrirModalDetalhesInteligencia(sku) {
+    const p = stateInteligenciaMatriz.produtos.find(x => String(x.sku) === String(sku));
+    if (!p) return;
+
+    const modal = document.getElementById('modal-detalhes-inteligencia');
+    const body = document.getElementById('body-detalhes-inteligencia');
+    if (!modal || !body) return;
+
+    const d = p.detalhes_calculo || {};
+
+    let html = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">
+            <div>
+                <h4 style="margin:0; font-size:1.15rem; color:#34d399;">${p.sku} — ${p.nome || p.descricao}</h4>
+                <p style="margin:4px 0 0 0; font-size:0.85rem; color:var(--text-muted);">
+                    Família: <strong>${p.familia || 'OUTROS'}</strong> | Marca: <strong>${p.marca || 'SHALOM'}</strong>
+                </p>
+            </div>
+            <div style="text-align: right;">
+                <span class="badge" style="font-size: 0.9rem; padding: 6px 12px; background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.4);">
+                    Classe ${p.classe_abc_familia} (Família)
+                </span>
+            </div>
+        </div>
+
+        <!-- Bloco 1: Curva ABC por Família -->
+        <div class="card mb-3" style="background: rgba(15, 23, 42, 0.6); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 12px;">
+            <h5 style="margin:0 0 10px 0; color:#fbbf24; display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-chart-pie"></i> 1. Diagnóstico da Classe ABC na Família "${d.familia || ''}"
+            </h5>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 0.88rem;">
+                <div>• Posicionamento: <strong>${d.rank_familia}º de ${d.total_produtos_familia} itens</strong></div>
+                <div>• Faturamento (30d): <strong>R$ ${(d.faturamento_prod_30d || 0).toFixed(2)}</strong></div>
+                <div>• Share da Família: <strong>${d.share_familia_pct || 0}%</strong> do volume</div>
+                <div>• % Acumulado: <strong>${d.pct_acumulado_familia || 0}%</strong> (Corte Classe A <= 80%)</div>
+            </div>
+        </div>
+
+        <!-- Bloco 2: Histórico e Velocidade de Vendas -->
+        <div class="card mb-3" style="background: rgba(15, 23, 42, 0.6); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 12px;">
+            <h5 style="margin:0 0 10px 0; color:#60a5fa; display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-chart-line"></i> 2. Demanda Total Matriz & Histórico de Tendência
+            </h5>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 0.88rem;">
+                <div>• Vendas Diretas Matriz (30d): <strong>${d.vendas_diretas_30d || 0} un</strong></div>
+                <div>• Remessas p/ CD_SP (30d): <strong>+${d.remessas_cd_sp_30d || 0} un</strong></div>
+                <div>• Demanda Total Matriz: <strong>${d.demanda_total_matriz_30d || 0} un/mês</strong></div>
+                <div>• Média Mensal (90d): <strong>${d.media_mensal_90d || 0} un/mês</strong></div>
+                <div>• Variação Velocidade: <strong>${d.variacao_tendencia_pct > 0 ? '+' : ''}${d.variacao_tendencia_pct || 0}%</strong></div>
+                <div>• Tendência: <strong>${p.tendencia_vendas || 'Estável'}</strong></div>
+            </div>
+        </div>
+
+        <!-- Bloco 3: Ajuste Manual de Lote Mínimo -->
+        <div class="card mb-3" style="background: rgba(30, 41, 59, 0.7); padding: 15px; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.3);">
+            <h5 style="margin:0 0 10px 0; color:#f59e0b; display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-sliders"></i> 3. Lote Mínimo & Análise de Encalhe
+            </h5>
+            <p style="margin:0 0 10px 0; font-size:0.82rem; color:var(--text-muted);">
+                Regra atual: <strong>${d.origem_lote || 'Padrão'}</strong> | Estoque Matriz: <strong>${d.estoque_matriz || 0} un</strong> (${d.meses_cobertura_atual || 0} meses de cobertura atual).
+            </p>
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                <label style="font-size: 0.88rem; font-weight: 600; color: #f8fafc;">Alterar Lote Mínimo Manualmente:</label>
+                <input type="number" id="input-lote-manual-${p.sku}" class="form-control" style="width: 120px;" value="${d.lote_minimo || 0}" min="0" step="10">
+                <button class="btn btn-primary btn-sm" onclick="salvarLoteManualJs('${p.sku}')">
+                    <i class="fa-solid fa-floppy-disk"></i> Salvar Lote
+                </button>
+            </div>
+        </div>
+    `;
+
+    body.innerHTML = html;
+    modal.style.display = 'flex';
+}
+
+async function salvarLoteManualJs(sku) {
+    const input = document.getElementById(`input-lote-manual-${sku}`);
+    if (!input) return;
+    const novoLote = parseInt(input.value) || 0;
+
+    try {
+        const resp = await fetch('/api/drp/salvar_lote_manual', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sku: sku, lote_minimo: novoLote })
+        });
+        const res = await resp.json();
+        if (resp.ok && res.success) {
+            alert(`✅ Lote Mínimo do SKU ${sku} salvo com sucesso (${novoLote} un)!`);
+            document.getElementById('modal-detalhes-inteligencia').style.display = 'none';
+            carregarInteligenciaMatriz(true);
+        } else {
+            alert(`❌ Erro ao salvar lote mínimo: ${res.message || 'Falha'}`);
+        }
+    } catch (e) {
+        console.error('Erro ao salvar lote manual:', e);
+        alert('Erro de conexão ao salvar lote mínimo.');
+    }
 }
 
 
