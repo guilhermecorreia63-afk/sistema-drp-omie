@@ -1960,11 +1960,14 @@ function renderTabelaRemessas(remessas, statusMap = {}) {
                 const resp = await fetch('/api/remessas/salvar_status_transito', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ remessa_id: remessaId, status_transito: novoSt })
+                    body: JSON.stringify({ remessa_id: remessaId, nCodRem: codRem, cNumeroRemessa: numRem, status_transito: novoSt })
                 });
                 const resData = await resp.json();
                 if (resData.success) {
                     statusMap[remessaId] = novoSt;
+                    statusMap[String(codRem)] = novoSt;
+                    statusMap[String(numRem)] = novoSt;
+                    r.status_transito = novoSt;
                     await atualizarEmTransitoProdutos(remessasGuarulhos, statusMap);
                 } else {
                     alert('Erro ao salvar status de trânsito.');
@@ -2030,10 +2033,14 @@ async function consultarRemessaDetalhes(remessaObj) {
                     remessaObj.itens = itens;
                     remessaObj.produtos = itens;
                     // Notifica servidor para salvar itens no banco de dados
+                    const payloadSave = { remessa_id: String(c.cNumeroRemessa || c.nCodRem), nCodRem: c.nCodRem, cNumeroRemessa: c.cNumeroRemessa, itens: itens };
+                    if (remessaObj.status_transito) {
+                        payloadSave.status_transito = remessaObj.status_transito;
+                    }
                     fetch('/api/remessas/salvar_status_transito', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ remessa_id: String(c.cNumeroRemessa || c.nCodRem), status_transito: remessaObj.status_transito || 'PENDENTE', itens: itens })
+                        body: JSON.stringify(payloadSave)
                     }).catch(() => {});
                 }
             }

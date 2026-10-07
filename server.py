@@ -588,9 +588,14 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 rem_db = db.obter_remessas_db()
                 for r in rem_db:
                     c = r.get('cabec') or {}
-                    rid = str(c.get('nCodRem') or c.get('cNumeroRemessa') or r.get('remessa_id') or '')
-                    if rid and r.get('status_transito'):
-                        status_map[rid] = r.get('status_transito')
+                    st = r.get('status_transito')
+                    if st:
+                        cod_rem = str(c.get('nCodRem') or r.get('codigo_remessa') or r.get('remessa_id') or '').strip()
+                        num_rem = str(c.get('cNumeroRemessa') or r.get('numero_remessa') or '').strip()
+                        rid = str(r.get('remessa_id') or '').strip()
+                        for k in [cod_rem, num_rem, rid]:
+                            if k and k.lower() not in ('none', 'null', 'undefined', '0'):
+                                status_map[k] = st
             except Exception:
                 pass
 
@@ -599,6 +604,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def handle_api_remessas_status_transito_save(self):
         body = self._read_body()
         remessa_id = str(body.get('remessa_id') or body.get('nCodRem') or body.get('cNumeroRemessa') or '').strip()
+        cod_rem = str(body.get('nCodRem') or body.get('codigo_remessa') or '').strip()
+        num_rem = str(body.get('cNumeroRemessa') or body.get('numero_remessa') or '').strip()
         novo_status = body.get('status_transito', 'PENDENTE')
         
         json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'status_remessas.json')
@@ -610,11 +617,13 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             except Exception:
                 status_map = {}
                 
-        if remessa_id:
-            status_map[remessa_id] = novo_status
+        if remessa_id or cod_rem or num_rem:
+            for k in [remessa_id, cod_rem, num_rem]:
+                if k and k.lower() not in ('none', 'null', 'undefined', '0'):
+                    status_map[k] = novo_status
             if db:
                 try:
-                    db.atualizar_status_transito_db(remessa_id, novo_status)
+                    db.atualizar_status_transito_db(remessa_id, novo_status, cod_rem=cod_rem, num_rem=num_rem)
                 except Exception as ex:
                     print(f"[API SERVER] Erro ao atualizar status no banco: {ex}")
             

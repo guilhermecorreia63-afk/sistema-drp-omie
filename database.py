@@ -402,19 +402,24 @@ def salvar_remessas_db(remessas_lista: list[dict]):
             except Exception as ex:
                 print(f"[DB] Erro ao salvar remessa {remessa_id}: {ex}")
 
-def atualizar_status_transito_db(remessa_id: str, status_transito: str):
+def atualizar_status_transito_db(remessa_id: str, status_transito: str, cod_rem: str = "", num_rem: str = ""):
     try:
-        executar_query(
-            "UPDATE drp_remessas SET status_transito = ?, ultima_atualizacao = datetime('now') WHERE remessa_id = ?",
-            (status_transito, str(remessa_id)),
-            is_select=False
-        )
-        # Se não existia ainda na tabela, insere registro minimo
-        executar_query(
-            "INSERT OR IGNORE INTO drp_remessas (remessa_id, status_transito, ultima_atualizacao) VALUES (?, ?, datetime('now'))",
-            (str(remessa_id), status_transito),
-            is_select=False
-        )
+        keys = set(filter(None, [str(remessa_id).strip(), str(cod_rem).strip(), str(num_rem).strip()]))
+        for k in keys:
+            if k and k.lower() not in ('none', 'null', 'undefined', '0'):
+                executar_query(
+                    "UPDATE drp_remessas SET status_transito = ?, ultima_atualizacao = datetime('now') WHERE remessa_id = ? OR numero_remessa = ? OR codigo_remessa = ?",
+                    (status_transito, k, k, k),
+                    is_select=False
+                )
+        r_primary = str(cod_rem or remessa_id).strip()
+        n_primary = str(num_rem or remessa_id).strip()
+        if r_primary and r_primary.lower() not in ('none', 'null', 'undefined', '0'):
+            executar_query(
+                "INSERT OR IGNORE INTO drp_remessas (remessa_id, codigo_remessa, numero_remessa, status_transito, ultima_atualizacao) VALUES (?, ?, ?, ?, datetime('now'))",
+                (r_primary, r_primary, n_primary, status_transito),
+                is_select=False
+            )
     except Exception as e:
         print(f"[DB] Erro ao atualizar status de transito {remessa_id}: {e}")
 
