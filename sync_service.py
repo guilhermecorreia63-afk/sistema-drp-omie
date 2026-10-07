@@ -48,7 +48,7 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
     # 1. Puxar produtos ativos do catálogo da Omie ERP (Matriz)
     if client_matriz:
         try:
-            prods_matriz = client_matriz.listar_paginado("geral/produtos/", "ListarProdutos", "produto_servico_cadastro", param_base={"inativo": "N"}, max_paginas=30)
+            prods_matriz = client_matriz.listar_paginado("geral/produtos/", "ListarProdutos", "produto_servico_cadastro", param_base={"inativo": "N"}, max_paginas=100)
             print(f"[SYNC] Matriz retornou {len(prods_matriz)} produtos ativos do Omie ERP.")
             for pm in prods_matriz:
                 sku = str(pm.get("codigo", "")).strip()
@@ -118,11 +118,28 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
                     saldo_res = int(item.get("nReservado") if item.get("nReservado") is not None else item.get("reservado", 0))
                     saldo_fis = int(item.get("nFisico") if item.get("nFisico") is not None else (saldo_disp + saldo_res))
                     p = produtos_by_sku.get(sku)
-                    if p:
-                        p["matriz"] = saldo_fis
-                        p["matriz_reservado"] = saldo_res
-                        if cod_prod:
-                            p["id_produto"] = cod_prod
+                    if not p:
+                        p = {
+                            "id_produto": cod_prod,
+                            "sku": sku,
+                            "nome": item.get("cDescricao", sku),
+                            "marca": "Edições Shalom",
+                            "familia": "GERAL",
+                            "cd_sp": 0,
+                            "matriz": 0,
+                            "peso_kg": 0.1,
+                            "valor_unitario": item.get("nPrecoUnitario", 0),
+                            "vendas_sul_sudeste_30d": 0,
+                            "vendas_geral_30d": 0,
+                            "ativo": True,
+                            "em_producao": False,
+                            "ultima_sincronizacao": agora_str
+                        }
+                        produtos_by_sku[sku] = p
+                    p["matriz"] = saldo_fis
+                    p["matriz_reservado"] = saldo_res
+                    if cod_prod:
+                        p["id_produto"] = cod_prod
                 pag += 1
             print(f"[SYNC] Saldo de estoque da Matriz atualizado com sucesso!")
         except Exception as e:
@@ -154,11 +171,28 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
                     saldo_res = int(item.get("nReservado") if item.get("nReservado") is not None else item.get("reservado", 0))
                     saldo_fis = int(item.get("nFisico") if item.get("nFisico") is not None else (saldo_disp + saldo_res))
                     p = produtos_by_sku.get(sku)
-                    if p:
-                        p["cd_sp"] = saldo_fis
-                        p["cd_sp_reservado"] = saldo_res
-                        if cod_prod:
-                            p["id_produto"] = cod_prod
+                    if not p:
+                        p = {
+                            "id_produto": cod_prod,
+                            "sku": sku,
+                            "nome": item.get("cDescricao", sku),
+                            "marca": "Edições Shalom",
+                            "familia": "GERAL",
+                            "cd_sp": 0,
+                            "matriz": 0,
+                            "peso_kg": 0.1,
+                            "valor_unitario": item.get("nPrecoUnitario", 0),
+                            "vendas_sul_sudeste_30d": 0,
+                            "vendas_geral_30d": 0,
+                            "ativo": True,
+                            "em_producao": False,
+                            "ultima_sincronizacao": agora_str
+                        }
+                        produtos_by_sku[sku] = p
+                    p["cd_sp"] = saldo_fis
+                    p["cd_sp_reservado"] = saldo_res
+                    if cod_prod:
+                        p["id_produto"] = cod_prod
                 pag += 1
             print(f"[SYNC] Saldo de estoque do CD_SP consultado.")
         except Exception as e:
