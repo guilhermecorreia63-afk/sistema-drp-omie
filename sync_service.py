@@ -318,6 +318,7 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
     lista_final = list(produtos_by_sku.values())
 
     # 4. Gravar lista atualizada em data/produtos_turso.json
+    caminho_json = os.path.join("data", "produtos_turso.json")
     os.makedirs("data", exist_ok=True)
     try:
         with open(caminho_json, "w", encoding="utf-8") as f:
