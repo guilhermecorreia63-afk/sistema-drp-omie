@@ -4460,5 +4460,49 @@ async function salvarLoteManualJs(sku) {
         alert('Erro de conexão ao salvar lote mínimo.');
     }
 }
+async function sincronizarRequisicoesPedidos() {
+    const btnMatriz = document.getElementById('btn-sync-requisicoes-matriz');
+    const btnTop = document.getElementById('btn-sync-requisicoes-top');
+    const btnAba7 = document.getElementById('btn-sync-reqs-aba7');
 
+    const origMatrizHtml = btnMatriz ? btnMatriz.innerHTML : '';
+    const origTopHtml = btnTop ? btnTop.innerHTML : '';
+    const origAba7Html = btnAba7 ? btnAba7.innerHTML : '';
 
+    if (btnMatriz) btnMatriz.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Atualizando...`;
+    if (btnTop) btnTop.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Sincronizando...`;
+    if (btnAba7) btnAba7.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Atualizando...`;
+
+    try {
+        const resp = await fetch('/api/sync_requisicoes', { method: 'POST' });
+        const data = await resp.json();
+
+        if (resp.ok && data.success) {
+            let respProds = await fetch('/api/produtos?_t=' + Date.now());
+            if (respProds.ok) {
+                state.produtos = await respProds.json();
+            }
+
+            if (typeof carregarProdutos === 'function') {
+                if (typeof renderTabelaMatriz === 'function') renderTabelaMatriz();
+                else if (typeof aplicarFiltrosMatriz === 'function') aplicarFiltrosMatriz();
+            }
+
+            if (typeof carregarInteligenciaMatriz === 'function') {
+                carregarInteligenciaMatriz(true);
+            }
+
+            alert(`✅ Sucesso!\n${data.message || 'Requisições e Pedidos de Compra atualizados diretamente da Omie ERP.'}`);
+            window.location.reload();
+        } else {
+            alert(`❌ Erro ao sincronizar requisições: ${data.message || 'Falha na resposta do servidor'}`);
+        }
+    } catch (e) {
+        console.error('Erro ao sincronizar requisições:', e);
+        alert('❌ Erro de conexão ao tentar atualizar requisições e pedidos de compra da Omie.');
+    } finally {
+        if (btnMatriz) btnMatriz.innerHTML = origMatrizHtml;
+        if (btnTop) btnTop.innerHTML = origTopHtml;
+        if (btnAba7) btnAba7.innerHTML = origAba7Html;
+    }
+}

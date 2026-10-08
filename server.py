@@ -70,6 +70,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_inteligencia_matriz()
         elif url_path in ['/data/produtos_turso.json', '/api/produtos', '/api/drp/produtos']:
             self.handle_api_produtos_turso_json()
+        elif url_path in ['/api/sync_requisicoes', '/api/sync/requisicoes']:
+            self.handle_api_sync_requisicoes()
         else:
             super().do_GET()
 
@@ -77,6 +79,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         url_path = self.path.split('?')[0].rstrip('/')
         if url_path == '/api/cron_sync':
             self.handle_api_cron_sync()
+        elif url_path in ['/api/sync_requisicoes', '/api/sync/requisicoes']:
+            self.handle_api_sync_requisicoes()
         elif url_path == '/api/email':
             self.handle_api_email()
         elif url_path == '/api/sync':
@@ -832,6 +836,22 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Content-Type', 'application/json; charset=utf-8')
         self.end_headers()
         self.wfile.write(json.dumps(response_payload, ensure_ascii=False).encode('utf-8'))
+
+    def handle_api_sync_requisicoes(self):
+        print("[API SERVER] Sincronizando Requisições e Pedidos de Compra com Omie ERP...")
+        try:
+            import sync_service
+            ok, msg, total_prods = sync_service.sincronizar_dados_seletivo("TUDO")
+            if db:
+                db.carregar_produtos_cache(force_refresh=True)
+            self._send_json({
+                "success": ok,
+                "message": f"Requisições e Pedidos de Compra sincronizados com a Omie ERP! ({total_prods} produtos verificados).",
+                "count": total_prods
+            })
+        except Exception as e:
+            print(f"[API SERVER] Erro ao sincronizar requisições: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
 
     def handle_api_requisicao_compra(self):
         content_length = int(self.headers.get('Content-Length', 0))

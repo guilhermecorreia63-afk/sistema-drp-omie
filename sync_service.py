@@ -212,21 +212,36 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
             res_reqs = client_matriz.executar("produtos/requisicaocompra/", "PesquisarReq", [{"pagina": 1, "registros_por_pagina": 100}])
             reqs = res_reqs.get("requisicaoCadastro", [])
             for r in reqs:
-                cab_req = r.get("cabecalhoReq", {})
-                dt_prev_req = cab_req.get("dtSugestao", "")
-                cod_req = r.get("cCodIntReq") or r.get("nCodReq") or ""
+                dt_prev_req = r.get("dtSugestao", "")
+                cod_req = r.get("codIntReqCompra") or r.get("codReqCompra") or ""
                 for it in r.get("ItensReqCompra", []):
                     cod_p = it.get("codProd")
                     qtd_p = int(it.get("qtde", 0) or 0)
                     if cod_p:
                         cod_p_int = int(cod_p)
-                        if cod_p_int not in prods_em_compra_map:
-                            prods_em_compra_map[cod_p_int] = {"qtd": qtd_p, "data_previsao": dt_prev_req, "numero_pedido": str(cod_req)}
+                        prods_em_compra_map[cod_p_int] = {"qtd": qtd_p, "data_previsao": dt_prev_req, "numero_pedido": str(cod_req)}
             print(f"[SYNC] Encontrados {len(prods_em_compra_map)} produtos em Requisições de Compra ativas no Omie.")
         except Exception as e_req:
             print(f"[SYNC] Aviso ao consultar Requisições de Compra no Omie: {e_req}")
 
-    # Atualiza 'em_producao' e reconhece Entrada de Estoque (aumento de saldo)
+        # Também consulta Pedidos de Compra ativos no Omie ERP (PesquisarPedCompra)
+        try:
+            res_ped = client_matriz.executar("produtos/pedidocompra/", "PesquisarPedCompra", [{"nPagina": 1}])
+            peds = res_ped.get("pedidosCadastro", []) or res_ped.get("pedidoCadastro", [])
+            for p_item in peds:
+                cab = p_item.get("cabecalho", {}) or p_item.get("pedido", {})
+                dt_prev = cab.get("dPrevisao") or cab.get("dtPrevisao") or ""
+                num_ped = str(cab.get("nCodPed") or cab.get("cCodIntPed") or "")
+                for it in p_item.get("produtos", []) or p_item.get("itens", []):
+                    cod_p = it.get("nCodProd") or it.get("codProd")
+                    qtd_p = int(it.get("nQtde", 0) or it.get("qtde", 0) or 0)
+                    if cod_p:
+                        cod_p_int = int(cod_p)
+                        prods_em_compra_map[cod_p_int] = {"qtd": qtd_p, "data_previsao": dt_prev, "numero_pedido": num_ped}
+        except Exception as e_ped:
+            print(f"[SYNC] Aviso ao consultar Pedidos de Compra no Omie: {e_ped}")
+
+    # Atualiza 'em_producao' e reconhece Entrada de Estoque ou exclusão de requisição na Omie
     prods_turso_db = {}
     if db:
         try:
@@ -243,19 +258,28 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
         matriz_anterior = int(p.get("matriz_anterior", p.get("matriz", 0)))
         matriz_atual = int(p.get("matriz", 0))
 
-        # Detecta se o item estava marcado em produção no Turso DB
-        was_in_prod = False
-        if sku in prods_turso_db:
-            db_info = prods_turso_db[sku]
-            if isinstance(db_info, dict):
-                was_in_prod = bool(db_info.get("em_producao", False))
-            else:
-                was_in_prod = bool(db_info)
+        match_info = prods_em_compra_map.get(sku) or prods_em_compra_map.get(id_prod)
 
-        # 1. Se o saldo em estoque AUMENTOU ou o estoque físico foi reabastecido (matriz_atual > 0 e estava em produção sem pedido pendente de entrega)
-        if (matriz_atual > matriz_anterior and matriz_anterior >= 0) or (was_in_prod and matriz_atual > 0 and not p.get("numero_pedido")):
+        # 1. Se possui Requisição ou Pedido de Compra ATIVO na Omie ERP -> Marca em Produção!
+        if match_info:
+            p["em_producao"] = True
+            p["qtd_producao"] = match_info.get("qtd", 0)
+            p["quantidade_producao"] = match_info.get("qtd", 0)
+            if match_info.get("data_previsao"):
+                p["data_previsao"] = match_info["data_previsao"]
+            if match_info.get("numero_pedido"):
+                p["numero_pedido"] = match_info["numero_pedido"]
+            if db:
+                try:
+                    db.salvar_status_producao(sku, True, data_previsao=p.get("data_previsao", ""), quantidade_producao=p.get("qtd_producao", 0), numero_pedido=p.get("numero_pedido", ""))
+                except Exception:
+                    pass
+
+        # 2. Se o saldo em estoque AUMENTOU ou o estoque foi reabastecido
+        elif (matriz_atual > matriz_anterior and matriz_anterior >= 0) or (matriz_atual > 0 and not p.get("numero_pedido")):
             p["em_producao"] = False
             p["qtd_producao"] = 0
+            p["quantidade_producao"] = 0
             p["data_previsao"] = ""
             p["numero_pedido"] = ""
             p["fornecedor"] = ""
@@ -264,32 +288,46 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
                     db.salvar_status_producao(sku, False, data_previsao="", quantidade_producao=0, numero_pedido="", fornecedor="")
                 except Exception:
                     pass
-            print(f"[SYNC ENTRADA] Saldo do SKU {sku} ({p.get('nome')}) atualizado para {matriz_atual}. Tag 'em_producao' removida automaticamente!")
 
-        # 2. Se o usuário definiu o status manualmente no Turso DB, RESPEITA a escolha do usuário!
+        # 3. Se o usuário definiu o status manualmente no Turso DB e possui previsão/pedido ativo
         elif sku in prods_turso_db:
             db_info = prods_turso_db[sku]
             if isinstance(db_info, dict):
-                p["em_producao"] = bool(db_info.get("em_producao", False))
-                p["data_previsao"] = db_info.get("data_previsao", "") if p["em_producao"] else ""
-                p["numero_pedido"] = db_info.get("numero_pedido", "") if p["em_producao"] else ""
-                p["fornecedor"] = db_info.get("fornecedor", "") if p["em_producao"] else ""
-                p["quantidade_producao"] = db_info.get("quantidade_producao", 0) if p["em_producao"] else 0
+                em_prod_db = bool(db_info.get("em_producao", False))
+                # Se não possui requisição ativa na Omie e não tem pedido/previsão válida -> limpa!
+                if em_prod_db and not db_info.get("data_previsao") and not db_info.get("numero_pedido"):
+                    p["em_producao"] = False
+                    p["data_previsao"] = ""
+                    p["numero_pedido"] = ""
+                    p["fornecedor"] = ""
+                    p["quantidade_producao"] = 0
+                    p["qtd_producao"] = 0
+                    if db:
+                        try:
+                            db.salvar_status_producao(sku, False, data_previsao="", quantidade_producao=0, numero_pedido="", fornecedor="")
+                        except Exception:
+                            pass
+                else:
+                    p["em_producao"] = em_prod_db
+                    p["data_previsao"] = db_info.get("data_previsao", "") if em_prod_db else ""
+                    p["numero_pedido"] = db_info.get("numero_pedido", "") if em_prod_db else ""
+                    p["fornecedor"] = db_info.get("fornecedor", "") if em_prod_db else ""
+                    p["quantidade_producao"] = db_info.get("quantidade_producao", 0) if em_prod_db else 0
+                    p["qtd_producao"] = p["quantidade_producao"]
             else:
                 p["em_producao"] = bool(db_info)
 
-        # 3. Caso não haja definição manual salva, verifica se o item está em requisição de compra ativa
-        elif sku in prods_em_compra_map or id_prod in prods_em_compra_map:
-            match_info = prods_em_compra_map.get(sku) or prods_em_compra_map.get(id_prod)
-            p["em_producao"] = True
-            p["qtd_producao"] = match_info.get("qtd", 0)
-            if match_info.get("data_previsao"):
-                p["data_previsao"] = match_info["data_previsao"]
-            if match_info.get("numero_pedido"):
-                p["numero_pedido"] = match_info["numero_pedido"]
+        # 4. Requisição excluída ou cancelada na Omie ERP -> Limpa automaticamente a tag em_producao!
+        else:
+            p["em_producao"] = False
+            p["qtd_producao"] = 0
+            p["quantidade_producao"] = 0
+            p["data_previsao"] = ""
+            p["numero_pedido"] = ""
+            p["fornecedor"] = ""
             if db:
                 try:
-                    db.salvar_status_producao(sku, True, data_previsao=p.get("data_previsao", ""), quantidade_producao=p.get("qtd_producao", 0), numero_pedido=p.get("numero_pedido", ""))
+                    db.salvar_status_producao(sku, False, data_previsao="", quantidade_producao=0, numero_pedido="", fornecedor="")
                 except Exception:
                     pass
 
