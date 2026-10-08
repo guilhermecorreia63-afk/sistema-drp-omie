@@ -2619,7 +2619,11 @@ function abrirModalRequisicaoCompra(itensExclusivos = null) {
     let produtosCompra = [];
     if (itensExclusivos && itensExclusivos.length > 0) {
         produtosCompra = itensExclusivos;
+    } else if (state.skusChecadosMatriz && state.skusChecadosMatriz.size > 0) {
+        // Se o usuário selecionou checkboxes específicas na Aba 2, filtrar SOMENTE os produtos selecionados!
+        produtosCompra = state.produtos.filter(p => state.skusChecadosMatriz.has(p.sku));
     } else {
+        // Se nenhum checkbox estiver marcado, sugere os produtos em Ruptura / Alerta
         produtosCompra = state.produtos.filter(p => {
             if (p.ativo === false || state.blacklist.has(p.sku)) return false;
             const fam = (p.familia || 'GERAL').toUpperCase();
@@ -2630,7 +2634,6 @@ function abrirModalRequisicaoCompra(itensExclusivos = null) {
             const estAlvo = calcularEstoqueAlvo(vendas, state.periodoDias, state.abastecimentoDias, lt);
             const nec = Math.max(0, Math.ceil(estAlvo - p.matriz));
 
-            if (state.skusChecadosMatriz.has(p.sku)) return true;
             return nec > 0 && (p.matriz <= 0 || p.matriz / (estAlvo || 1) < 0.8);
         }).slice(0, 50);
     }
