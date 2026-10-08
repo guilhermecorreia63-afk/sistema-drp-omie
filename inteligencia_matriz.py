@@ -283,9 +283,17 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
 
             p_copia["tendencia_vendas"] = tendencia
 
-            # Cobertura c/ Lote Mínimo
+            # Cobertura c/ Lote Mínimo baseada no Estoque DISPONÍVEL (Saldo Livre)
             v30_diaria = max(0.033, m3 / 30.0)
-            est_matriz = p.get("matriz", 0)
+            est_matriz_bruto = float(p.get("matriz", 0) or 0)
+            est_matriz_res = float(p.get("matriz_reservado", 0) or 0)
+            est_matriz_disp = p.get("matriz_disponivel")
+            if est_matriz_disp is None:
+                est_matriz_disp = max(0.0, est_matriz_bruto - est_matriz_res)
+            
+            est_matriz = int(est_matriz_disp) # Saldo livre/disponível
+            p_copia["matriz"] = est_matriz # Usar saldo disponível no card e tabela
+            
             meses_cobertura_atual = round((est_matriz / (v30_diaria * 30.0)), 1) if m3 > 0 else (99.0 if est_matriz > 0 else 0.0)
             
             if lote_minimo > 0:

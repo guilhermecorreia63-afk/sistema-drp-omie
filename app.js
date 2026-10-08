@@ -4332,7 +4332,7 @@ function abrirModalDetalhesInteligencia(sku) {
                 <i class="fa-solid fa-sliders"></i> 3. Ajustar Lote Mínimo de Produção / Compra
             </h5>
             <p style="margin:0 0 10px 0; font-size:0.82rem; color:var(--text-muted);">
-                Regra atual: <strong>${d.origem_lote || 'Padrão'}</strong> | Estoque Atual Matriz: <strong>${d.estoque_matriz || 0} un</strong> (${d.meses_cobertura_atual || 0} meses de estoque).
+                Regra atual: <strong>${d.origem_lote || 'Padrão'}</strong> | Estoque Disponível Matriz: <strong>${d.estoque_matriz || 0} un</strong> (${d.meses_cobertura_atual || 0} meses de estoque).
             </p>
             <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                 <label style="font-size: 0.88rem; font-weight: 600; color: #f8fafc;">Lote Mínimo Personalizado:</label>
@@ -4363,15 +4363,21 @@ function renderizarGraficoTendenciaInteligencia(d) {
     }
 
     const labels = ['Mês 1 (61-90 dias atrás)', 'Mês 2 (31-60 dias atrás)', 'Mês 3 (Últimos 30 dias)'];
-    const dataMatriz = [
-        d.m1_direto || 0,
-        d.m2_direto || 0,
-        d.m3_direto || 0
-    ];
+    
+    let m3Val = Number(d.m3_direto ?? d.vendas_diretas_30d ?? d.m3_total ?? d.demanda_total_matriz_30d ?? 0);
+    if (m3Val === 0 && d.demanda_total_matriz_30d) m3Val = Number(d.demanda_total_matriz_30d);
+
+    let m2Val = Number(d.m2_direto ?? d.m2_total ?? 0);
+    if (m2Val === 0 && d.v60_total) m2Val = Math.max(0, Number(d.v60_total) - m3Val);
+
+    let m1Val = Number(d.m1_direto ?? d.m1_total ?? 0);
+    if (m1Val === 0 && d.v90_total) m1Val = Math.max(0, Number(d.v90_total) - m3Val - m2Val);
+
+    const dataMatriz = [m1Val, m2Val, m3Val];
     const dataCD = [
         0,
         0,
-        d.remessas_cd_sp_30d || 0
+        Number(d.remessas_cd_sp_30d || 0)
     ];
 
     chartInstanceInteligencia = new Chart(ctx, {
@@ -4418,7 +4424,8 @@ function renderizarGraficoTendenciaInteligencia(d) {
                     grid: { color: 'rgba(255,255,255,0.05)' }
                 },
                 y: {
-                    ticks: { color: '#94a3b8' },
+                    beginAtZero: true,
+                    ticks: { color: '#94a3b8', precision: 0 },
                     grid: { color: 'rgba(255,255,255,0.05)' }
                 }
             }
