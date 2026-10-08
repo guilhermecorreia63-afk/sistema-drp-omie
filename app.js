@@ -4288,7 +4288,7 @@ function abrirModalDetalhesInteligencia(sku) {
         <!-- Container do Gráfico de Vendas -->
         <div class="card mb-3" style="background: rgba(15, 23, 42, 0.7); padding: 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 16px;">
             <h5 style="margin:0 0 12px 0; color:#38bdf8; display:flex; align-items:center; gap:8px; font-size: 0.95rem;">
-                <i class="fa-solid fa-chart-column"></i> Gráfico de Curva de Vendas & Remessas para CD_SP por Período
+                <i class="fa-solid fa-chart-column"></i> Evolução Mensal de Saídas & Remessas p/ CD_SP (Últimos 3 Meses Reais)
             </h5>
             <div style="position: relative; height: 220px; width: 100%;">
                 <canvas id="chart-tendencia-inteligencia"></canvas>
@@ -4359,19 +4359,15 @@ function renderizarGraficoTendenciaInteligencia(d) {
         chartInstanceInteligencia.destroy();
     }
 
-    const labels = ['30 Dias', '60 Dias', '90 Dias', '180 Dias', 'Desde Jan'];
+    const labels = ['Mês 1 (61-90 dias atrás)', 'Mês 2 (31-60 dias atrás)', 'Mês 3 (Últimos 30 dias)'];
     const dataMatriz = [
-        d.vendas_diretas_30d || 0,
-        Math.round((d.v60_total || 0) * 0.5),
-        Math.round((d.v90_total || 0) * 0.33),
-        Math.round((d.v180_total || 0) * 0.16),
-        Math.round((d.v365_total || 0) * 0.1)
+        d.m1_direto || 0,
+        d.m2_direto || 0,
+        d.m3_direto || 0
     ];
     const dataCD = [
-        d.remessas_cd_sp_30d || 0,
-        d.remessas_cd_sp_30d || 0,
-        d.remessas_cd_sp_30d || 0,
-        d.remessas_cd_sp_30d || 0,
+        0,
+        0,
         d.remessas_cd_sp_30d || 0
     ];
 
@@ -4402,6 +4398,15 @@ function renderizarGraficoTendenciaInteligencia(d) {
             plugins: {
                 legend: {
                     labels: { color: '#f8fafc', font: { family: 'Outfit', size: 12 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        footer: (items) => {
+                            let total = 0;
+                            items.forEach(i => total += (i.raw || 0));
+                            return 'Demanda Total do Mês: ' + total + ' un';
+                        }
+                    }
                 }
             },
             scales: {

@@ -136,10 +136,24 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
     # 3. Carregar Remessas CD_SP
     remessas_cd_sp = obter_remessas_por_sku()
 
-    # 4. Filtrar produtos fora da Blacklist (100% de exclusão)
+    # 4. Filtrar produtos fora da Blacklist e fora de COMBOS / KITS (100% de exclusão)
     produtos_validos = []
     for p in produtos:
         sku = str(p.get("sku", "")).strip().upper()
+        nome = (p.get("nome") or p.get("descricao") or "").strip().upper()
+        fam = (p.get("familia") or "").strip().upper()
+
+        # Filtrar COMBOS, KITS e PRESENTE DA FAMÍLIA (não entram na reposição/análise)
+        is_combo = (
+            "COMBO" in fam or "COMBOS" in fam or
+            "COMBO" in nome or "COMBOS" in nome or
+            "KIT" in fam or "KITS" in fam or
+            "CONJUNTO" in fam or "CONJUNTO" in nome or
+            "PRESENTE DA FAM" in nome
+        )
+        if is_combo:
+            continue
+
         sku_pad = sku.zfill(6)
         digits = re.sub(r'[^0-9]', '', sku)
         digits_pad = digits.zfill(6) if digits else ""
@@ -179,12 +193,24 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
             v30_direto = float(p.get("vendas_geral_30d", 0))
             v60_direto = float(p.get("vendas_geral_60d", 0))
             v90_direto = float(p.get("vendas_geral_90d", 0))
-            v180_direto = float(p.get("vendas_geral_180d", 0))
 
-            # Adiciona movimentação de remessas como demanda da Matriz
-            demanda_matriz_30d = v30_direto + rem_qtd
-            p["_demanda_30d"] = demanda_matriz_30d
+            # Separação exata mês a mês (30d recentes, 31-60d, 61-90d)
+            m3_direto = v30_direto
+            m2_direto = max(0.0, v60_direto - v30_direto)
+            m1_direto = max(0.0, v90_direto - v60_direto)
+
+            m3_total = m3_direto + rem_qtd
+            m2_total = m2_direto
+            m1_total = m1_direto
+
+            p["_demanda_30d"] = m3_total
             p["remessas_cd_sp_30d"] = rem_qtd
+            p["_m3_total"] = m3_total
+            p["_m2_total"] = m2_total
+            p["_m1_total"] = m1_total
+            p["_m3_direto"] = m3_direto
+            p["_m2_direto"] = m2_direto
+            p["_m1_direto"] = m1_direto
 
         # Ordenar produtos da família pela demanda/faturamento total da Matriz
         prods_sorted = sorted(
@@ -215,35 +241,42 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
             p_copia = dict(p)
             p_copia["classe_abc_familia"] = classe_abc
 
-            # Regras Específicas de Lote Mínimo
+            # Regras Específicas de Lote Mínimo (Por Família ou pelo Nome do Produto)
             fam_up = fam_nome.upper()
+            nome_up = (p.get("nome") or p.get("descricao") or "").upper()
+            is_camisa = (
+                "CAMISA" in fam_up or "VESTUARIO" in fam_up or "BLUSA" in fam_up or "BABYLOOK" in fam_up or
+                "CAMISA" in nome_up or "BLUSA" in nome_up or "BABYLOOK" in nome_up or "CAMISETA" in nome_up
+            )
+
             if sku in lotes_manuais:
                 lote_minimo = lotes_manuais[sku]
                 origem_lote = "Manual"
+            elif is_camisa:
+                lote_minimo = 20
+                origem_lote = "Padrão Camisas (20 un)"
             elif "ESPIRITUALIDADE" in fam_up and ("EDIÇ" in fam_up or "EDIC" in fam_up):
                 lote_minimo = 500
                 origem_lote = "Padrão Edições (500 un)"
-            elif "CAMISA" in fam_up or "VESTUARIO" in fam_up or "BLUSA" in fam_up:
-                lote_minimo = 20
-                origem_lote = "Padrão Camisas (20 un)"
             else:
                 lote_minimo = 0
                 origem_lote = "Sem Lote Mínimo"
 
-            # Tendência de Vendas (30d vs Média 90d/180d)
-            v30 = p["_demanda_30d"]
-            v90 = float(p.get("vendas_geral_90d", 0)) + p["remessas_cd_sp_30d"]
-            v_media_mensal_90 = v90 / 3.0 if v90 > 0 else 0.0
+            # Tendência de Vendas Mês a Mês (Mês 3 Atual vs Média dos Meses M1 e M2)
+            m3 = p["_m3_total"]
+            m2 = p["_m2_total"]
+            m1 = p["_m1_total"]
+            media_m1_m2 = (m1 + m2) / 2.0
 
             variacao_pct = 0.0
-            if v_media_mensal_90 > 0:
-                variacao_pct = round(((v30 - v_media_mensal_90) / v_media_mensal_90) * 100, 1)
+            if media_m1_m2 > 0:
+                variacao_pct = round(((m3 - media_m1_m2) / media_m1_m2) * 100, 1)
 
-            if v30 > (v_media_mensal_90 * 1.25) and v30 >= 5:
+            if m3 > (media_m1_m2 * 1.20) and m3 >= 5:
                 tendencia = "Acelerando 🔥"
                 if classe_abc == "A":
                     tot_classe_a_alta += 1
-            elif v30 < (v_media_mensal_90 * 0.70) and v_media_mensal_90 > 2:
+            elif m3 < (media_m1_m2 * 0.70) and media_m1_m2 > 2:
                 tendencia = "Desacelerando 📉"
             else:
                 tendencia = "Estável ➡️"
@@ -251,12 +284,12 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
             p_copia["tendencia_vendas"] = tendencia
 
             # Cobertura c/ Lote Mínimo
-            v30_diaria = max(0.033, v30 / 30.0)
+            v30_diaria = max(0.033, m3 / 30.0)
             est_matriz = p.get("matriz", 0)
-            meses_cobertura_atual = round((est_matriz / (v30_diaria * 30.0)), 1) if v30 > 0 else (99.0 if est_matriz > 0 else 0.0)
+            meses_cobertura_atual = round((est_matriz / (v30_diaria * 30.0)), 1) if m3 > 0 else (99.0 if est_matriz > 0 else 0.0)
             
             if lote_minimo > 0:
-                meses_cobertura_lote = round((lote_minimo / (v30_diaria * 30.0)), 1) if v30 > 0 else 99.0
+                meses_cobertura_lote = round((lote_minimo / (v30_diaria * 30.0)), 1) if m3 > 0 else 99.0
             else:
                 meses_cobertura_lote = 0.0
 
@@ -274,11 +307,11 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
 
             # Explicação textual amigável do status de tendência
             if tendencia == "Acelerando 🔥":
-                explicacao_status = f"Acelerando 🔥: A demanda dos últimos 30 dias ({round(v30)} un) superou a média histórica ({round(v_media_mensal_90, 1)} un/mês) em +{variacao_pct}%. O produto está em alta rotação."
+                explicacao_status = f"Acelerando 🔥: A demanda do mês recente ({round(m3)} un) superou a média dos 2 meses anteriores ({round(media_m1_m2, 1)} un/mês) em +{variacao_pct}%. O produto está em alta rotação."
             elif tendencia == "Desacelerando 📉":
-                explicacao_status = f"Desacelerando 📉: A demanda dos últimos 30 dias ({round(v30)} un) caiu {variacao_pct}% em relação à média recente ({round(v_media_mensal_90, 1)} un/mês). Alerta para evitar lote excessivo."
+                explicacao_status = f"Desacelerando 📉: A demanda do mês recente ({round(m3)} un) caiu {variacao_pct}% em relação à média recente ({round(media_m1_m2, 1)} un/mês). Alerta para evitar lote excessivo."
             else:
-                explicacao_status = f"Estável ➡️: A demanda recente ({round(v30)} un/mês) está alinhada à média histórica ({round(v_media_mensal_90, 1)} un/mês) com variação de {variacao_pct}%."
+                explicacao_status = f"Estável ➡️: A demanda recente ({round(m3)} un) está alinhada à média dos meses anteriores ({round(media_m1_m2, 1)} un/mês) com variação de {variacao_pct}%."
 
             # Detalhamento completo do cálculo para o Modal de Diagnóstico
             p_copia["detalhes_calculo"] = {
@@ -292,15 +325,16 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
                 "faturamento_familia_30d": round(tot_val_fam, 2),
                 "share_familia_pct": round((val_p / tot_val_fam * 100) if tot_val_fam > 0 else 0.0, 2),
                 "pct_acumulado_familia": round(pct_acum * 100, 1),
-                "vendas_diretas_30d": float(p.get("vendas_geral_30d", 0)),
+                "vendas_diretas_30d": float(m3_direto),
                 "remessas_cd_sp_30d": float(p.get("remessas_cd_sp_30d", 0)),
-                "demanda_total_matriz_30d": round(v30, 1),
-                "v30_total": round(v30, 1),
-                "v60_total": round(float(p.get("vendas_geral_60d", 0)) + rem_qtd, 1),
-                "v90_total": round(v90, 1),
-                "v180_total": round(float(p.get("vendas_geral_180d", 0)) + rem_qtd, 1),
-                "v365_total": round(float(p.get("vendas_geral_365d", 0)) + rem_qtd, 1),
-                "media_mensal_90d": round(v_media_mensal_90, 1),
+                "demanda_total_matriz_30d": round(m3, 1),
+                "m3_total": round(m3, 1),
+                "m2_total": round(m2, 1),
+                "m1_total": round(m1, 1),
+                "m3_direto": round(m3_direto, 1),
+                "m2_direto": round(m2_direto, 1),
+                "m1_direto": round(m1_direto, 1),
+                "media_mensal_90d": round(media_m1_m2, 1),
                 "variacao_tendencia_pct": variacao_pct,
                 "tendencia": tendencia,
                 "explicacao_status": explicacao_status,
