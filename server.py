@@ -68,7 +68,7 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_combo_detalhes()
         elif url_path in ['/api/inteligencia_matriz', '/api/drp/inteligencia_matriz']:
             self.handle_api_inteligencia_matriz()
-        elif url_path == '/data/produtos_turso.json':
+        elif url_path in ['/data/produtos_turso.json', '/api/produtos', '/api/drp/produtos']:
             self.handle_api_produtos_turso_json()
         else:
             super().do_GET()

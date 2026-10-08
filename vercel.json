@@ -2,6 +2,7 @@
   "version": 2,
   "rewrites": [
     { "source": "/api/cron_sync", "destination": "/api/cron_sync.py" },
+    { "source": "/data/produtos_turso.json", "destination": "/api/index.py" },
     { "source": "/api/(.*)", "destination": "/api/index.py" }
   ],
   "crons": [

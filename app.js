@@ -448,7 +448,10 @@ async function carregarProdutos() {
             console.warn('produtos_destaque_drp.json não encontrado:', eDest);
         }
 
-        const resp = await fetch('data/produtos_turso.json?_t=' + Date.now());
+        let resp = await fetch('/api/produtos?_t=' + Date.now());
+        if (!resp.ok) {
+            resp = await fetch('data/produtos_turso.json?_t=' + Date.now());
+        }
         state.produtos = await resp.json();
 
         // 4. Aplicar regras de Vínculo DE-PARA / Equivalência de SKUs (ex: 009539 <-> 009622)
