@@ -4367,14 +4367,16 @@ function renderizarGraficoTendenciaInteligencia(d) {
 
     const labels = ['Mês 1 (61-90 dias atrás)', 'Mês 2 (31-60 dias atrás)', 'Mês 3 (Últimos 30 dias)'];
     
-    let m3Val = Number(d.m3_direto ?? d.vendas_diretas_30d ?? d.m3_total ?? d.demanda_total_matriz_30d ?? 0);
-    if (m3Val === 0 && d.demanda_total_matriz_30d) m3Val = Number(d.demanda_total_matriz_30d);
+    let m3Val = Number(d.m3_direto || d.m3_total || d.vendas_diretas_30d || d.demanda_total_matriz_30d || 0);
+    let m2Val = Number(d.m2_direto || d.m2_total || 0);
+    let m1Val = Number(d.m1_direto || d.m1_total || 0);
 
-    let m2Val = Number(d.m2_direto ?? d.m2_total ?? 0);
-    if (m2Val === 0 && d.v60_total) m2Val = Math.max(0, Number(d.v60_total) - m3Val);
+    if (m3Val === 0 && d.m3_total) m3Val = Number(d.m3_total);
+    if (m2Val === 0 && d.m2_total) m2Val = Number(d.m2_total);
+    if (m1Val === 0 && d.m1_total) m1Val = Number(d.m1_total);
 
-    let m1Val = Number(d.m1_direto ?? d.m1_total ?? 0);
-    if (m1Val === 0 && d.v90_total) m1Val = Math.max(0, Number(d.v90_total) - m3Val - m2Val);
+    if (m2Val === 0 && d.vendas_diretas_60d) m2Val = Math.max(0, Number(d.vendas_diretas_60d) - m3Val);
+    if (m1Val === 0 && d.vendas_diretas_90d) m1Val = Math.max(0, Number(d.vendas_diretas_90d) - m3Val - m2Val);
 
     const dataMatriz = [m1Val, m2Val, m3Val];
     const dataCD = [

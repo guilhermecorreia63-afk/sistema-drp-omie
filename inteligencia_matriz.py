@@ -190,9 +190,9 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
             sku_pad = sku.zfill(6)
             rem_qtd = remessas_cd_sp.get(sku, 0.0) or remessas_cd_sp.get(sku_pad, 0.0)
             
-            v30_direto = float(p.get("vendas_geral_30d", 0))
-            v60_direto = float(p.get("vendas_geral_60d", 0))
-            v90_direto = float(p.get("vendas_geral_90d", 0))
+            v30_direto = float(p.get("vendas_geral_30d") if p.get("vendas_geral_30d") is not None else (p.get("vendas_sul_sudeste_30d") or p.get("vendas_30d") or 0.0))
+            v60_direto = float(p.get("vendas_geral_60d") if p.get("vendas_geral_60d") is not None else (p.get("vendas_sul_sudeste_60d") or p.get("vendas_60d") or 0.0))
+            v90_direto = float(p.get("vendas_geral_90d") if p.get("vendas_geral_90d") is not None else (p.get("vendas_sul_sudeste_90d") or p.get("vendas_90d") or 0.0))
 
             # Separação exata mês a mês (30d recentes, 31-60d, 61-90d)
             m3_direto = v30_direto
