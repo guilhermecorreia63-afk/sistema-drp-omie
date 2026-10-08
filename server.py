@@ -855,20 +855,34 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 qtd = float(item.get('quantidade') or item.get('qtde') or 1)
                 preco = float(item.get('valor_unitario') or item.get('precoUnit') or 10.0)
 
-                cod_prod = sku_map.get(sku)
+                cod_prod = None
+
+                # 1. Consultar diretamente no Omie MATRIZ por 'codigo' (ex: PRD00532)
+                try:
+                    resp_prod = client.executar("geral/produtos/", "ConsultarProduto", [{"codigo": sku}])
+                    if resp_prod and "codigo_produto" in resp_prod and resp_prod.get("codigo_produto"):
+                        cod_prod = int(resp_prod["codigo_produto"])
+                except Exception:
+                    pass
+
+                # 2. Se não achou, tentar consultar por 'codigo_produto_integracao'
                 if not cod_prod:
-                    # Tenta consultar no Omie se não achou no JSON local
-                    resp_prod = client.executar("geral/produtos/", "ConsultarProduto", [{"codigo_produto_integracao": sku}])
-                    if "codigo_produto" in resp_prod:
-                        cod_prod = resp_prod["codigo_produto"]
-                    else:
-                        resp_prod = client.executar("geral/produtos/", "ConsultarProduto", [{"codigo": sku}])
-                        if "codigo_produto" in resp_prod:
-                            cod_prod = resp_prod["codigo_produto"]
+                    try:
+                        resp_prod = client.executar("geral/produtos/", "ConsultarProduto", [{"codigo_produto_integracao": sku}])
+                        if resp_prod and "codigo_produto" in resp_prod and resp_prod.get("codigo_produto"):
+                            cod_prod = int(resp_prod["codigo_produto"])
+                    except Exception:
+                        pass
+
+                # 3. Fallback: usar id_produto local apenas se for numérico válido do Omie
+                if not cod_prod:
+                    c_loc = sku_map.get(sku)
+                    if c_loc and str(c_loc).isdigit() and int(c_loc) > 0:
+                        cod_prod = int(c_loc)
 
                 if cod_prod:
                     itens_req.append({
-                        "codProd": int(cod_prod),
+                        "codProd": cod_prod,
                         "qtde": qtd,
                         "precoUnit": preco
                     })
