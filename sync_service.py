@@ -26,14 +26,15 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
     - ESTOQUE_MATRIZ: Saldo real de estoque da Matriz
     - AMBOS_ESTOQUES: Saldo real da Matriz e CD_SP
     """
-    caminho_json = os.path.join("data", "produtos_turso.json")
-    produtos = []
-    if os.path.exists(caminho_json):
-        try:
-            with open(caminho_json, "r", encoding="utf-8") as f:
-                produtos = json.load(f)
-        except Exception:
-            produtos = []
+    produtos = db.carregar_produtos_cache(force_refresh=True) if db and hasattr(db, "carregar_produtos_cache") else []
+    if not produtos:
+        caminho_json = os.path.join("data", "produtos_turso.json")
+        if os.path.exists(caminho_json):
+            try:
+                with open(caminho_json, "r", encoding="utf-8") as f:
+                    produtos = json.load(f)
+            except Exception:
+                produtos = []
 
     produtos_by_sku = {p["sku"]: p for p in produtos if "sku" in p}
     data_hoje = datetime.now().strftime("%d/%m/%Y")
@@ -137,7 +138,9 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
                         }
                         produtos_by_sku[sku] = p
                     p["matriz"] = saldo_fis
+                    p["matriz_fisico"] = saldo_fis
                     p["matriz_reservado"] = saldo_res
+                    p["matriz_disponivel"] = max(0, saldo_fis - saldo_res)
                     if cod_prod:
                         p["id_produto"] = cod_prod
                 pag += 1
@@ -190,7 +193,9 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
                         }
                         produtos_by_sku[sku] = p
                     p["cd_sp"] = saldo_fis
+                    p["cd_sp_fisico"] = saldo_fis
                     p["cd_sp_reservado"] = saldo_res
+                    p["cd_sp_disponivel"] = max(0, saldo_fis - saldo_res)
                     if cod_prod:
                         p["id_produto"] = cod_prod
                 pag += 1
@@ -355,6 +360,14 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
         print(f"[SYNC] Banco Turso DB / SQLite atualizado com sucesso em lote ({len(batch_stmts)} itens)!")
     except Exception as e:
         print(f"[SYNC] Erro ao salvar no Turso/SQLite: {e}")
+
+    # 5. Persistir no Cache Geral Turso DB (drp_produtos_cache)
+    if db and hasattr(db, "salvar_produtos_cache"):
+        try:
+            db.salvar_produtos_cache(lista_final)
+            print(f"[SYNC] {len(lista_final)} produtos salvos em drp_produtos_cache no Turso DB!")
+        except Exception as e_cache:
+            print(f"[SYNC] Erro ao salvar cache de produtos no Turso DB: {e_cache}")
 
     msg = f"Sincronização ({tipo_sync}) concluída com sucesso! Saldo real de estoque consultado na Omie e salvo no Turso DB."
     return True, msg, len(lista_final)

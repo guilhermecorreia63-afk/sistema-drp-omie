@@ -68,6 +68,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_combo_detalhes()
         elif url_path in ['/api/inteligencia_matriz', '/api/drp/inteligencia_matriz']:
             self.handle_api_inteligencia_matriz()
+        elif url_path == '/data/produtos_turso.json':
+            self.handle_api_produtos_turso_json()
         else:
             super().do_GET()
 
@@ -639,15 +641,27 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             
         self._send_json({"success": True, "remessa_id": remessa_id, "status_transito": novo_status, "status_map": status_map})
 
+    def handle_api_produtos_turso_json(self):
+        try:
+            prods = db.carregar_produtos_cache() if db else []
+            if not prods:
+                json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'produtos_turso.json')
+                if os.path.exists(json_path):
+                    with open(json_path, 'r', encoding='utf-8') as f:
+                        prods = json.load(f)
+            self._send_json(prods)
+        except Exception as e:
+            self._send_json({"error": str(e)}, status=500)
+
     def handle_api_inteligencia_matriz(self):
         try:
-            import json
             import inteligencia_matriz
-            json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'produtos_turso.json')
-            prods = []
-            if os.path.exists(json_path):
-                with open(json_path, 'r', encoding='utf-8') as f:
-                    prods = json.load(f)
+            prods = db.carregar_produtos_cache() if db else []
+            if not prods:
+                json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'produtos_turso.json')
+                if os.path.exists(json_path):
+                    with open(json_path, 'r', encoding='utf-8') as f:
+                        prods = json.load(f)
             resultado = inteligencia_matriz.calcular_inteligencia_matriz(prods)
             self._send_json({"success": True, "data": resultado})
         except Exception as e:
@@ -675,7 +689,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         query = parse_qs(urlparse(self.path).query)
         force = query.get('force', ['false'])[0].lower() in ['true', '1', 'sim']
 
-        lock_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'cron_lock.json')
+        lock_dir = "/tmp" if os.path.exists("/tmp") else os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+        lock_path = os.path.join(lock_dir, 'cron_lock.json')
         agora_dt = datetime.now()
         agora_iso = agora_dt.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -713,6 +728,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             # A. Sincronização completa Omie / Turso
             import sync_service
             ok_sync, msg_sync, count_sync = sync_service.sincronizar_dados_seletivo("TUDO")
+            if db:
+                db.carregar_produtos_cache(force_refresh=True)
             print(f"[CRON API] Sync finalizado: ok={ok_sync}, msg={msg_sync}, prods={count_sync}", flush=True)
 
             # B. Disparo do e-mail de alerta automático

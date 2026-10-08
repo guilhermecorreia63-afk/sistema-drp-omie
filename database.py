@@ -7,6 +7,9 @@ import os
 import sqlite3
 import requests
 import math
+import json
+import time
+from datetime import datetime
 import pandas as pd
 from pathlib import Path
 from dotenv import load_dotenv
@@ -201,6 +204,11 @@ def inicializar_banco():
             quantidade INTEGER,
             data_hora TEXT,
             observacao TEXT
+        )""",
+        """CREATE TABLE IF NOT EXISTS drp_produtos_cache (
+            sku TEXT PRIMARY KEY,
+            dados_json TEXT,
+            ultima_atualizacao TEXT
         )"""
     ]
     for sql in tabelas:
@@ -578,6 +586,128 @@ def obter_historico_transferencias_db(limit: int = 100) -> list[dict]:
             return df.to_dict(orient="records")
     except Exception as e:
         print(f"[DB] Erro ao obter historico transferencias: {e}")
+    return []
+
+_PRODUTOS_CACHE_MEM = None
+_PRODUTOS_CACHE_TIME = 0
+
+def salvar_produtos_cache(produtos_list: list) -> bool:
+    """
+    Salva a lista atualizada de produtos no Turso DB, em /tmp e em data/produtos_turso.json.
+    """
+    global _PRODUTOS_CACHE_MEM, _PRODUTOS_CACHE_TIME
+    if not isinstance(produtos_list, list) or not produtos_list:
+        return False
+
+    agora_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    _PRODUTOS_CACHE_MEM = produtos_list
+    _PRODUTOS_CACHE_TIME = time.time()
+
+    # 1. Salva em /tmp/produtos_turso.json (para persistência na instância)
+    try:
+        tmp_dir = "/tmp" if os.path.exists("/tmp") else os.path.dirname(os.path.abspath(__file__))
+        tmp_path = os.path.join(tmp_dir, "produtos_turso.json")
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(produtos_list, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+    # 2. Tenta salvar em data/produtos_turso.json (se ambiente for gravável)
+    try:
+        data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "produtos_turso.json")
+        os.makedirs(os.path.dirname(data_path), exist_ok=True)
+        with open(data_path, "w", encoding="utf-8") as f:
+            json.dump(produtos_list, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+    # 3. Salva no Turso DB Cloud (tabela drp_produtos_cache) em lotes de statements
+    try:
+        inicializar_banco()
+        batch_stmts = []
+        for p in produtos_list:
+            sku = str(p.get("sku", "")).strip()
+            if not sku:
+                continue
+            batch_stmts.append({
+                "query": """INSERT INTO drp_produtos_cache (sku, dados_json, ultima_atualizacao)
+                            VALUES (:sku, :dados_json, :ultima_atualizacao)
+                            ON CONFLICT(sku) DO UPDATE SET
+                            dados_json = excluded.dados_json,
+                            ultima_atualizacao = excluded.ultima_atualizacao""",
+                "params": {
+                    "sku": sku,
+                    "dados_json": json.dumps(p, ensure_ascii=False),
+                    "ultima_atualizacao": agora_str
+                }
+            })
+        if batch_stmts:
+            executar_batch_query(batch_stmts)
+            print(f"[DB] {len(batch_stmts)} produtos salvos em drp_produtos_cache no Turso DB!")
+        return True
+    except Exception as e:
+        print(f"[DB] Erro ao salvar drp_produtos_cache no Turso DB: {e}")
+        return False
+
+def carregar_produtos_cache(force_refresh: bool = False) -> list:
+    """
+    Carrega a lista de produtos atualizada:
+    1. Retorna da memória se foi lido/salvo há menos de 60 segundos (e not force_refresh).
+    2. Tenta carregar do Turso DB (drp_produtos_cache).
+    3. Fallback para /tmp/produtos_turso.json.
+    4. Fallback para data/produtos_turso.json.
+    """
+    global _PRODUTOS_CACHE_MEM, _PRODUTOS_CACHE_TIME
+    if not force_refresh and _PRODUTOS_CACHE_MEM and (time.time() - _PRODUTOS_CACHE_TIME) < 60:
+        return _PRODUTOS_CACHE_MEM
+
+    # 1. Turso DB
+    try:
+        df = executar_query("SELECT dados_json FROM drp_produtos_cache")
+        if df is not None and not df.empty and len(df) > 0:
+            produtos = []
+            for _, row in df.iterrows():
+                raw_j = row.get("dados_json")
+                if raw_j and isinstance(raw_j, str):
+                    try:
+                        produtos.append(json.loads(raw_j))
+                    except Exception:
+                        pass
+            if len(produtos) > 100:
+                _PRODUTOS_CACHE_MEM = produtos
+                _PRODUTOS_CACHE_TIME = time.time()
+                print(f"[DB] Carregados {len(produtos)} produtos da tabela drp_produtos_cache no Turso DB.")
+                return produtos
+    except Exception as e:
+        print(f"[DB] Aviso ao carregar drp_produtos_cache: {e}")
+
+    # 2. /tmp/produtos_turso.json
+    try:
+        tmp_dir = "/tmp" if os.path.exists("/tmp") else os.path.dirname(os.path.abspath(__file__))
+        tmp_path = os.path.join(tmp_dir, "produtos_turso.json")
+        if os.path.exists(tmp_path):
+            with open(tmp_path, "r", encoding="utf-8") as f:
+                prods = json.load(f)
+                if prods and len(prods) > 100:
+                    _PRODUTOS_CACHE_MEM = prods
+                    _PRODUTOS_CACHE_TIME = time.time()
+                    return prods
+    except Exception:
+        pass
+
+    # 3. data/produtos_turso.json
+    data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "produtos_turso.json")
+    if os.path.exists(data_path):
+        try:
+            with open(data_path, "r", encoding="utf-8") as f:
+                prods = json.load(f)
+                if prods:
+                    _PRODUTOS_CACHE_MEM = prods
+                    _PRODUTOS_CACHE_TIME = time.time()
+                    return prods
+        except Exception:
+            pass
+
     return []
 
 if __name__ == "__main__":
