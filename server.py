@@ -68,6 +68,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_combo_detalhes()
         elif url_path in ['/api/inteligencia_matriz', '/api/drp/inteligencia_matriz']:
             self.handle_api_inteligencia_matriz()
+        elif url_path in ['/api/coordenacao/pauta', '/api/drp/coordenacao/pauta']:
+            self.handle_api_coordenacao_pauta_get()
         elif url_path in ['/data/produtos_turso.json', '/api/produtos', '/api/drp/produtos']:
             self.handle_api_produtos_turso_json()
         elif url_path in ['/api/sync_requisicoes', '/api/sync/requisicoes']:
@@ -87,6 +89,14 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_sync()
         elif url_path in ['/api/producao', '/api/producao/salvar']:
             self.handle_api_producao_save()
+        elif url_path in ['/api/coordenacao/adicionar', '/api/drp/coordenacao/adicionar']:
+            self.handle_api_coordenacao_adicionar()
+        elif url_path in ['/api/coordenacao/remover', '/api/drp/coordenacao/remover']:
+            self.handle_api_coordenacao_remover()
+        elif url_path in ['/api/coordenacao/salvar_decisao', '/api/drp/coordenacao/salvar_decisao']:
+            self.handle_api_coordenacao_salvar_decisao()
+        elif url_path in ['/api/coordenacao/salvar_meta', '/api/drp/coordenacao/salvar_meta']:
+            self.handle_api_coordenacao_salvar_meta()
         elif url_path in ['/api/pedido_compra/remover', '/api/pedidos/remover']:
             self.handle_api_pedido_compra_remover()
         elif url_path == '/api/blacklist' or url_path == '/api/blacklist/salvar':
@@ -778,7 +788,217 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 return
             import inteligencia_matriz
             ok = inteligencia_matriz.salvar_lote_manual(sku, lote)
-            self._send_json({"success": ok, "message": f"Lote mínimo do SKU {sku} atualizado para {lote} un."})
+            self._send_json({"success": ok, "message": "Lote manual salvo com sucesso" if ok else "Falha ao salvar lote"})
+        except Exception as e:
+            self._send_json({"success": False, "message": str(e)}, status=500)
+    def _carregar_pauta_coordenacao_json(self):
+        pauta_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'pauta_coordenacao.json')
+        if os.path.exists(pauta_path):
+            try:
+                with open(pauta_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except Exception:
+                pass
+        return {"itens": [], "metas_fornecedores": {}}
+
+    def _salvar_pauta_coordenacao_json(self, data):
+        pauta_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'pauta_coordenacao.json')
+        try:
+            with open(pauta_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            return True
+        except Exception as e:
+            print(f"[PAUTA COORDENACAO] Erro ao salvar pauta_coordenacao.json: {e}")
+            return False
+
+    def handle_api_coordenacao_pauta_get(self):
+        try:
+            pauta = self._carregar_pauta_coordenacao_json()
+            prods = db.carregar_produtos_cache() if db else []
+            if not prods:
+                json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'produtos_turso.json')
+                if os.path.exists(json_path):
+                    with open(json_path, 'r', encoding='utf-8') as f:
+                        prods = json.load(f)
+            
+            import inteligencia_matriz
+            calc_intel = inteligencia_matriz.calcular_inteligencia_matriz(prods)
+            intel_map = {str(p.get('sku', '')).strip().upper(): p for p in calc_intel.get('produtos', [])}
+            prods_map = {str(p.get('sku', '')).strip().upper(): p for p in prods}
+
+            itens_enriquecidos = []
+            for item in pauta.get('itens', []):
+                sku_raw = str(item.get('sku', '')).strip().upper()
+                p_base = prods_map.get(sku_raw, {})
+                p_intel = intel_map.get(sku_raw, {})
+                d_calc = p_intel.get('detalhes_calculo', {})
+
+                lote_dinamico = p_intel.get('lote_minimo', 0)
+
+                item_enr = dict(item)
+                item_enr['nome'] = item.get('nome') or p_base.get('nome') or p_base.get('descricao') or sku_raw
+                item_enr['familia'] = item.get('familia') or p_base.get('familia') or 'OUTROS'
+                item_enr['marca'] = item.get('marca') or p_base.get('marca') or 'SHALOM'
+                item_enr['matriz_fisico'] = p_base.get('matriz_fisico', p_base.get('matriz', 0)) or 0
+                item_enr['matriz_reservado'] = p_base.get('matriz_reservado', 0) or 0
+                item_enr['matriz_disponivel'] = p_base.get('matriz_disponivel', p_base.get('matriz', 0)) or 0
+                item_enr['cd_sp_fisico'] = p_base.get('cd_sp_fisico', p_base.get('cd_sp', 0)) or 0
+                item_enr['cmc'] = float(p_base.get('cmc') or 0.0)
+                item_enr['valor_unitario'] = float(p_base.get('valor_unitario') or 0.0)
+                item_enr['vendas_30d'] = float(p_base.get('vendas_geral_30d') or 0.0)
+                item_enr['vendas_60d'] = float(p_base.get('vendas_geral_60d') or 0.0)
+                item_enr['vendas_90d'] = float(p_base.get('vendas_geral_90d') or 0.0)
+                item_enr['vendas_180d'] = float(p_base.get('vendas_geral_180d') or 0.0)
+                item_enr['vendas_365d'] = float(p_base.get('vendas_geral_365d') or 0.0)
+                item_enr['classe_abc'] = p_intel.get('classe_abc_familia', 'C')
+                item_enr['tendencia_vendas'] = p_intel.get('tendencia_vendas', 'Estável ➡️')
+                item_enr['lote_minimo'] = lote_dinamico
+                item_enr['meses_cobertura_lote'] = p_intel.get('meses_cobertura_lote', 0)
+                item_enr['acao_recomendada'] = p_intel.get('acao_recomendada', 'Análise')
+                item_enr['remessas_cd_sp_30d'] = float(d_calc.get('remessas_cd_sp_30d', 0))
+                item_enr['detalhes_calculo'] = d_calc
+                itens_enriquecidos.append(item_enr)
+
+            self._send_json({
+                "success": True,
+                "itens": itens_enriquecidos,
+                "metas_fornecedores": pauta.get('metas_fornecedores', {})
+            })
+        except Exception as e:
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_coordenacao_adicionar(self):
+        try:
+            body = self._read_body()
+            skus_recebidos = body.get('skus', [])
+            if not skus_recebidos and body.get('sku'):
+                skus_recebidos = [body.get('sku')]
+
+            if not skus_recebidos:
+                self._send_json({"success": False, "message": "Nenhum SKU informado"}, status=400)
+                return
+
+            pauta = self._carregar_pauta_coordenacao_json()
+            itens_existentes = {str(it.get('sku', '')).strip().upper(): it for it in pauta.get('itens', [])}
+            agora = datetime.now().strftime('%d/%m/%Y %H:%M')
+
+            adicionados = 0
+            for s in skus_recebidos:
+                sku_clean = str(s).strip().upper()
+                if sku_clean and sku_clean not in itens_existentes:
+                    pauta['itens'].append({
+                        "sku": sku_clean,
+                        "adicionado_em": agora,
+                        "decisao": "PENDENTE",
+                        "observacao": "",
+                        "qtd_sugerida": 0
+                    })
+                    adicionados += 1
+
+            if adicionados > 0:
+                self._salvar_pauta_coordenacao_json(pauta)
+
+            self._send_json({
+                "success": True,
+                "adicionados": adicionados,
+                "total_pauta": len(pauta.get('itens', [])),
+                "message": f"{adicionados} produto(s) adicionado(s) à Pauta da Coordenação!"
+            })
+        except Exception as e:
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_coordenacao_remover(self):
+        try:
+            body = self._read_body()
+            sku = str(body.get('sku') or '').strip().upper()
+            if not sku:
+                self._send_json({"success": False, "message": "SKU obrigatório"}, status=400)
+                return
+
+            pauta = self._carregar_pauta_coordenacao_json()
+            qtd_antes = len(pauta.get('itens', []))
+            pauta['itens'] = [it for it in pauta.get('itens', []) if str(it.get('sku', '')).strip().upper() != sku]
+            self._salvar_pauta_coordenacao_json(pauta)
+
+            self._send_json({
+                "success": True,
+                "removido": (qtd_antes != len(pauta['itens'])),
+                "total_pauta": len(pauta['itens']),
+                "message": f"SKU {sku} removido da Pauta da Coordenação."
+            })
+        except Exception as e:
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_coordenacao_salvar_decisao(self):
+        try:
+            body = self._read_body()
+            sku = str(body.get('sku') or '').strip().upper()
+            decisao = str(body.get('decisao') or 'PENDENTE').upper()
+            obs = str(body.get('observacao') or '').strip()
+            qtd_sug = int(body.get('qtd_sugerida') or 0)
+
+            if not sku:
+                self._send_json({"success": False, "message": "SKU obrigatório"}, status=400)
+                return
+
+            pauta = self._carregar_pauta_coordenacao_json()
+            achou = False
+            for it in pauta.get('itens', []):
+                if str(it.get('sku', '')).strip().upper() == sku:
+                    it['decisao'] = decisao
+                    it['observacao'] = obs
+                    it['qtd_sugerida'] = qtd_sug
+                    it['decidido_em'] = datetime.now().strftime('%d/%m/%Y %H:%M')
+                    achou = True
+                    break
+
+            if achou:
+                self._salvar_pauta_coordenacao_json(pauta)
+
+            # Se for Blacklist -> envia automaticamente para a Blacklist global!
+            if decisao == 'BLACKLIST':
+                try:
+                    bl_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'blacklist.json')
+                    bl_list = []
+                    if os.path.exists(bl_path):
+                        with open(bl_path, 'r', encoding='utf-8') as f:
+                            bl_list = json.load(f)
+                    if sku not in bl_list:
+                        bl_list.append(sku)
+                        with open(bl_path, 'w', encoding='utf-8') as f:
+                            json.dump(bl_list, f, ensure_ascii=False, indent=2)
+                    if db:
+                        db.adicionar_blacklist(sku)
+                except Exception as ex_bl:
+                    print(f"[PAUTA COORDENACAO] Aviso ao adicionar {sku} na blacklist: {ex_bl}")
+
+            self._send_json({
+                "success": True,
+                "message": f"Decisão ({decisao}) registrada para o SKU {sku} com sucesso!"
+            })
+        except Exception as e:
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_coordenacao_salvar_meta(self):
+        try:
+            body = self._read_body()
+            fornecedor = str(body.get('fornecedor') or '').strip().upper()
+            meta_valor = float(body.get('meta_valor') or 0.0)
+
+            if not fornecedor:
+                self._send_json({"success": False, "message": "Fornecedor obrigatório"}, status=400)
+                return
+
+            pauta = self._carregar_pauta_coordenacao_json()
+            if 'metas_fornecedores' not in pauta:
+                pauta['metas_fornecedores'] = {}
+            pauta['metas_fornecedores'][fornecedor] = meta_valor
+            self._salvar_pauta_coordenacao_json(pauta)
+
+            self._send_json({
+                "success": True,
+                "message": f"Meta de pedido mínimo para {fornecedor} atualizada para R$ {meta_valor:.2f}."
+            })
         except Exception as e:
             self._send_json({"success": False, "message": str(e)}, status=500)
 
@@ -826,7 +1046,18 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         print(f"[CRON API] Iniciando Sincronização Automática (12h20 / 18h30 Fortaleza) em {agora_iso}...", flush=True)
 
         try:
-            # A. Disparo prioritário do e-mail de alerta automático (Garante entrega imediata em <6s sem risco de timeout da Vercel)
+            # A. Sincronização seletiva Omie / Turso (Atualiza estoque primeiro)
+            is_serverless = bool(os.getenv('VERCEL') or os.getenv('AWS_LAMBDA_FUNCTION_NAME'))
+            if not is_serverless:
+                import sync_service
+                ok_sync, msg_sync, count_sync = sync_service.sincronizar_dados_seletivo("TUDO")
+                if db:
+                    db.carregar_produtos_cache(force_refresh=True)
+                print(f"[CRON API] Sync de estoque finalizado: ok={ok_sync}, msg={msg_sync}, prods={count_sync}", flush=True)
+            else:
+                ok_sync, msg_sync, count_sync = True, "Ambiente Vercel: Alerta gerado a partir do Turso Cloud DB atualizado.", len(db.carregar_produtos_cache()) if db else 0
+
+            # B. Disparo do e-mail de alerta automático com dados atualizados
             import alertas_email
             if alertas_email:
                 import importlib
@@ -836,17 +1067,6 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 ok_email, msg_email = False, "Módulo alertas_email não disponível."
 
             print(f"[CRON API] Disparo e-mail finalizado: ok={ok_email}, msg={msg_email}", flush=True)
-
-            # B. Sincronização seletiva Omie / Turso
-            is_serverless = bool(os.getenv('VERCEL') or os.getenv('AWS_LAMBDA_FUNCTION_NAME'))
-            if not is_serverless:
-                import sync_service
-                ok_sync, msg_sync, count_sync = sync_service.sincronizar_dados_seletivo("TUDO")
-                if db:
-                    db.carregar_produtos_cache(force_refresh=True)
-                print(f"[CRON API] Sync finalizado: ok={ok_sync}, msg={msg_sync}, prods={count_sync}", flush=True)
-            else:
-                ok_sync, msg_sync, count_sync = True, "Ambiente Vercel: Alerta gerado a partir do Turso Cloud DB atualizado.", len(db.carregar_produtos_cache()) if db else 0
 
             # C. Atualiza lock com SUCCESS
             try:

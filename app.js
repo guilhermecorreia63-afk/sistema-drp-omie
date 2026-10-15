@@ -157,6 +157,10 @@ function setupEventListeners() {
                 document.getElementById('page-heading').innerText = '🧬 Aba 7 — Inteligência de Produção & Compras (Matriz)';
                 document.getElementById('page-subheading').innerHTML = 'Curva ABC por Família, Ruptura Isolada por Grade (PP..3G e A3..A7) e Avaliação de Encalhe por Lote Mínimo';
                 carregarInteligenciaMatriz();
+            } else if (tabId === 'tab-comite-decisao') {
+                document.getElementById('page-heading').innerText = '🤝 Aba 8 — Comitê de Decisão & Produção (Coordenação)';
+                document.getElementById('page-subheading').innerHTML = 'Análise de Rupturas e Alertas com Inteligência Matriz, Meta Financeira de Terceiros e Decisão com 1 Clique';
+                carregarPautaCoordenacao();
             }
         });
     });
@@ -4526,3 +4530,652 @@ async function sincronizarRequisicoesPedidos() {
         if (btnAba7) btnAba7.innerHTML = origAba7Html;
     }
 }
+
+// ======================================================================
+// ABA 8 — COMITÊ DE DECISÃO & PRODUÇÃO (COORDENAÇÃO)
+// ======================================================================
+let stateComite = {
+    itens: [],
+    metas: {},
+    itemSelecionado: null,
+    filtroMarca: 'TODAS',
+    filtroStatus: 'TODOS',
+    busca: ''
+};
+
+// 1. Enviar produtos selecionados na Matriz para a Pauta
+async function enviarSelecionadosParaCoordenacao() {
+    if (!state.skusChecadosMatriz || state.skusChecadosMatriz.size === 0) {
+        alert('Selecione ao menos um produto na tabela da Matriz usando os checkboxes à esquerda para enviar ao Comitê de Decisão.');
+        return;
+    }
+    const skus = Array.from(state.skusChecadosMatriz);
+    const btn = document.getElementById('btn-enviar-coordenacao-matriz');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
+    }
+    try {
+        const resp = await fetch('/api/coordenacao/adicionar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ skus: skus })
+        });
+        const res = await resp.json();
+        if (res.success) {
+            alert(`✅ ${res.message || 'Produtos adicionados à Pauta da Coordenação!'}`);
+            if (confirm('Deseja abrir a Aba 8 (Comitê de Decisão) agora para iniciar a análise?')) {
+                const tabBtn = document.querySelector('.nav-tab[data-tab="tab-comite-decisao"]');
+                if (tabBtn) tabBtn.click();
+            }
+        } else {
+            alert('❌ ' + (res.message || 'Erro ao enviar produtos para a pauta.'));
+        }
+    } catch (err) {
+        console.error('Erro ao enviar para coordenacao:', err);
+        alert('❌ Falha na comunicação com o servidor.');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml || `<i class="fa-solid fa-users-gear"></i> Enviar p/ Comitê Coordenação (<span id="count-selected-coordenacao">${state.skusChecadosMatriz.size}</span>) 🎯`;
+        }
+    }
+}
+
+// 2. Carregar Pauta da Coordenação do Servidor
+async function carregarPautaCoordenacao(forcar = false) {
+    const container = document.getElementById('lista-cards-pauta');
+    if (container && (!stateComite.itens || stateComite.itens.length === 0)) {
+        container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 30px;"><i class="fa-solid fa-spinner fa-spin"></i> Carregando pauta da coordenação...</div>`;
+    }
+
+    try {
+        const resp = await fetch('/api/coordenacao/pauta?_t=' + Date.now());
+        const data = await resp.json();
+        if (resp.ok && data.success) {
+            stateComite.itens = data.itens || [];
+            stateComite.metas = data.metas_fornecedores || {};
+            
+            // Atualizar KPIs
+            const total = stateComite.itens.length;
+            const pendentes = stateComite.itens.filter(i => (i.decisao || 'PENDENTE') === 'PENDENTE').length;
+            const aprovados = stateComite.itens.filter(i => i.decisao === 'APROVADO').length;
+            const blacklist = stateComite.itens.filter(i => i.decisao === 'BLACKLIST').length;
+
+            const elTotal = document.getElementById('kpi-comite-total');
+            if (elTotal) elTotal.innerText = total;
+            const elPend = document.getElementById('kpi-comite-pendentes');
+            if (elPend) elPend.innerText = pendentes;
+            const elAprov = document.getElementById('kpi-comite-aprovados');
+            if (elAprov) elAprov.innerText = aprovados;
+            const elBl = document.getElementById('kpi-comite-blacklist');
+            if (elBl) elBl.innerText = blacklist;
+
+            const countEl = document.getElementById('count-itens-pauta');
+            if (countEl) countEl.innerText = total;
+
+            // Popular filtro de marcas
+            popularFiltroMarcasPauta();
+
+            // Renderizar fila
+            renderListaPauta();
+
+            // Re-renderizar Raio-X se o item atual ainda existir na pauta
+            if (stateComite.itemSelecionado) {
+                const refreshed = stateComite.itens.find(i => i.sku === stateComite.itemSelecionado.sku);
+                if (refreshed) {
+                    selecionarProdutoPauta(refreshed.sku);
+                } else {
+                    document.getElementById('vazio-raiox-comite').style.display = 'block';
+                    document.getElementById('conteudo-raiox-comite').style.display = 'none';
+                    stateComite.itemSelecionado = null;
+                }
+            }
+        }
+    } catch (err) {
+        console.error('Erro ao carregar pauta da coordenacao:', err);
+        if (container) {
+            container.innerHTML = `<div style="text-align:center; color:#f87171; padding:20px;">Erro ao carregar pauta da coordenação.</div>`;
+        }
+    }
+}
+
+function popularFiltroMarcasPauta() {
+    const sel = document.getElementById('filtro-marca-pauta');
+    if (!sel) return;
+    const valAtual = sel.value;
+    const marcas = Array.from(new Set(stateComite.itens.map(i => i.marca || 'SHALOM'))).sort();
+    
+    let opts = '<option value="TODAS">Todas as Marcas</option>';
+    marcas.forEach(m => {
+        opts += `<option value="${m}" ${m === valAtual ? 'selected' : ''}>${m}</option>`;
+    });
+    sel.innerHTML = opts;
+}
+
+function filtrarListaPauta() {
+    const buscaEl = document.getElementById('busca-pauta-comite');
+    const marcaEl = document.getElementById('filtro-marca-pauta');
+    const statusEl = document.getElementById('filtro-status-pauta');
+
+    stateComite.busca = buscaEl ? buscaEl.value.toLowerCase().trim() : '';
+    stateComite.filtroMarca = marcaEl ? marcaEl.value : 'TODAS';
+    stateComite.filtroStatus = statusEl ? statusEl.value : 'TODOS';
+
+    renderListaPauta();
+}
+
+function renderListaPauta() {
+    const container = document.getElementById('lista-cards-pauta');
+    if (!container) return;
+
+    let lista = stateComite.itens.filter(item => {
+        if (stateComite.filtroMarca !== 'TODAS' && (item.marca || 'SHALOM') !== stateComite.filtroMarca) return false;
+        if (stateComite.filtroStatus !== 'TODOS' && (item.decisao || 'PENDENTE') !== stateComite.filtroStatus) return false;
+        if (stateComite.busca) {
+            const termo = stateComite.busca;
+            const matchSku = (item.sku || '').toLowerCase().includes(termo);
+            const matchNome = (item.nome || '').toLowerCase().includes(termo);
+            if (!matchSku && !matchNome) return false;
+        }
+        return true;
+    });
+
+    if (lista.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; color: var(--text-muted); padding: 30px;">
+                Nenhum produto encontrado na pauta com os filtros aplicados.
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = '';
+    lista.forEach(item => {
+        const card = document.createElement('div');
+        const isAtivo = stateComite.itemSelecionado && stateComite.itemSelecionado.sku === item.sku;
+        
+        // Cores de status de decisão
+        let decisaoBadge = '<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);">🟡 Pendente</span>';
+        let borderColor = 'rgba(255, 255, 255, 0.08)';
+        if (item.decisao === 'APROVADO') {
+            decisaoBadge = `<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4);">🟢 Aprovado (${item.qtd_sugerida || 0} un)</span>`;
+            borderColor = 'rgba(16, 185, 129, 0.4)';
+        } else if (item.decisao === 'BLACKLIST') {
+            decisaoBadge = '<span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);">🔴 Descontinuar</span>';
+            borderColor = 'rgba(239, 68, 68, 0.4)';
+        }
+
+        if (isAtivo) {
+            borderColor = '#c084fc';
+        }
+
+        card.className = 'card-pauta-item';
+        card.style.cssText = `
+            background: ${isAtivo ? 'rgba(192, 132, 252, 0.12)' : 'rgba(30, 41, 59, 0.7)'};
+            border: 1px solid ${borderColor};
+            padding: 10px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        `;
+
+        card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 3px;">
+                        <strong style="color: #60a5fa; font-size: 0.85rem;">${item.sku}</strong>
+                        <span class="badge" style="font-size: 0.7rem; padding: 2px 6px; background: rgba(255,255,255,0.06);">${item.marca || 'SHALOM'}</span>
+                    </div>
+                    <div style="font-size: 0.82rem; font-weight: 500; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${item.nome}">
+                        ${item.nome}
+                    </div>
+                    <div style="display: flex; gap: 10px; font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+                        <span>Est: <strong style="color:#f8fafc;">${item.matriz_fisico || 0}</strong> un</span>
+                        <span>Vendas 30d: <strong style="color:#f8fafc;">${item.vendas_30d || 0}</strong></span>
+                        <span>ABC: <strong style="color:#fbbf24;">${item.classe_abc || 'C'}</strong></span>
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+                    <button class="btn btn-sm btn-icon btn-remover-pauta" data-sku="${item.sku}" title="Remover da Pauta" style="color: #94a3b8; font-size: 0.75rem; padding: 2px 5px;">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    ${decisaoBadge}
+                </div>
+            </div>
+        `;
+
+        card.onclick = (e) => {
+            if (e.target.closest('.btn-remover-pauta')) return;
+            selecionarProdutoPauta(item.sku);
+        };
+
+        const btnRem = card.querySelector('.btn-remover-pauta');
+        if (btnRem) {
+            btnRem.onclick = (e) => {
+                e.stopPropagation();
+                removerItemPauta(item.sku);
+            };
+        }
+
+        container.appendChild(card);
+    });
+}
+
+function selecionarProdutoPauta(sku) {
+    const item = stateComite.itens.find(i => i.sku === sku);
+    if (!item) return;
+
+    stateComite.itemSelecionado = item;
+    renderListaPauta(); // atualiza card ativo
+    renderRaioXComite(item);
+}
+
+function renderRaioXComite(item) {
+    const painelVazio = document.getElementById('vazio-raiox-comite');
+    const painelConteudo = document.getElementById('conteudo-raiox-comite');
+    if (!painelConteudo) return;
+
+    painelVazio.style.display = 'none';
+    painelConteudo.style.display = 'block';
+
+    const d = item.detalhes_calculo || {};
+    const marca = item.marca || 'SHALOM';
+    const isTerceiro = !marca.toUpperCase().includes('SHALOM') && !marca.toUpperCase().includes('EDIÇÕES');
+
+    // Cálculo da Margem e Lucro Bruto
+    const preco = item.valor_unitario || 0.0;
+    const cmc = item.cmc || 0.0;
+    const margemBrutaPct = preco > 0 ? (((preco - cmc) / preco) * 100).toFixed(1) : '0';
+
+    // Cálculo consolidado de Pedido Mínimo Financeiro de Terceiros
+    let blocoTerceiroHtml = '';
+    if (isTerceiro) {
+        const metaFornecedor = Number(stateComite.metas[marca] || 1000.0);
+        // Itens da mesma marca na pauta
+        const itensMesmaMarcaPauta = stateComite.itens.filter(i => (i.marca || '').toUpperCase() === marca.toUpperCase());
+        let valorTotalMarcaPauta = 0;
+        itensMesmaMarcaPauta.forEach(i => {
+            const qtd = i.qtd_sugerida > 0 ? i.qtd_sugerida : (i.lote_minimo > 0 ? i.lote_minimo : 1);
+            const pUnit = i.valor_unitario || i.cmc || 20.0;
+            valorTotalMarcaPauta += (qtd * pUnit);
+        });
+
+        const pctAtingido = Math.min(100, ((valorTotalMarcaPauta / metaFornecedor) * 100)).toFixed(0);
+        const faltaValor = Math.max(0, metaFornecedor - valorTotalMarcaPauta);
+        const metaAtingida = valorTotalMarcaPauta >= metaFornecedor;
+
+        // Sugestão de outros itens da mesma marca para completar o pedido
+        const outrosItensMarca = state.produtos.filter(p => {
+            if ((p.marca || '').toUpperCase() !== marca.toUpperCase()) return false;
+            if (p.ativo === false || state.blacklist.has(p.sku)) return false;
+            // Que não estejam na pauta ainda
+            if (stateComite.itens.some(it => it.sku === p.sku)) return false;
+            // Apenas com estoque baixo / alerta
+            const estMatriz = getMatrizDisponivel(p);
+            const vendas30 = p[`vendas_geral_${state.periodoDias}d`] || 0;
+            return estMatriz <= 15 || vendas30 > 0;
+        }).slice(0, 5);
+
+        let sugestoesHtml = '';
+        if (outrosItensMarca.length > 0) {
+            sugestoesHtml = `
+                <div style="margin-top: 12px; background: rgba(15, 23, 42, 0.5); padding: 10px; border-radius: 6px; border: 1px dashed rgba(255,255,255,0.15);">
+                    <div style="font-size: 0.8rem; font-weight: 600; color: #38bdf8; margin-bottom: 6px;">
+                        <i class="fa-solid fa-cart-plus"></i> Sugestões para completar o pedido de ${marca}:
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        ${outrosItensMarca.map(p => `
+                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;" title="${p.nome}">
+                                    <strong>${p.sku}</strong> — ${p.nome} (Est: ${getMatrizDisponivel(p)})
+                                </span>
+                                <button class="btn btn-sm btn-secondary" onclick="adicionarItemAvulsoPauta('${p.sku}')" style="padding: 1px 6px; font-size: 0.72rem; color: #34d399; border-color: rgba(16,185,129,0.3);">
+                                    + Adicionar à Pauta
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        blocoTerceiroHtml = `
+            <div class="card mb-3" style="background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(14, 165, 233, 0.3); padding: 14px; border-radius: 8px; margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h5 style="margin:0; color:#38bdf8; font-size: 0.92rem; display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-file-invoice-dollar"></i> Pedido Mínimo Financeiro — Fornecedor: ${marca}
+                    </h5>
+                    <button class="btn btn-sm btn-secondary" onclick="editarMetaFinanceiraFornecedor('${marca}', ${metaFornecedor})" style="font-size: 0.75rem; padding: 2px 8px;">
+                        <i class="fa-solid fa-pen"></i> Editar Meta (R$)
+                    </button>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px;">
+                    <span>Total Consolidado na Pauta: <strong style="color: ${metaAtingida ? '#34d399' : '#fbbf24'};">R$ ${valorTotalMarcaPauta.toFixed(2)}</strong></span>
+                    <span>Meta do Fornecedor: <strong>R$ ${metaFornecedor.toFixed(2)}</strong></span>
+                </div>
+                <!-- Barra de Progresso da Meta -->
+                <div style="background: rgba(15, 23, 42, 0.8); border-radius: 6px; height: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px;">
+                    <div style="background: ${metaAtingida ? 'linear-gradient(90deg, #10b981, #34d399)' : 'linear-gradient(90deg, #f59e0b, #fbbf24)'}; height: 100%; width: ${pctAtingido}%; transition: width 0.3s ease;"></div>
+                </div>
+                <div style="font-size: 0.78rem; color: ${metaAtingida ? '#34d399' : '#94a3b8'};">
+                    ${metaAtingida ? '🎉 Meta mínima atingida para faturamento!' : `Faltam <strong>R$ ${faltaValor.toFixed(2)}</strong> (${100 - pctAtingido}% restante) para atingir o faturamento mínimo.`}
+                </div>
+                ${sugestoesHtml}
+            </div>
+        `;
+    }
+
+    painelConteudo.innerHTML = `
+        <!-- Cabeçalho do Produto -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 14px;">
+            <div>
+                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 4px;">
+                    <span class="badge" style="background: rgba(192, 132, 252, 0.2); color: #c084fc; font-size: 0.85rem; font-weight: 700;">${item.sku}</span>
+                    <span class="badge" style="background: rgba(255,255,255,0.06); color: #e2e8f0;">${item.marca || 'SHALOM'}</span>
+                    <span class="badge" style="background: rgba(255,255,255,0.06); color: #94a3b8;">${item.familia || 'OUTROS'}</span>
+                    <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24;">⭐ Classe ${item.classe_abc || 'C'}</span>
+                </div>
+                <h3 style="margin: 0; font-size: 1.25rem; color: #f8fafc;">${item.nome}</h3>
+            </div>
+            <div style="text-align: right; background: rgba(15, 23, 42, 0.6); padding: 8px 14px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08);">
+                <div style="font-size: 0.75rem; color: var(--text-muted);">Preço / CMC / Margem</div>
+                <div style="font-size: 0.95rem; font-weight: 700; color: #34d399;">
+                    R$ ${preco.toFixed(2)} <span style="font-size:0.75rem; color:#94a3b8; font-weight:normal;">(Custo: R$ ${cmc.toFixed(2)})</span>
+                </div>
+                <div style="font-size: 0.75rem; color: ${margemBrutaPct > 40 ? '#34d399' : '#fbbf24'}; font-weight: 600;">
+                    Margem Estimada: ${margemBrutaPct}%
+                </div>
+            </div>
+        </div>
+
+        <!-- Banner Diagnóstico IA -->
+        <div style="padding: 10px 14px; border-radius: 6px; background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.3); color: #93c5fd; margin-bottom: 14px; font-size: 0.88rem;">
+            <i class="fa-solid fa-wand-magic-sparkles" style="color: #60a5fa; margin-right: 6px;"></i>
+            <strong>Recomendação Inteligência:</strong> ${item.acao_recomendada || 'Análise de Reposição'} | Tendência: <strong>${item.tendencia_vendas || 'Estável'}</strong>
+        </div>
+
+        <!-- Grid de Vendas & Cobertura -->
+        <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 14px;">
+            <div class="metric-card" style="padding: 10px; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.08);">
+                <div class="metric-lbl">Estoque Matriz</div>
+                <div class="metric-val" style="font-size: 1.2rem; color: #f8fafc;">${item.matriz_fisico || 0} <small style="font-size:0.75rem;">un</small></div>
+            </div>
+            <div class="metric-card" style="padding: 10px; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.08);">
+                <div class="metric-lbl">Vendas 30d (Geral)</div>
+                <div class="metric-val" style="font-size: 1.2rem; color: #38bdf8;">${item.vendas_30d || 0} <small style="font-size:0.75rem;">un</small></div>
+            </div>
+            <div class="metric-card" style="padding: 10px; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.08);">
+                <div class="metric-lbl">Média Mensal (90d)</div>
+                <div class="metric-val" style="font-size: 1.2rem; color: #60a5fa;">${((item.vendas_90d || 0) / 3).toFixed(1)} <small style="font-size:0.75rem;">un</small></div>
+            </div>
+            <div class="metric-card" style="padding: 10px; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.08);">
+                <div class="metric-lbl">Vendas Ano (365d)</div>
+                <div class="metric-val" style="font-size: 1.2rem; color: #a78bfa;">${item.vendas_365d || 0} <small style="font-size:0.75rem;">un</small></div>
+            </div>
+            <div class="metric-card" style="padding: 10px; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.08);">
+                <div class="metric-lbl">Remessas CD_SP</div>
+                <div class="metric-val" style="font-size: 1.2rem; color: #34d399;">+${item.remessas_cd_sp_30d || 0} <small style="font-size:0.75rem;">un</small></div>
+            </div>
+        </div>
+
+        <!-- Bloco Lote Mínimo Dinâmico -->
+        <div class="card mb-3" style="background: rgba(15, 23, 42, 0.6); padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.25); margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <h5 style="margin: 0; color: #fbbf24; font-size: 0.9rem;">
+                        <i class="fa-solid fa-sliders"></i> Lote Mínimo de Produção / Tiragem
+                    </h5>
+                    <p style="margin: 2px 0 0 0; font-size: 0.78rem; color: var(--text-muted);">
+                        Valor herdado da Inteligência Matriz: <strong>${item.lote_minimo || 0} un</strong> (${item.meses_cobertura_lote || 0} meses de cobertura estimada).
+                    </p>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <input type="number" id="input-lote-comite-${item.sku}" class="form-control" style="width: 100px; font-size: 0.85rem;" value="${item.lote_minimo || 0}" min="0" step="10">
+                    <button class="btn btn-sm btn-secondary" onclick="salvarLotePeloComite('${item.sku}')" style="font-size: 0.78rem;">
+                        <i class="fa-solid fa-floppy-disk"></i> Atualizar Lote
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bloco de Terceiros (se aplicável) -->
+        ${blocoTerceiroHtml}
+
+        <!-- Mesa de Decisão e Parecer do Coordenador -->
+        <div class="card" style="background: rgba(30, 41, 59, 0.9); border: 1px solid #c084fc; padding: 16px; border-radius: 8px;">
+            <h4 style="margin: 0 0 10px 0; color: #c084fc; font-size: 0.98rem; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-gavel"></i> Decisão da Coordenação & Parecer Executivo
+            </h4>
+            
+            <div style="display: grid; grid-template-columns: 140px 1fr; gap: 12px; margin-bottom: 12px;">
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: #f8fafc; display: block; margin-bottom: 4px;">Qtd a Produzir / Comprar:</label>
+                    <input type="number" id="decisao-qtd-${item.sku}" class="form-control" value="${item.qtd_sugerida > 0 ? item.qtd_sugerida : (item.lote_minimo > 0 ? item.lote_minimo : 50)}" min="0" step="10">
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: #f8fafc; display: block; margin-bottom: 4px;">Justificativa / Parecer Editorial da Coordenação:</label>
+                    <input type="text" id="decisao-obs-${item.sku}" class="form-control" value="${item.observacao || ''}" placeholder="Ex: Aguardando nova capa, cotação de papel, reavaliar em 30d...">
+                </div>
+            </div>
+
+            <!-- Botões de Ação Imediata -->
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn btn-success btn-sm" onclick="registrarDecisaoComite('${item.sku}', 'APROVADO')" style="font-weight: 600;">
+                        <i class="fa-solid fa-circle-check"></i> 🟢 Aprovar Produção / Compra
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="registrarDecisaoComite('${item.sku}', 'BLACKLIST')" style="font-weight: 600;">
+                        <i class="fa-solid fa-ban"></i> 🔴 Descontinuar (Mover p/ Blacklist)
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="registrarDecisaoComite('${item.sku}', 'PENDENTE')" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border-color: rgba(245, 158, 11, 0.4); font-weight: 600;">
+                        <i class="fa-solid fa-clock"></i> 🟡 Salvar Parecer / Manter Pendente
+                    </button>
+                </div>
+                <div>
+                    <button class="btn btn-sm btn-secondary" onclick="removerItemPauta('${item.sku}')" style="color: #94a3b8;">
+                        <i class="fa-solid fa-trash"></i> Retirar da Pauta
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// 3. Salvar Lote Mínimo a partir da Tela do Comitê
+async function salvarLotePeloComite(sku) {
+    const input = document.getElementById(`input-lote-comite-${sku}`);
+    if (!input) return;
+    const novoLote = parseInt(input.value) || 0;
+    try {
+        const resp = await fetch('/api/salvar_lote_manual', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sku: sku, lote_minimo: novoLote })
+        });
+        const res = await resp.json();
+        if (res.success) {
+            alert(`Lote mínimo do SKU ${sku} atualizado para ${novoLote} un!`);
+            carregarPautaCoordenacao();
+        } else {
+            alert('Erro: ' + res.message);
+        }
+    } catch (e) {
+        alert('Erro ao salvar lote.');
+    }
+}
+
+// 4. Salvar Decisão no Servidor
+async function registrarDecisaoComite(sku, decisao) {
+    const qtdEl = document.getElementById(`decisao-qtd-${sku}`);
+    const obsEl = document.getElementById(`decisao-obs-${sku}`);
+    const qtd = qtdEl ? parseInt(qtdEl.value) || 0 : 0;
+    const obs = obsEl ? obsEl.value.trim() : '';
+
+    if (decisao === 'BLACKLIST') {
+        if (!confirm(`Tem certeza que deseja DESCONTINUAR o SKU ${sku}? Ele será movido para a Blacklist global e não gerará mais alertas de ruptura.`)) {
+            return;
+        }
+    }
+
+    try {
+        const resp = await fetch('/api/coordenacao/salvar_decisao', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                sku: sku,
+                decisao: decisao,
+                qtd_sugerida: qtd,
+                observacao: obs
+            })
+        });
+        const res = await resp.json();
+        if (res.success) {
+            if (decisao === 'APROVADO') {
+                if (confirm(`✅ Produção de ${qtd} un APROVADA!\nDeseja abrir a tela de Requisição de Compra no Omie agora para gerar a ordem?`)) {
+                    state.skusChecadosMatriz.add(sku);
+                    abrirModalRequisicaoCompra();
+                }
+            } else {
+                alert(`✅ Decisão registrada com sucesso: ${decisao}`);
+            }
+            carregarPautaCoordenacao();
+        } else {
+            alert('Erro ao registrar decisão: ' + res.message);
+        }
+    } catch (e) {
+        console.error('Erro ao registrar decisao:', e);
+        alert('Falha na comunicação com o servidor.');
+    }
+}
+
+// 5. Remover Item da Pauta
+async function removerItemPauta(sku) {
+    if (!confirm(`Remover o SKU ${sku} da Pauta da Coordenação?`)) return;
+    try {
+        const resp = await fetch('/api/coordenacao/remover', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sku: sku })
+        });
+        const res = await resp.json();
+        if (res.success) {
+            carregarPautaCoordenacao();
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+// 6. Adicionar Item Avulso de Sugestão de Fornecedor
+async function adicionarItemAvulsoPauta(sku) {
+    try {
+        const resp = await fetch('/api/coordenacao/adicionar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sku: sku })
+        });
+        const res = await resp.json();
+        if (res.success) {
+            carregarPautaCoordenacao();
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+// 7. Editar Meta Financeira de Fornecedor
+async function editarMetaFinanceiraFornecedor(fornecedor, metaAtual) {
+    const novoValorStr = prompt(`Informe a nova meta de pedido mínimo consolidado em R$ para o fornecedor ${fornecedor}:`, metaAtual);
+    if (!novoValorStr) return;
+    const novoValor = parseFloat(novoValorStr.replace(',', '.'));
+    if (isNaN(novoValor) || novoValor < 0) {
+        alert('Valor inválido!');
+        return;
+    }
+    try {
+        const resp = await fetch('/api/coordenacao/salvar_meta', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fornecedor: fornecedor, meta_valor: novoValor })
+        });
+        const res = await resp.json();
+        if (res.success) {
+            carregarPautaCoordenacao();
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+// 8. Limpar Pauta Completa
+async function limparPautaCompleta() {
+    if (!confirm('Tem certeza que deseja LIMPAR todos os itens da Pauta da Coordenação da reunião?')) return;
+    for (const it of stateComite.itens) {
+        try {
+            await fetch('/api/coordenacao/remover', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sku: it.sku })
+            });
+        } catch (e) {}
+    }
+    carregarPautaCoordenacao();
+}
+
+// 9. Gerar Ata Executiva da Reunião em PDF
+function gerarAtaComitePdf() {
+    if (!stateComite.itens || stateComite.itens.length === 0) {
+        alert('A pauta está vazia. Adicione produtos antes de gerar a ata.');
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('Ata do Comitê de Decisão & Produção — Edições Shalom', 14, 18);
+
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(10);
+    const agora = new Date().toLocaleString('pt-BR');
+    doc.text(`Data da Reunião: ${agora} | Total de Itens Avaliados: ${stateComite.itens.length}`, 14, 25);
+    doc.line(14, 28, 196, 28);
+
+    let y = 35;
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text('SKU', 14, y);
+    doc.text('Produto / Marca', 35, y);
+    doc.text('Estoque', 105, y);
+    doc.text('Decisão', 125, y);
+    doc.text('Parecer / Justificativa', 150, y);
+    doc.line(14, y + 2, 196, y + 2);
+    y += 7;
+
+    doc.setFont('Helvetica', 'normal');
+    stateComite.itens.forEach(item => {
+        if (y > 275) {
+            doc.addPage();
+            y = 20;
+        }
+
+        doc.text(String(item.sku), 14, y);
+        const nomeCortado = (item.nome || '').substring(0, 32);
+        doc.text(`${nomeCortado} (${item.marca || 'SH'})`, 35, y);
+        doc.text(`${item.matriz_fisico || 0} un`, 105, y);
+
+        const dec = item.decisao || 'PENDENTE';
+        doc.text(dec, 125, y);
+
+        const obs = (item.observacao || '-').substring(0, 24);
+        doc.text(obs, 150, y);
+
+        y += 6;
+    });
+
+    doc.save(`Ata_Comite_Producao_${new Date().toISOString().slice(0, 10)}.pdf`);
+}
+

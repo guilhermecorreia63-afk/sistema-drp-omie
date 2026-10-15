@@ -65,11 +65,33 @@ def extrair_base_e_tamanho(nome_prod: str) -> tuple[str, str]:
 
     return nome_up, ""
 
-def obter_remessas_por_sku() -> Dict[str, float]:
+def obter_remessas_por_sku(produtos: List[Dict[str, Any]] = None) -> Dict[str, float]:
     """
     Calcula a soma de remessas/transferências enviadas pela Matriz para o CD_SP
-    nos últimos 30 dias a partir da tabela drp_remessas.
+    nos últimos 30 dias a partir da tabela drp_remessas, mapeando tanto por nCodProd quanto por SKU.
     """
+    id_to_sku = {}
+    if produtos:
+        for p in produtos:
+            id_p = p.get('id_produto')
+            sku = p.get('sku') or p.get('codigo')
+            if id_p and sku:
+                try:
+                    id_to_sku[int(id_p)] = str(sku).strip()
+                except Exception:
+                    pass
+    if not id_to_sku:
+        try:
+            df_cad = db.executar_query("SELECT id_produto, sku FROM produtos_cadastro WHERE id_produto IS NOT NULL AND sku IS NOT NULL")
+            if df_cad is not None and not df_cad.empty:
+                for _, r in df_cad.iterrows():
+                    try:
+                        id_to_sku[int(r['id_produto'])] = str(r['sku']).strip()
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
     remessas_map = {}
     try:
         df = db.executar_query("SELECT itens_json, status_transito, ultima_atualizacao FROM drp_remessas")
@@ -84,11 +106,20 @@ def obter_remessas_por_sku() -> Dict[str, float]:
                             itens = json.loads(itens_str)
                             for it in itens:
                                 prod = it.get('produto') or it
-                                sku = str(it.get('cCodItInt') or prod.get('cCodItInt') or prod.get('cCodigo') or prod.get('codigo_produto') or prod.get('cSKU') or '').strip()
+                                n_cod = it.get('nCodProd') or prod.get('nCodProd')
+                                sku = None
+                                if n_cod and id_to_sku:
+                                    try:
+                                        sku = id_to_sku.get(int(n_cod))
+                                    except Exception:
+                                        pass
+                                if not sku:
+                                    cod_raw = str(it.get('cCodItInt') or prod.get('cCodItInt') or prod.get('cCodigo') or prod.get('codigo_produto') or prod.get('cSKU') or '').strip()
+                                    sku = cod_raw.replace('R1-', '').replace('REM-', '').strip()
                                 qtd = float(it.get('nQtde') or it.get('nQtd') or it.get('quantidade') or prod.get('nQtde') or prod.get('nQtd') or 0)
                                 if sku and qtd > 0:
                                     remessas_map[sku] = remessas_map.get(sku, 0.0) + qtd
-                                    sku_pad = sku.padStart(6, '0') if hasattr(sku, 'padStart') else str(sku).zfill(6)
+                                    sku_pad = str(sku).zfill(6)
                                     remessas_map[sku_pad] = remessas_map.get(sku_pad, 0.0) + qtd
                         except Exception:
                             pass
@@ -134,7 +165,7 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
     lotes_manuais = carregar_lotes_manuais()
 
     # 3. Carregar Remessas CD_SP
-    remessas_cd_sp = obter_remessas_por_sku()
+    remessas_cd_sp = obter_remessas_por_sku(produtos)
 
     # 4. Filtrar produtos fora da Blacklist e fora de COMBOS / KITS (100% de exclusão)
     produtos_validos = []
@@ -188,7 +219,16 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
         for p in prods_fam:
             sku = str(p.get("sku", "")).strip()
             sku_pad = sku.zfill(6)
-            rem_qtd = remessas_cd_sp.get(sku, 0.0) or remessas_cd_sp.get(sku_pad, 0.0)
+            digits = re.sub(r'[^0-9]', '', sku)
+            digits_pad = digits.zfill(6) if digits else ""
+            rem_qtd = (
+                remessas_cd_sp.get(sku, 0.0) or
+                remessas_cd_sp.get(sku.upper(), 0.0) or
+                remessas_cd_sp.get(sku_pad, 0.0) or
+                (remessas_cd_sp.get(digits, 0.0) if digits else 0.0) or
+                (remessas_cd_sp.get(digits_pad, 0.0) if digits_pad else 0.0) or
+                (remessas_cd_sp.get(f"PRD{digits_pad}", 0.0) if digits_pad else 0.0)
+            )
             
             v30_direto = float(p.get("vendas_geral_30d") if p.get("vendas_geral_30d") is not None else (p.get("vendas_sul_sudeste_30d") or p.get("vendas_30d") or 0.0))
             v60_direto = float(p.get("vendas_geral_60d") if p.get("vendas_geral_60d") is not None else (p.get("vendas_sul_sudeste_60d") or p.get("vendas_60d") or 0.0))

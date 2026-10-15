@@ -59,6 +59,10 @@
                     <i class="fa-solid fa-dna" style="color: #34d399;"></i>
                     <span>7. Inteligência Matriz 🧬</span>
                 </button>
+                <button class="nav-tab" data-tab="tab-comite-decisao">
+                    <i class="fa-solid fa-users-gear" style="color: #c084fc;"></i>
+                    <span>8. Comitê de Decisão 🤝</span>
+                </button>
             </nav>
 
             <div class="filter-section">
@@ -363,6 +367,9 @@
                             </button>
                             <button class="btn btn-secondary" onclick="tirarSelecionadosProducao()" title="Tirar produtos selecionados (ou todos) do status Em Produção / Compra" style="background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.4); color: #c084fc;">
                                 <i class="fa-solid fa-broom"></i> Tirar Selecionados da Produção/Compra
+                            </button>
+                            <button id="btn-enviar-coordenacao-matriz" class="btn btn-secondary" onclick="enviarSelecionadosParaCoordenacao()" title="Enviar produtos selecionados para o Comitê de Decisão & Produção" style="background: rgba(192, 132, 252, 0.2); border: 1px solid rgba(192, 132, 252, 0.5); color: #c084fc; font-weight: 600;">
+                                <i class="fa-solid fa-users-gear"></i> Enviar p/ Comitê Coordenação (<span id="count-selected-coordenacao">0</span>) 🎯
                             </button>
                             <button id="btn-add-blacklist-selected-matriz" class="btn btn-danger">
                                 <i class="fa-solid fa-ban"></i> Mover Selecionados para Blacklist (<span id="count-selected-blacklist-matriz">0</span>)
@@ -852,6 +859,105 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Aba 8: Comitê de Decisão & Produção (Análise da Coordenação) -->
+            <section id="tab-comite-decisao" class="tab-content">
+                <div class="card mb-4">
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h3 style="display: flex; align-items: center; gap: 10px; color: #c084fc;">
+                                <i class="fa-solid fa-users-gear"></i> Aba 8 — Comitê de Decisão & Produção (Coordenação) 🤝
+                            </h3>
+                            <p style="margin:0; font-size:0.85rem; color:var(--text-muted);">
+                                Análise estratégica de itens em Ruptura e Alerta, Meta Financeira de Fornecedores Terceiros e Decisão com 1 Clique (Produzir, Blacklist ou Justificativa).
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button id="btn-gerar-ata-comite" class="btn btn-secondary" onclick="gerarAtaComitePdf()" style="background: rgba(192, 132, 252, 0.15); border: 1px solid rgba(192, 132, 252, 0.4); color: #c084fc; font-weight: 600;">
+                                <i class="fa-solid fa-file-pdf"></i> Gerar Ata Executiva (PDF) 📄
+                            </button>
+                            <button id="btn-recarregar-pauta" class="btn btn-secondary" onclick="carregarPautaCoordenacao(true)" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.4); color: #60a5fa; font-weight: 600;">
+                                <i class="fa-solid fa-arrows-rotate"></i> Recarregar Pauta 🔄
+                            </button>
+                            <button id="btn-limpar-pauta" class="btn btn-danger btn-sm" onclick="limparPautaCompleta()" style="font-weight: 600;">
+                                <i class="fa-solid fa-trash-can"></i> Limpar Pauta
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- KPIs do Comitê -->
+                    <div class="kpi-grid" style="margin-top: 20px;">
+                        <div class="kpi-card" style="border-top: 3px solid #a855f7;">
+                            <div class="kpi-title">TOTAL NA PAUTA</div>
+                            <div class="kpi-value" id="kpi-comite-total">0</div>
+                            <div class="kpi-sub">Produtos selecionados</div>
+                        </div>
+                        <div class="kpi-card" style="border-top: 3px solid #f59e0b;">
+                            <div class="kpi-title">DECISÕES PENDENTES</div>
+                            <div class="kpi-value" id="kpi-comite-pendentes">0</div>
+                            <div class="kpi-sub">Aguardando parecer</div>
+                        </div>
+                        <div class="kpi-card" style="border-top: 3px solid #10b981;">
+                            <div class="kpi-title">APROVADOS P/ PRODUÇÃO</div>
+                            <div class="kpi-value" id="kpi-comite-aprovados">0</div>
+                            <div class="kpi-sub">Prontos p/ requisição</div>
+                        </div>
+                        <div class="kpi-card" style="border-top: 3px solid #ef4444;">
+                            <div class="kpi-title">DESCONTINUADOS (BLACKLIST)</div>
+                            <div class="kpi-value" id="kpi-comite-blacklist">0</div>
+                            <div class="kpi-sub">Cauda longa / sem giro</div>
+                        </div>
+                    </div>
+
+                    <!-- Layout Master-Detail (2 Colunas) -->
+                    <div style="display: grid; grid-template-columns: 380px 1fr; gap: 20px; margin-top: 20px; align-items: start;">
+                        <!-- Coluna 1: Lista da Pauta -->
+                        <div class="card" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); padding: 15px; border-radius: 8px;">
+                            <h4 style="margin: 0 0 12px 0; color: #f8fafc; font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center;">
+                                <span><i class="fa-solid fa-list-check"></i> Fila de Produtos (<span id="count-itens-pauta">0</span>)</span>
+                            </h4>
+
+                            <!-- Filtros da Fila -->
+                            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
+                                <input type="text" id="busca-pauta-comite" class="form-control" placeholder="🔍 Filtrar pauta..." onkeyup="filtrarListaPauta()">
+                                <div style="display: flex; gap: 6px;">
+                                    <select id="filtro-marca-pauta" class="form-control" style="font-size: 0.8rem;" onchange="filtrarListaPauta()">
+                                        <option value="TODAS" selected>Todas as Marcas</option>
+                                    </select>
+                                    <select id="filtro-status-pauta" class="form-control" style="font-size: 0.8rem;" onchange="filtrarListaPauta()">
+                                        <option value="TODOS" selected>Todos os Status</option>
+                                        <option value="PENDENTE">🟡 Pendente</option>
+                                        <option value="APROVADO">🟢 Aprovado</option>
+                                        <option value="BLACKLIST">🔴 Blacklist</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Lista Rolável de Cards -->
+                            <div id="lista-cards-pauta" style="max-height: 650px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px;">
+                                <div style="text-align: center; color: var(--text-muted); padding: 30px;">
+                                    Nenhum item na pauta da coordenação.<br>
+                                    <small>Selecione itens na Aba 2 (Matriz) e clique em <em>"Enviar p/ Comitê"</em>.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Coluna 2: Raio-X & Mesa de Decisão -->
+                        <div id="painel-raiox-comite" class="card" style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 8px; min-height: 500px;">
+                            <div id="vazio-raiox-comite" style="text-align: center; color: var(--text-muted); padding: 80px 20px;">
+                                <i class="fa-solid fa-chart-simple" style="font-size: 3rem; color: #475569; margin-bottom: 15px;"></i>
+                                <h4 style="color: #94a3b8; margin: 0 0 8px 0;">Selecione um produto da pauta ao lado</h4>
+                                <p style="max-width: 480px; margin: 0 auto; font-size: 0.88rem;">
+                                    O Raio-X estratégico exibirá os dados de vendas, CMC, margem, lote dinâmico da Inteligência Matriz e a barra de pedido mínimo financeiro do fornecedor.
+                                </p>
+                            </div>
+                            <div id="conteudo-raiox-comite" style="display: none;">
+                                <!-- Preenchido dinamicamente via JS -->
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
