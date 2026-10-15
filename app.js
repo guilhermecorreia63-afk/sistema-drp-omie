@@ -4557,13 +4557,163 @@ async function sincronizarRequisicoesPedidos() {
 // ABA 8 — COMITÊ DE DECISÃO & PRODUÇÃO (COORDENAÇÃO)
 // ======================================================================
 let stateComite = {
-    itens: [],
-    metas: {},
+    itens: (() => {
+        try {
+            return JSON.parse(localStorage.getItem('drp_pauta_coordenacao') || '[]');
+        } catch (e) {
+            return [];
+        }
+    })(),
+    metas: (() => {
+        try {
+            return JSON.parse(localStorage.getItem('drp_pauta_metas') || '{}');
+        } catch (e) {
+            return {};
+        }
+    })(),
     itemSelecionado: null,
     filtroMarca: 'TODAS',
     filtroStatus: 'TODOS',
     busca: ''
 };
+
+// Salvar pauta localmente no LocalStorage e atualizar contadores
+function salvarPautaLocal() {
+    try {
+        localStorage.setItem('drp_pauta_coordenacao', JSON.stringify(stateComite.itens));
+        localStorage.setItem('drp_pauta_metas', JSON.stringify(stateComite.metas));
+    } catch (e) {
+        console.warn('Erro ao salvar pauta no localStorage:', e);
+    }
+
+    const total = stateComite.itens.length;
+    const pendentes = stateComite.itens.filter(i => (i.decisao || 'PENDENTE') === 'PENDENTE').length;
+    const aprovados = stateComite.itens.filter(i => i.decisao === 'APROVADO').length;
+    const blacklist = stateComite.itens.filter(i => i.decisao === 'BLACKLIST').length;
+
+    const elTotal = document.getElementById('kpi-comite-total');
+    if (elTotal) elTotal.innerText = total;
+    const elPend = document.getElementById('kpi-comite-pendentes');
+    if (elPend) elPend.innerText = pendentes;
+    const elAprov = document.getElementById('kpi-comite-aprovados');
+    if (elAprov) elAprov.innerText = aprovados;
+    const elBl = document.getElementById('kpi-comite-blacklist');
+    if (elBl) elBl.innerText = blacklist;
+
+    const countEl = document.getElementById('count-itens-pauta');
+    if (countEl) countEl.innerText = total;
+}
+
+// Obter dados completos de um produto a partir de state.produtos e stateInteligenciaMatriz
+function obterItemPautaCompleto(skuRaw) {
+    if (!skuRaw) return null;
+    const cleanSku = String(skuRaw).trim().toUpperCase();
+    const digitsOnly = cleanSku.replace(/\D/g, '');
+    const cleanPadded = cleanSku.padStart(6, '0');
+
+    // 1. Buscar no state.produtos
+    let pBase = null;
+    if (state.produtos && state.produtos.length > 0) {
+        pBase = state.produtos.find(p => {
+            const s = String(p.sku || '').trim().toUpperCase();
+            return s === cleanSku ||
+                   s.padStart(6, '0') === cleanPadded ||
+                   (digitsOnly && s.replace(/\D/g, '') === digitsOnly);
+        });
+    }
+
+    // 2. Buscar no stateInteligenciaMatriz.produtos
+    let pIntel = null;
+    if (stateInteligenciaMatriz && stateInteligenciaMatriz.produtos && stateInteligenciaMatriz.produtos.length > 0) {
+        pIntel = stateInteligenciaMatriz.produtos.find(p => {
+            const s = String(p.sku || '').trim().toUpperCase();
+            return s === cleanSku ||
+                   s.padStart(6, '0') === cleanPadded ||
+                   (digitsOnly && s.replace(/\D/g, '') === digitsOnly);
+        });
+    }
+
+    const dCalc = pIntel?.detalhes_calculo || {};
+    const agora = new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+    const loteDinamico = Number(pIntel?.lote_minimo || (pBase?.familia?.toUpperCase()?.includes('ESPIRITUALIDADE') ? 500 : (pBase?.familia?.toUpperCase()?.includes('CAMISA') ? 20 : 0)));
+
+    return {
+        sku: pBase?.sku || cleanSku,
+        nome: pBase?.nome || pBase?.descricao || pIntel?.nome || cleanSku,
+        familia: pBase?.familia || pIntel?.familia || 'OUTROS',
+        marca: pBase?.marca || pIntel?.marca || 'SHALOM',
+        matriz_fisico: Number(pBase?.matriz_fisico || pBase?.matriz || 0),
+        matriz_reservado: Number(pBase?.matriz_reservado || 0),
+        matriz_disponivel: Number(pBase ? getMatrizDisponivel(pBase) : 0),
+        cd_sp_fisico: Number(pBase?.cd_sp_fisico || pBase?.cd_sp || 0),
+        cmc: Number(pBase?.cmc || 0.0),
+        valor_unitario: Number(pBase?.valor_unitario || 0.0),
+        vendas_30d: Number(pBase?.vendas_geral_30d || pBase?.[`vendas_geral_${state.periodoDias}d`] || pBase?.vendas_30d || 0),
+        vendas_60d: Number(pBase?.vendas_geral_60d || pBase?.vendas_60d || 0),
+        vendas_90d: Number(pBase?.vendas_geral_90d || pBase?.vendas_90d || 0),
+        vendas_180d: Number(pBase?.vendas_geral_180d || 0),
+        vendas_365d: Number(pBase?.vendas_geral_365d || 0),
+        classe_abc: pIntel?.classe_abc_familia || 'C',
+        tendencia_vendas: pIntel?.tendencia_vendas || 'Estável ➡️',
+        lote_minimo: loteDinamico,
+        meses_cobertura_lote: Number(pIntel?.meses_cobertura_lote || 0),
+        acao_recomendada: pIntel?.acao_recomendada || 'Análise da Coordenação',
+        remessas_cd_sp_30d: Number(dCalc.remessas_cd_sp_30d || pIntel?.remessas_cd_sp_30d || 0),
+        detalhes_calculo: dCalc,
+        decisao: 'PENDENTE',
+        observacao: '',
+        qtd_sugerida: loteDinamico > 0 ? loteDinamico : 0,
+        adicionado_em: agora
+    };
+}
+
+// Adicionar um ou mais SKUs à pauta com persistência imediata
+async function adicionarSkusPauta(skus) {
+    if (!skus || skus.length === 0) return 0;
+
+    let adicionados = 0;
+    skus.forEach(s => {
+        const itemComp = obterItemPautaCompleto(s);
+        if (!itemComp) return;
+
+        // Se já existe na pauta, apenas atualiza os dados
+        const idxExistente = stateComite.itens.findIndex(i => String(i.sku).trim().toUpperCase() === String(itemComp.sku).trim().toUpperCase());
+        if (idxExistente >= 0) {
+            // Mantém a decisão anterior se já havia sido tomada
+            itemComp.decisao = stateComite.itens[idxExistente].decisao || 'PENDENTE';
+            itemComp.observacao = stateComite.itens[idxExistente].observacao || '';
+            if (stateComite.itens[idxExistente].qtd_sugerida) {
+                itemComp.qtd_sugerida = stateComite.itens[idxExistente].qtd_sugerida;
+            }
+            stateComite.itens[idxExistente] = itemComp;
+        } else {
+            stateComite.itens.unshift(itemComp);
+            adicionados++;
+        }
+    });
+
+    // Salvar localmente no LocalStorage imediatamente
+    salvarPautaLocal();
+    popularFiltroMarcasPauta();
+    renderListaPauta();
+
+    // Seleciona o primeiro produto adicionado para visualização no Raio-X
+    if (stateComite.itens.length > 0) {
+        selecionarProdutoPauta(stateComite.itens[0].sku);
+    }
+
+    // Sincroniza em segundo plano com o backend (se disponível)
+    try {
+        fetch('/api/coordenacao/adicionar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ skus: skus.map(String) })
+        }).catch(() => {});
+    } catch (e) {}
+
+    return adicionados;
+}
 
 // 1. Enviar produtos selecionados na Matriz para a Pauta
 async function enviarSelecionadosParaCoordenacao() {
@@ -4572,94 +4722,71 @@ async function enviarSelecionadosParaCoordenacao() {
         return;
     }
     const skus = Array.from(state.skusChecadosMatriz);
-    const btn = document.getElementById('btn-enviar-coordenacao-matriz');
-    const origHtml = btn ? btn.innerHTML : '';
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
-    }
-    try {
-        const resp = await fetch('/api/coordenacao/adicionar', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ skus: skus })
-        });
-        const res = await resp.json();
-        if (res.success) {
-            alert(`✅ ${res.message || 'Produtos adicionados à Pauta da Coordenação!'}`);
-            if (confirm('Deseja abrir a Aba 8 (Comitê de Decisão) agora para iniciar a análise?')) {
-                const tabBtn = document.querySelector('.nav-tab[data-tab="tab-comite-decisao"]');
-                if (tabBtn) tabBtn.click();
-            }
-        } else {
-            alert('❌ ' + (res.message || 'Erro ao enviar produtos para a pauta.'));
-        }
-    } catch (err) {
-        console.error('Erro ao enviar para coordenacao:', err);
-        alert('❌ Falha na comunicação com o servidor.');
-    } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = origHtml || `<i class="fa-solid fa-users-gear"></i> Enviar p/ Comitê Coordenação (<span id="count-selected-coordenacao">${state.skusChecadosMatriz.size}</span>) 🎯`;
-        }
+    const qtd = await adicionarSkusPauta(skus);
+
+    // Limpar seleção
+    state.skusChecadosMatriz.clear();
+    const elCoord = document.getElementById('count-selected-coordenacao');
+    if (elCoord) elCoord.innerText = '0';
+    const elBl = document.getElementById('count-selected-blacklist-matriz');
+    if (elBl) elBl.innerText = '0';
+    renderTabMatriz();
+
+    alert(`✅ ${skus.length} produto(s) adicionado(s) com sucesso à Pauta do Comitê de Decisão!`);
+    if (confirm('Deseja abrir a Aba 8 (Comitê de Decisão) agora para iniciar a análise conjunta?')) {
+        const tabBtn = document.querySelector('.nav-tab[data-tab="tab-comite-decisao"]');
+        if (tabBtn) tabBtn.click();
     }
 }
 
-// 2. Carregar Pauta da Coordenação do Servidor
+// 2. Carregar Pauta da Coordenação (LocalStorage primeiro + Sincronização remota)
 async function carregarPautaCoordenacao(forcar = false) {
-    const container = document.getElementById('lista-cards-pauta');
-    if (container && (!stateComite.itens || stateComite.itens.length === 0)) {
-        container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 30px;"><i class="fa-solid fa-spinner fa-spin"></i> Carregando pauta da coordenação...</div>`;
+    // 1. Se já tem itens no stateComite ou localStorage, renderiza IMEDIATAMENTE sem esperar rede
+    try {
+        const localItens = JSON.parse(localStorage.getItem('drp_pauta_coordenacao') || '[]');
+        const localMetas = JSON.parse(localStorage.getItem('drp_pauta_metas') || '{}');
+        if (localItens && localItens.length > 0) {
+            stateComite.itens = localItens;
+        }
+        if (localMetas && Object.keys(localMetas).length > 0) {
+            stateComite.metas = { ...stateComite.metas, ...localMetas };
+        }
+    } catch (e) {}
+
+    salvarPautaLocal();
+    popularFiltroMarcasPauta();
+    renderListaPauta();
+
+    if (stateComite.itens.length > 0 && !stateComite.itemSelecionado) {
+        selecionarProdutoPauta(stateComite.itens[0].sku);
     }
 
+    // 2. Consulta a API em background para mesclar caso o servidor esteja online
     try {
         const resp = await fetch('/api/coordenacao/pauta?_t=' + Date.now());
-        const data = await resp.json();
-        if (resp.ok && data.success) {
-            stateComite.itens = data.itens || [];
-            stateComite.metas = data.metas_fornecedores || {};
-            
-            // Atualizar KPIs
-            const total = stateComite.itens.length;
-            const pendentes = stateComite.itens.filter(i => (i.decisao || 'PENDENTE') === 'PENDENTE').length;
-            const aprovados = stateComite.itens.filter(i => i.decisao === 'APROVADO').length;
-            const blacklist = stateComite.itens.filter(i => i.decisao === 'BLACKLIST').length;
-
-            const elTotal = document.getElementById('kpi-comite-total');
-            if (elTotal) elTotal.innerText = total;
-            const elPend = document.getElementById('kpi-comite-pendentes');
-            if (elPend) elPend.innerText = pendentes;
-            const elAprov = document.getElementById('kpi-comite-aprovados');
-            if (elAprov) elAprov.innerText = aprovados;
-            const elBl = document.getElementById('kpi-comite-blacklist');
-            if (elBl) elBl.innerText = blacklist;
-
-            const countEl = document.getElementById('count-itens-pauta');
-            if (countEl) countEl.innerText = total;
-
-            // Popular filtro de marcas
-            popularFiltroMarcasPauta();
-
-            // Renderizar fila
-            renderListaPauta();
-
-            // Re-renderizar Raio-X se o item atual ainda existir na pauta
-            if (stateComite.itemSelecionado) {
-                const refreshed = stateComite.itens.find(i => i.sku === stateComite.itemSelecionado.sku);
-                if (refreshed) {
-                    selecionarProdutoPauta(refreshed.sku);
-                } else {
-                    document.getElementById('vazio-raiox-comite').style.display = 'block';
-                    document.getElementById('conteudo-raiox-comite').style.display = 'none';
-                    stateComite.itemSelecionado = null;
+        if (resp.ok) {
+            const data = await resp.json();
+            if (data.success && Array.isArray(data.itens)) {
+                if (data.itens.length > 0 || stateComite.itens.length === 0) {
+                    // Mescla mantendo itens novos locais
+                    const skusRemotos = new Set(data.itens.map(i => i.sku));
+                    const locaisUnicos = stateComite.itens.filter(i => !skusRemotos.has(i.sku));
+                    stateComite.itens = [...data.itens, ...locaisUnicos];
+                }
+                if (data.metas_fornecedores) {
+                    stateComite.metas = { ...data.metas_fornecedores, ...stateComite.metas };
+                }
+                salvarPautaLocal();
+                popularFiltroMarcasPauta();
+                renderListaPauta();
+                if (stateComite.itemSelecionado) {
+                    const refreshed = stateComite.itens.find(i => i.sku === stateComite.itemSelecionado.sku);
+                    if (refreshed) selecionarProdutoPauta(refreshed.sku);
                 }
             }
         }
     } catch (err) {
-        console.error('Erro ao carregar pauta da coordenacao:', err);
-        if (container) {
-            container.innerHTML = `<div style="text-align:center; color:#f87171; padding:20px;">Erro ao carregar pauta da coordenação.</div>`;
-        }
+        console.log('[COMITE] Servidor remoto não acessível, operando 100% via persistência local.');
     }
 }
 
@@ -5028,7 +5155,7 @@ async function salvarLotePeloComite(sku) {
     }
 }
 
-// 4. Salvar Decisão no Servidor
+// 4. Salvar Decisão no Comitê
 async function registrarDecisaoComite(sku, decisao) {
     const qtdEl = document.getElementById(`decisao-qtd-${sku}`);
     const obsEl = document.getElementById(`decisao-obs-${sku}`);
@@ -5041,8 +5168,39 @@ async function registrarDecisaoComite(sku, decisao) {
         }
     }
 
+    // 1. Atualização imediata no estado local e LocalStorage
+    const item = stateComite.itens.find(i => String(i.sku).trim().toUpperCase() === String(sku).trim().toUpperCase());
+    if (item) {
+        item.decisao = decisao;
+        item.observacao = obs;
+        item.qtd_sugerida = qtd;
+    }
+
+    if (decisao === 'BLACKLIST') {
+        state.blacklist.add(sku);
+        try {
+            localStorage.setItem('drp_blacklist', JSON.stringify(Array.from(state.blacklist)));
+        } catch (e) {}
+    }
+
+    salvarPautaLocal();
+    renderListaPauta();
+    if (stateComite.itemSelecionado && stateComite.itemSelecionado.sku === sku) {
+        renderRaioXComite(item);
+    }
+
+    if (decisao === 'APROVADO') {
+        if (confirm(`✅ Produção de ${qtd} un APROVADA!\nDeseja abrir a tela de Requisição de Compra no Omie agora para gerar a ordem?`)) {
+            state.skusChecadosMatriz.add(sku);
+            abrirModalRequisicaoCompra();
+        }
+    } else {
+        alert(`✅ Decisão registrada com sucesso: ${decisao}`);
+    }
+
+    // 2. Sincronização remota em background
     try {
-        const resp = await fetch('/api/coordenacao/salvar_decisao', {
+        fetch('/api/coordenacao/salvar_decisao', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -5051,60 +5209,44 @@ async function registrarDecisaoComite(sku, decisao) {
                 qtd_sugerida: qtd,
                 observacao: obs
             })
-        });
-        const res = await resp.json();
-        if (res.success) {
-            if (decisao === 'APROVADO') {
-                if (confirm(`✅ Produção de ${qtd} un APROVADA!\nDeseja abrir a tela de Requisição de Compra no Omie agora para gerar a ordem?`)) {
-                    state.skusChecadosMatriz.add(sku);
-                    abrirModalRequisicaoCompra();
-                }
-            } else {
-                alert(`✅ Decisão registrada com sucesso: ${decisao}`);
-            }
-            carregarPautaCoordenacao();
-        } else {
-            alert('Erro ao registrar decisão: ' + res.message);
-        }
-    } catch (e) {
-        console.error('Erro ao registrar decisao:', e);
-        alert('Falha na comunicação com o servidor.');
-    }
+        }).catch(() => {});
+    } catch (e) {}
 }
 
 // 5. Remover Item da Pauta
 async function removerItemPauta(sku) {
     if (!confirm(`Remover o SKU ${sku} da Pauta da Coordenação?`)) return;
+
+    stateComite.itens = stateComite.itens.filter(i => String(i.sku).trim().toUpperCase() !== String(sku).trim().toUpperCase());
+    if (stateComite.itemSelecionado && stateComite.itemSelecionado.sku === sku) {
+        stateComite.itemSelecionado = stateComite.itens.length > 0 ? stateComite.itens[0] : null;
+    }
+
+    salvarPautaLocal();
+    popularFiltroMarcasPauta();
+    renderListaPauta();
+
+    if (stateComite.itemSelecionado) {
+        selecionarProdutoPauta(stateComite.itemSelecionado.sku);
+    } else {
+        const v = document.getElementById('vazio-raiox-comite');
+        const c = document.getElementById('conteudo-raiox-comite');
+        if (v) v.style.display = 'block';
+        if (c) c.style.display = 'none';
+    }
+
     try {
-        const resp = await fetch('/api/coordenacao/remover', {
+        fetch('/api/coordenacao/remover', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sku: sku })
-        });
-        const res = await resp.json();
-        if (res.success) {
-            carregarPautaCoordenacao();
-        }
-    } catch (e) {
-        console.error(e);
-    }
+        }).catch(() => {});
+    } catch (e) {}
 }
 
 // 6. Adicionar Item Avulso de Sugestão de Fornecedor
 async function adicionarItemAvulsoPauta(sku) {
-    try {
-        const resp = await fetch('/api/coordenacao/adicionar', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sku: sku })
-        });
-        const res = await resp.json();
-        if (res.success) {
-            carregarPautaCoordenacao();
-        }
-    } catch (e) {
-        console.error(e);
-    }
+    await adicionarSkusPauta([sku]);
 }
 
 // 7. Editar Meta Financeira de Fornecedor
@@ -5116,34 +5258,41 @@ async function editarMetaFinanceiraFornecedor(fornecedor, metaAtual) {
         alert('Valor inválido!');
         return;
     }
+    stateComite.metas[fornecedor] = novoValor;
+    salvarPautaLocal();
+    if (stateComite.itemSelecionado) {
+        renderRaioXComite(stateComite.itemSelecionado);
+    }
+
     try {
-        const resp = await fetch('/api/coordenacao/salvar_meta', {
+        fetch('/api/coordenacao/salvar_meta', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ fornecedor: fornecedor, meta_valor: novoValor })
-        });
-        const res = await resp.json();
-        if (res.success) {
-            carregarPautaCoordenacao();
-        }
-    } catch (e) {
-        console.error(e);
-    }
+        }).catch(() => {});
+    } catch (e) {}
 }
 
 // 8. Limpar Pauta Completa
 async function limparPautaCompleta() {
-    if (!confirm('Tem certeza que deseja LIMPAR todos os itens da Pauta da Coordenação da reunião?')) return;
-    for (const it of stateComite.itens) {
-        try {
-            await fetch('/api/coordenacao/remover', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sku: it.sku })
-            });
-        } catch (e) {}
-    }
-    carregarPautaCoordenacao();
+    if (!confirm('Tem certeza que deseja LIMPAR todos os itens da Pauta da Coordenação?')) return;
+    stateComite.itens = [];
+    stateComite.itemSelecionado = null;
+    salvarPautaLocal();
+    renderListaPauta();
+
+    const v = document.getElementById('vazio-raiox-comite');
+    const c = document.getElementById('conteudo-raiox-comite');
+    if (v) v.style.display = 'block';
+    if (c) c.style.display = 'none';
+
+    try {
+        fetch('/api/coordenacao/remover', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ todos: true })
+        }).catch(() => {});
+    } catch (e) {}
 }
 
 // 9. Gerar Ata Executiva da Reunião em PDF
@@ -5204,26 +5353,11 @@ function gerarAtaComitePdf() {
 // Enviar SKU Individual diretamente (ex: pelo Modal de Diagnóstico da Matriz)
 async function enviarSkuIndividualParaCoordenacao(sku) {
     if (!sku) return;
-    const cleanSku = String(sku).trim().toUpperCase();
-    try {
-        const resp = await fetch('/api/coordenacao/adicionar', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ skus: [cleanSku] })
-        });
-        const res = await resp.json();
-        if (res.success) {
-            alert(`✅ SKU ${cleanSku} adicionado à Pauta do Comitê de Decisão!`);
-            if (confirm('Deseja abrir a Aba 8 (Comitê de Decisão) agora para analisá-lo?')) {
-                const tabBtn = document.querySelector('.nav-tab[data-tab="tab-comite-decisao"]');
-                if (tabBtn) tabBtn.click();
-            }
-        } else {
-            alert('❌ ' + (res.message || 'Erro ao adicionar produto à pauta.'));
-        }
-    } catch (e) {
-        console.error('Erro ao enviar SKU individual:', e);
-        alert('❌ Falha na comunicação com o servidor.');
+    await adicionarSkusPauta([sku]);
+    alert(`✅ SKU ${sku} adicionado à Pauta do Comitê de Decisão!`);
+    if (confirm('Deseja abrir a Aba 8 (Comitê de Decisão) agora para analisá-lo?')) {
+        const tabBtn = document.querySelector('.nav-tab[data-tab="tab-comite-decisao"]');
+        if (tabBtn) tabBtn.click();
     }
 }
 
@@ -5236,8 +5370,8 @@ async function adicionarSkuAvulsoPauta() {
     }
     const sku = input.value.trim().toUpperCase();
     input.value = '';
-    await enviarSkuIndividualParaCoordenacao(sku);
-    carregarPautaCoordenacao(true);
+    await adicionarSkusPauta([sku]);
+    alert(`✅ SKU ${sku} adicionado à Pauta do Comitê de Decisão!`);
 }
 
 // Exposição global das funções do Comitê de Decisão
@@ -5253,5 +5387,7 @@ window.registrarDecisaoComite = registrarDecisaoComite;
 window.removerItemPauta = removerItemPauta;
 window.editarMetaFinanceiraFornecedor = editarMetaFinanceiraFornecedor;
 window.limparPautaCompleta = limparPautaCompleta;
+window.adicionarItemAvulsoPauta = adicionarItemAvulsoPauta;
+window.adicionarSkusPauta = adicionarSkusPauta;
 window.gerarAtaComitePdf = gerarAtaComitePdf;
 
