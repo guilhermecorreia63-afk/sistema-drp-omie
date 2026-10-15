@@ -508,19 +508,6 @@ def obter_detalhes_producao() -> dict[str, dict]:
 
 def salvar_status_producao(sku: str, em_producao: bool, data_previsao: str = None, quantidade_producao: int = 0, numero_pedido: str = None, fornecedor: str = None):
     try:
-        try:
-            executar_query("ALTER TABLE drp_producao ADD COLUMN data_previsao TEXT", is_select=False)
-        except Exception:
-            pass
-        try:
-            executar_query("ALTER TABLE drp_producao ADD COLUMN numero_pedido TEXT", is_select=False)
-        except Exception:
-            pass
-        try:
-            executar_query("ALTER TABLE drp_producao ADD COLUMN fornecedor TEXT", is_select=False)
-        except Exception:
-            pass
-        
         val_dt = data_previsao if data_previsao is not None else ''
         val_ped = numero_pedido if numero_pedido is not None else ''
         val_forn = fornecedor if fornecedor is not None else ''

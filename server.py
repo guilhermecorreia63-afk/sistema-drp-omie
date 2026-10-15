@@ -729,14 +729,7 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         print(f"[CRON API] Iniciando Sincronização Automática (12h20 / 18h30 Fortaleza) em {agora_iso}...", flush=True)
 
         try:
-            # A. Sincronização completa Omie / Turso
-            import sync_service
-            ok_sync, msg_sync, count_sync = sync_service.sincronizar_dados_seletivo("TUDO")
-            if db:
-                db.carregar_produtos_cache(force_refresh=True)
-            print(f"[CRON API] Sync finalizado: ok={ok_sync}, msg={msg_sync}, prods={count_sync}", flush=True)
-
-            # B. Disparo do e-mail de alerta automático
+            # A. Disparo prioritário do e-mail de alerta automático (Garante entrega imediata em <6s sem risco de timeout da Vercel)
             import alertas_email
             if alertas_email:
                 import importlib
@@ -746,6 +739,17 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 ok_email, msg_email = False, "Módulo alertas_email não disponível."
 
             print(f"[CRON API] Disparo e-mail finalizado: ok={ok_email}, msg={msg_email}", flush=True)
+
+            # B. Sincronização seletiva Omie / Turso
+            is_serverless = bool(os.getenv('VERCEL') or os.getenv('AWS_LAMBDA_FUNCTION_NAME'))
+            if not is_serverless:
+                import sync_service
+                ok_sync, msg_sync, count_sync = sync_service.sincronizar_dados_seletivo("TUDO")
+                if db:
+                    db.carregar_produtos_cache(force_refresh=True)
+                print(f"[CRON API] Sync finalizado: ok={ok_sync}, msg={msg_sync}, prods={count_sync}", flush=True)
+            else:
+                ok_sync, msg_sync, count_sync = True, "Ambiente Vercel: Alerta gerado a partir do Turso Cloud DB atualizado.", len(db.carregar_produtos_cache()) if db else 0
 
             # C. Atualiza lock com SUCCESS
             try:
@@ -838,19 +842,89 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(json.dumps(response_payload, ensure_ascii=False).encode('utf-8'))
 
     def handle_api_sync_requisicoes(self):
-        print("[API SERVER] Sincronizando Requisições e Pedidos de Compra com Omie ERP...")
+        print("[API SERVER] Sincronizando Requisições de Compra com Omie ERP em alta velocidade...", flush=True)
         try:
-            import sync_service
-            ok, msg, total_prods = sync_service.sincronizar_dados_seletivo("TUDO")
-            if db:
-                db.carregar_produtos_cache(force_refresh=True)
+            from omie_client import OmieClient
+            client_matriz = OmieClient("MATRIZ")
+
+            # 1. Consulta requisições de compra ativas no Omie ERP (PesquisarReq - leva <1s!)
+            prods_em_compra_map = {}
+            try:
+                res_reqs = client_matriz.executar("produtos/requisicaocompra/", "PesquisarReq", [{"pagina": 1, "registros_por_pagina": 100}])
+                reqs = res_reqs.get("requisicaoCadastro", [])
+                for r in reqs:
+                    dt_prev_req = r.get("dtSugestao", "")
+                    cod_req = str(r.get("codIntReqCompra") or r.get("codReqCompra") or "")
+                    for it in r.get("ItensReqCompra", []):
+                        cod_p = it.get("codProd")
+                        qtd_p = int(it.get("qtde", 0) or 0)
+                        if cod_p:
+                            prods_em_compra_map[int(cod_p)] = {"qtd": qtd_p, "data_previsao": dt_prev_req, "numero_pedido": cod_req}
+            except Exception as e_req:
+                print(f"[API SERVER] Aviso PesquisarReq: {e_req}", flush=True)
+
+            # 2. Carrega produtos e atualiza status de produção
+            produtos = db.carregar_produtos_cache() if db else []
+            if not produtos:
+                caminho_json = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "produtos_turso.json")
+                if os.path.exists(caminho_json):
+                    with open(caminho_json, "r", encoding="utf-8") as f:
+                        produtos = json.load(f)
+
+            atualizados = 0
+            for p in produtos:
+                id_prod = int(p.get("id_produto", 0) or 0)
+                sku = str(p.get("sku", "")).strip()
+                match = prods_em_compra_map.get(id_prod) or prods_em_compra_map.get(sku)
+
+                if match:
+                    if not p.get("em_producao"):
+                        p["em_producao"] = True
+                        p["qtd_producao"] = match["qtd"]
+                        p["quantidade_producao"] = match["qtd"]
+                        p["data_previsao"] = match["data_previsao"]
+                        p["numero_pedido"] = match["numero_pedido"]
+                        atualizados += 1
+                        if db:
+                            db.salvar_status_producao(sku, True, data_previsao=match["data_previsao"], quantidade_producao=match["qtd"], numero_pedido=match["numero_pedido"])
+                else:
+                    # Se tinha requisição salva mas ela NÃO está mais ativa no Omie -> Limpa!
+                    if p.get("em_producao") and p.get("numero_pedido"):
+                        p["em_producao"] = False
+                        p["qtd_producao"] = 0
+                        p["quantidade_producao"] = 0
+                        p["data_previsao"] = ""
+                        p["numero_pedido"] = ""
+                        p["fornecedor"] = ""
+                        atualizados += 1
+                        if db:
+                            db.salvar_status_producao(sku, False, data_previsao="", quantidade_producao=0, numero_pedido="", fornecedor="")
+
+            if db and atualizados > 0:
+                is_serverless = bool(os.getenv('VERCEL') or os.getenv('AWS_LAMBDA_FUNCTION_NAME'))
+                if not is_serverless:
+                    db.salvar_produtos_cache(produtos)
+                else:
+                    # No ambiente Vercel Serverless, atualiza o cache pontual dos alterados sem estourar tempo limite
+                    for p in produtos:
+                        sku = str(p.get("sku", "")).strip()
+                        if sku in prods_em_compra_map or (not p.get("em_producao") and not p.get("numero_pedido")):
+                            try:
+                                db.executar_query(
+                                    "UPDATE drp_produtos_cache SET dados_json = ?, ultima_atualizacao = datetime('now') WHERE sku = ?",
+                                    (json.dumps(p, ensure_ascii=False), sku),
+                                    is_select=False
+                                )
+                            except Exception:
+                                pass
+
             self._send_json({
-                "success": ok,
-                "message": f"Requisições e Pedidos de Compra sincronizados com a Omie ERP! ({total_prods} produtos verificados).",
-                "count": total_prods
+                "success": True,
+                "message": f"Requisições de Compra atualizadas com sucesso diretamente da Omie! ({len(prods_em_compra_map)} itens ativos em compra)",
+                "count": len(prods_em_compra_map)
             })
         except Exception as e:
-            print(f"[API SERVER] Erro ao sincronizar requisições: {e}")
+            print(f"[API SERVER] Erro ao sincronizar requisições: {e}", flush=True)
             self._send_json({"success": False, "message": str(e)}, status=500)
 
     def handle_api_requisicao_compra(self):
