@@ -178,14 +178,15 @@ def gerar_relatorio_sintetico():
         for item in itens:
             tipo = item["tipo_alerta"]
             cor_tipo = "#ef4444" if tipo == "RUPTURA" else "#f59e0b"
-            em_p = item.get("em_producao_flag")
-
-            badge_prod = '<span style="background-color:#8b5cf6; color:#ffffff; padding:2px 8px; border-radius:10px; font-weight:bold; font-size:11px; margin-left:6px;">🛠️ EM PRODUÇÃO / COMPRA</span>' if em_p else '<span style="color:#9ca3af; font-size:11px; margin-left:6px;">- (Pendente)</span>'
+            em_tr = int(item.get("em_transito", 0) or 0)
+            badge_prod = '<span style="background-color:#8b5cf6; color:#ffffff; padding:2px 8px; border-radius:10px; font-weight:bold; font-size:11px; margin-left:6px;">🛠️ EM PRODUÇÃO / COMPRA</span>' if em_p else ''
+            badge_transp = f'<span style="background-color:#0284c7; color:#ffffff; padding:2px 8px; border-radius:10px; font-weight:bold; font-size:11px; margin-left:6px;">🚚 EM TRANSPORTE ({em_tr} un)</span>' if em_tr > 0 else ''
+            badges = (badge_prod + badge_transp) if (badge_prod or badge_transp) else '<span style="color:#9ca3af; font-size:11px; margin-left:6px;">- (Pendente)</span>'
 
             linhas_html.append(f"""
             <tr style="border-bottom:1px solid #334155;">
                 <td style="padding:8px; font-weight:bold; color:#f8fafc;">{item['sku']}</td>
-                <td style="padding:8px; color:#e2e8f0;">{item['nome']}{badge_prod}</td>
+                <td style="padding:8px; color:#e2e8f0;">{item['nome']}{badges}</td>
                 <td style="padding:8px; text-align:center; color:#f8fafc;">{item.get('matriz', 0)} un</td>
                 <td style="padding:8px; text-align:center; color:#94a3b8;">{int(item.get('vendas_geral_30d', 0))} un</td>
                 <td style="padding:8px; text-align:center;"><span style="color:{cor_tipo}; font-weight:bold; font-size:11px; text-transform:uppercase;">{tipo}</span></td>
@@ -222,13 +223,15 @@ def gerar_relatorio_sintetico():
         for item in itens:
             tipo = item["tipo_alerta"]
             cor_tipo = "#ef4444" if tipo == "RUPTURA" else "#f59e0b"
-            em_p = item.get("em_producao_flag")
+            em_tr = int(item.get("em_transito", 0) or 0)
             badge_prod = '<span style="background-color:#8b5cf6; color:#ffffff; padding:2px 8px; border-radius:10px; font-weight:bold; font-size:11px; margin-left:6px;">🛠️ EM PRODUÇÃO / COMPRA</span>' if em_p else ''
+            badge_transp = f'<span style="background-color:#0284c7; color:#ffffff; padding:2px 8px; border-radius:10px; font-weight:bold; font-size:11px; margin-left:6px;">🚚 EM TRANSPORTE ({em_tr} un)</span>' if em_tr > 0 else ''
+            badges = badge_prod + badge_transp
 
             linhas_html.append(f"""
             <tr style="border-bottom:1px solid #334155;">
                 <td style="padding:8px; font-weight:bold; color:#f8fafc;">{item['sku']}</td>
-                <td style="padding:8px; color:#e2e8f0;">{item['nome']}{badge_prod}</td>
+                <td style="padding:8px; color:#e2e8f0;">{item['nome']}{badges}</td>
                 <td style="padding:8px; text-align:center; color:#f8fafc;">{item.get('cd_sp', 0)} un</td>
                 <td style="padding:8px; text-align:center; color:#94a3b8;">{int(item.get('vendas_sul_sudeste_30d', 0))} un</td>
                 <td style="padding:8px; text-align:center;"><span style="color:{cor_tipo}; font-weight:bold; font-size:11px;">{tipo}</span></td>
@@ -376,8 +379,10 @@ def gerar_pdf_relatorio(rupturas_cd, alertas_cd, rupturas_matriz, alertas_matriz
             for p in grupos_mat[fam][:20]:
                 nome = str(p.get("nome", ""))[:40]
                 tag_prod = " [EM PRODUCAO/COMPRA]" if p.get("em_producao_flag") else ""
+                tr_qtd = int(p.get("em_transito", 0) or 0)
+                tag_transp = f" [EM TRANSPORTE: {tr_qtd} un]" if tr_qtd > 0 else ""
                 tipo = p.get("tipo_alerta", "ALERTA")
-                pdf.cell(0, 5, f"   -{tipo} SKU: {p.get('sku')} | {nome} | Est: {p.get('matriz', 0)}{tag_prod}", new_x="LMARGIN", new_y="NEXT")
+                pdf.cell(0, 5, f"   -{tipo} SKU: {p.get('sku')} | {nome} | Est: {p.get('matriz', 0)}{tag_prod}{tag_transp}", new_x="LMARGIN", new_y="NEXT")
 
         pdf.ln(3)
 
@@ -398,8 +403,10 @@ def gerar_pdf_relatorio(rupturas_cd, alertas_cd, rupturas_matriz, alertas_matriz
             for p in grupos_cd[fam][:20]:
                 nome = str(p.get("nome", ""))[:40]
                 tag_prod = " [EM PRODUCAO/COMPRA]" if p.get("em_producao_flag") else ""
+                tr_qtd = int(p.get("em_transito", 0) or 0)
+                tag_transp = f" [EM TRANSPORTE: {tr_qtd} un]" if tr_qtd > 0 else ""
                 tipo = p.get("tipo_alerta", "ALERTA")
-                pdf.cell(0, 5, f"   -{tipo} SKU: {p.get('sku')} | {nome} | Est: {p.get('cd_sp', 0)}{tag_prod}", new_x="LMARGIN", new_y="NEXT")
+                pdf.cell(0, 5, f"   -{tipo} SKU: {p.get('sku')} | {nome} | Est: {p.get('cd_sp', 0)}{tag_prod}{tag_transp}", new_x="LMARGIN", new_y="NEXT")
 
         os.makedirs(os.path.dirname(caminho_pdf), exist_ok=True)
         pdf.output(caminho_pdf)
