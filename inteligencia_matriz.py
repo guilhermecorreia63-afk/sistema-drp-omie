@@ -321,7 +321,12 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
             m3 = p["_m3_total"]
             m2 = p["_m2_total"]
             m1 = p["_m1_total"]
+            m3_dir = float(p.get("_m3_direto", 0.0))
+            m2_dir = float(p.get("_m2_direto", 0.0))
+            m1_dir = float(p.get("_m1_direto", 0.0))
+
             media_m1_m2 = (m1 + m2) / 2.0
+            media_geral_90d = round((m1 + m2 + m3) / 3.0, 1)
 
             variacao_pct = 0.0
             if media_m1_m2 > 0:
@@ -388,16 +393,17 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
                 "faturamento_familia_30d": round(tot_val_fam, 2),
                 "share_familia_pct": round((val_p / tot_val_fam * 100) if tot_val_fam > 0 else 0.0, 2),
                 "pct_acumulado_familia": round(pct_acum * 100, 1),
-                "vendas_diretas_30d": float(m3_direto),
+                "vendas_diretas_30d": round(m3_dir, 1),
                 "remessas_cd_sp_30d": float(p.get("remessas_cd_sp_30d", 0)),
                 "demanda_total_matriz_30d": round(m3, 1),
                 "m3_total": round(m3, 1),
                 "m2_total": round(m2, 1),
                 "m1_total": round(m1, 1),
-                "m3_direto": round(m3_direto, 1),
-                "m2_direto": round(m2_direto, 1),
-                "m1_direto": round(m1_direto, 1),
-                "media_mensal_90d": round(media_m1_m2, 1),
+                "m3_direto": round(m3_dir, 1),
+                "m2_direto": round(m2_dir, 1),
+                "m1_direto": round(m1_dir, 1),
+                "media_mensal_90d": media_geral_90d,
+                "media_anterior_m1_m2": round(media_m1_m2, 1),
                 "variacao_tendencia_pct": variacao_pct,
                 "tendencia": tendencia,
                 "explicacao_status": explicacao_status,

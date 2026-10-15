@@ -4350,7 +4350,8 @@ function abrirModalDetalhesInteligencia(sku) {
                 <div>• Vendas Diretas Matriz (30d): <strong>${d.vendas_diretas_30d || 0} un</strong></div>
                 <div>• Transferências CD_SP (30d): <strong>+${d.remessas_cd_sp_30d || 0} un</strong></div>
                 <div>• Demanda Total Matriz: <strong>${d.demanda_total_matriz_30d || 0} un/mês</strong></div>
-                <div>• Média Mensal (90d): <strong>${d.media_mensal_90d || 0} un/mês</strong></div>
+                <div>• Média Geral (90d - 3 meses): <strong>${d.media_mensal_90d || 0} un/mês</strong></div>
+                <div>• Média Base Anterior (M1 e M2): <strong>${d.media_anterior_m1_m2 != null ? d.media_anterior_m1_m2 : d.media_mensal_90d} un/mês</strong></div>
                 <div>• Variação Velocidade: <strong>${d.variacao_tendencia_pct > 0 ? '+' : ''}${d.variacao_tendencia_pct || 0}%</strong></div>
                 <div>• Status de Tendência: <strong>${p.tendencia_vendas || 'Estável'}</strong></div>
             </div>
@@ -4411,11 +4412,11 @@ function renderizarGraficoTendenciaInteligencia(d) {
 
     const labels = ['Mês 1 (61-90 dias atrás)', 'Mês 2 (31-60 dias atrás)', 'Mês 3 (Últimos 30 dias)'];
     
-    let m3Val = Number(d.m3_direto || d.m3_total || d.vendas_diretas_30d || d.demanda_total_matriz_30d || 0);
-    let m2Val = Number(d.m2_direto || d.m2_total || 0);
-    let m1Val = Number(d.m1_direto || d.m1_total || 0);
+    let m3Val = Number(d.m3_direto != null ? d.m3_direto : (d.vendas_diretas_30d != null ? d.vendas_diretas_30d : 0));
+    let m2Val = Number(d.m2_direto != null ? d.m2_direto : 0);
+    let m1Val = Number(d.m1_direto != null ? d.m1_direto : 0);
 
-    if (m3Val === 0 && d.m3_total) m3Val = Number(d.m3_total);
+    if (m3Val === 0 && d.m3_total && !d.remessas_cd_sp_30d) m3Val = Number(d.m3_total);
     if (m2Val === 0 && d.m2_total) m2Val = Number(d.m2_total);
     if (m1Val === 0 && d.m1_total) m1Val = Number(d.m1_total);
 
