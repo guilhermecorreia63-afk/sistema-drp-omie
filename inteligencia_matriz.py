@@ -149,17 +149,25 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
             pass
 
     blacklist_norm = set()
+    blacklist_prd = set()
     for item in blacklist_raw:
         s = str(item).strip().upper()
-        if s:
+        if not s:
+            continue
+        if s.startswith('PRD'):
+            blacklist_prd.add(s)
+            digits = re.sub(r'[^0-9]', '', s)
+            if digits:
+                blacklist_prd.add(f"PRD{digits}")
+                blacklist_prd.add(f"PRD{digits.zfill(5)}")
+                blacklist_prd.add(f"PRD{digits.zfill(6)}")
+        else:
             blacklist_norm.add(s)
             blacklist_norm.add(s.zfill(6))
             digits = re.sub(r'[^0-9]', '', s)
             if digits:
                 blacklist_norm.add(digits)
                 blacklist_norm.add(digits.zfill(6))
-                blacklist_norm.add(f"PRD{digits.zfill(5)}")
-                blacklist_norm.add(f"PRD{digits.zfill(6)}")
 
     # 2. Carregar Lotes Manuais Customizados
     lotes_manuais = carregar_lotes_manuais()
@@ -185,17 +193,24 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
         if is_combo:
             continue
 
-        sku_pad = sku.zfill(6)
-        digits = re.sub(r'[^0-9]', '', sku)
-        digits_pad = digits.zfill(6) if digits else ""
+        if sku.startswith('PRD'):
+            digits = re.sub(r'[^0-9]', '', sku)
+            digits_pad = digits.zfill(5) if digits else ""
+            is_blacklisted = (
+                sku in blacklist_prd or
+                (digits and f"PRD{digits}" in blacklist_prd) or
+                (digits_pad and f"PRD{digits_pad}" in blacklist_prd)
+            )
+        else:
+            sku_pad = sku.zfill(6)
+            digits = re.sub(r'[^0-9]', '', sku)
+            is_blacklisted = (
+                sku in blacklist_norm or
+                sku_pad in blacklist_norm or
+                (digits and digits in blacklist_norm) or
+                (digits and digits.zfill(6) in blacklist_norm)
+            )
 
-        is_blacklisted = (
-            sku in blacklist_norm or
-            sku_pad in blacklist_norm or
-            (digits and digits in blacklist_norm) or
-            (digits_pad and digits_pad in blacklist_norm) or
-            (digits_pad and f"PRD{digits_pad}" in blacklist_norm)
-        )
         if is_blacklisted:
             continue
         produtos_validos.append(p)
