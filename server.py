@@ -87,6 +87,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_sync()
         elif url_path in ['/api/producao', '/api/producao/salvar']:
             self.handle_api_producao_save()
+        elif url_path in ['/api/pedido_compra/remover', '/api/pedidos/remover']:
+            self.handle_api_pedido_compra_remover()
         elif url_path == '/api/blacklist' or url_path == '/api/blacklist/salvar':
             self.handle_api_blacklist_save()
         elif url_path in ['/api/remessas/status_transito', '/api/remessas/salvar_status_transito', '/api/remessas/salvar_status', '/api/remessas/status/salvar']:
@@ -476,29 +478,41 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         fornecedor = body.get('fornecedor')
         num_pedido_target = str(body.get('numero_pedido', '')).strip()
 
+        is_desmarcando = (em_producao is False or em_producao == 0 or str(em_producao).lower() == 'false')
+
         if os.path.exists(prods_json_path):
             try:
                 with open(prods_json_path, 'r', encoding='utf-8') as f:
                     produtos = json.load(f)
                 
-                # Se não veio numero_pedido diretamente no body, descobre pelo SKU fornecido
-                if not num_pedido_target and sku:
+                if is_desmarcando:
+                    # Limpeza pontual do SKU desmarcado
                     for p in produtos:
-                        if str(p.get('sku', '')).strip() == sku and p.get('numero_pedido'):
-                            num_pedido_target = str(p.get('numero_pedido')).strip()
-                            break
+                        if str(p.get('sku', '')).strip() == sku:
+                            p['em_producao'] = False
+                            p['numero_pedido'] = ''
+                            p['data_previsao'] = ''
+                            p['fornecedor'] = ''
+                            p['qtd_producao'] = 0
+                            p['quantidade_producao'] = 0
+                else:
+                    # Se não veio numero_pedido diretamente no body, descobre pelo SKU fornecido
+                    if not num_pedido_target and sku:
+                        for p in produtos:
+                            if str(p.get('sku', '')).strip() == sku and p.get('numero_pedido'):
+                                num_pedido_target = str(p.get('numero_pedido')).strip()
+                                break
 
-                for p in produtos:
-                    p_sku = str(p.get('sku', '')).strip()
-                    p_ped = str(p.get('numero_pedido', '')).strip()
-                    p['em_producao'] = p_sku in producao_set
+                    for p in produtos:
+                        p_sku = str(p.get('sku', '')).strip()
+                        p_ped = str(p.get('numero_pedido', '')).strip()
+                        p['em_producao'] = p_sku in producao_set
 
-                    if data_previsao is not None:
-                        # Atualiza o próprio SKU ou todos os SKUs que compartilham o mesmo numero_pedido
-                        if (sku and p_sku == sku) or (num_pedido_target and p_ped == num_pedido_target):
-                            p['data_previsao'] = data_previsao
-                            if fornecedor is not None:
-                                p['fornecedor'] = fornecedor
+                        if data_previsao is not None:
+                            if (sku and p_sku == sku) or (num_pedido_target and p_ped == num_pedido_target):
+                                p['data_previsao'] = data_previsao
+                                if fornecedor is not None:
+                                    p['fornecedor'] = fornecedor
 
                 with open(prods_json_path, 'w', encoding='utf-8') as f:
                     json.dump(produtos, f, ensure_ascii=False, indent=2)
@@ -507,8 +521,9 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         try:
             import database as db_mod
-            if num_pedido_target and data_previsao is not None:
-                # Salva no Turso DB para todos os SKUs do pedido
+            if is_desmarcando and sku:
+                db_mod.salvar_status_producao(sku, False, data_previsao='', numero_pedido='', fornecedor='', quantidade_producao=0)
+            elif num_pedido_target and data_previsao is not None and not is_desmarcando:
                 for p in produtos:
                     p_sku = str(p.get('sku', '')).strip()
                     p_ped = str(p.get('numero_pedido', '')).strip()
@@ -524,6 +539,88 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             "success": True,
             "message": "Status de produção salvo com sucesso!",
             "producao": producao_lista
+        })
+
+    def handle_api_pedido_compra_remover(self):
+        body = self._read_body()
+        numero_pedido = str(body.get('numero_pedido', '')).strip()
+        if not numero_pedido:
+            self._send_json({"success": False, "error": "Número do pedido não informado"}, status=400)
+            return
+
+        # 1. Adicionar à blacklist de pedidos
+        blacklist_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'pedidos_blacklist.json')
+        pedidos_bl = []
+        if os.path.exists(blacklist_path):
+            try:
+                with open(blacklist_path, 'r', encoding='utf-8') as f:
+                    pedidos_bl = json.load(f)
+            except Exception:
+                pedidos_bl = []
+        if numero_pedido not in pedidos_bl:
+            pedidos_bl.append(numero_pedido)
+            try:
+                with open(blacklist_path, 'w', encoding='utf-8') as f:
+                    json.dump(pedidos_bl, f, ensure_ascii=False, indent=2)
+            except Exception as e:
+                print(f"[API SERVER] Erro ao salvar pedidos_blacklist.json: {e}")
+
+        # 2. Atualizar produtos_turso.json e coletar SKUs removidos
+        prods_json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'produtos_turso.json')
+        skus_removidos = []
+        produtos_atualizados = []
+        if os.path.exists(prods_json_path):
+            try:
+                with open(prods_json_path, 'r', encoding='utf-8') as f:
+                    produtos = json.load(f)
+                for p in produtos:
+                    if str(p.get('numero_pedido', '')).strip() == numero_pedido:
+                        p['em_producao'] = False
+                        p['numero_pedido'] = ''
+                        p['fornecedor'] = ''
+                        p['data_previsao'] = ''
+                        p['qtd_producao'] = 0
+                        p['quantidade_producao'] = 0
+                        skus_removidos.append(str(p.get('sku', '')).strip())
+                produtos_atualizados = produtos
+                with open(prods_json_path, 'w', encoding='utf-8') as f:
+                    json.dump(produtos, f, ensure_ascii=False, indent=2)
+            except Exception as e:
+                print(f"[API SERVER] Erro ao atualizar produtos_turso.json na remoção de pedido: {e}")
+
+        # 3. Atualizar producao_status.json
+        json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'producao_status.json')
+        if os.path.exists(json_path):
+            try:
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    prod_status = json.load(f)
+                if isinstance(prod_status, list):
+                    prod_status = [s for s in prod_status if s not in skus_removidos]
+                elif isinstance(prod_status, dict):
+                    for s in skus_removidos:
+                        prod_status.pop(s, None)
+                with open(json_path, 'w', encoding='utf-8') as f:
+                    json.dump(prod_status, f, ensure_ascii=False, indent=2)
+            except Exception as e:
+                print(f"[API SERVER] Erro ao salvar producao_status.json: {e}")
+
+        # 4. Atualizar Turso DB
+        try:
+            import database as db_mod
+            for s in skus_removidos:
+                db_mod.salvar_status_producao(s, False, data_previsao='', numero_pedido='', fornecedor='', quantidade_producao=0)
+            if produtos_atualizados:
+                is_serverless = bool(os.getenv('VERCEL') or os.getenv('AWS_LAMBDA_FUNCTION_NAME'))
+                if not is_serverless:
+                    db_mod.salvar_produtos_cache(produtos_atualizados)
+        except Exception as e:
+            print(f"[API SERVER] Erro Turso DB ao remover pedido: {e}")
+
+        print(f"[API SERVER] Pedido #{numero_pedido} removido da produção ({len(skus_removidos)} itens desvinculados).")
+        self._send_json({
+            "success": True,
+            "message": f"Pedido #{numero_pedido} removido da produção com sucesso!",
+            "skus_removidos": skus_removidos
         })
 
     def handle_api_blacklist_get(self):
@@ -871,10 +968,36 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                     with open(caminho_json, "r", encoding="utf-8") as f:
                         produtos = json.load(f)
 
+            # Carrega blacklist de pedidos
+            blacklist_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "pedidos_blacklist.json")
+            pedidos_bl = set()
+            if os.path.exists(blacklist_path):
+                try:
+                    with open(blacklist_path, "r", encoding="utf-8") as f:
+                        pedidos_bl = set(str(x).strip() for x in json.load(f))
+                except Exception:
+                    pedidos_bl = set()
+
             atualizados = 0
             for p in produtos:
                 id_prod = int(p.get("id_produto", 0) or 0)
                 sku = str(p.get("sku", "")).strip()
+                num_ped_str = str(p.get("numero_pedido") or "").strip()
+
+                # 1. Se o pedido está na blacklist, limpa e desmarca imediatamente!
+                if num_ped_str and num_ped_str in pedidos_bl:
+                    if p.get("em_producao"):
+                        p["em_producao"] = False
+                        p["qtd_producao"] = 0
+                        p["quantidade_producao"] = 0
+                        p["data_previsao"] = ""
+                        p["numero_pedido"] = ""
+                        p["fornecedor"] = ""
+                        atualizados += 1
+                        if db:
+                            db.salvar_status_producao(sku, False, data_previsao="", quantidade_producao=0, numero_pedido="", fornecedor="")
+                    continue
+
                 match = prods_em_compra_map.get(id_prod) or prods_em_compra_map.get(sku)
 
                 if match:

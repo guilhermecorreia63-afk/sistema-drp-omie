@@ -2303,23 +2303,41 @@ window.abrirModalPedido = function(numPedido) {
     const btnRemoverPedido = document.getElementById('btn-remover-pedido-completo');
     if (btnRemoverPedido) {
         btnRemoverPedido.onclick = async () => {
-            if (confirm(`Tem certeza que deseja remover TODOS os produtos do Pedido #${numPedido} da Produção?`)) {
-                for (const p of itensPedido) {
-                    state.producao.delete(p.sku);
-                    p.em_producao = false;
-                    delete p.numero_pedido;
-                    delete p.fornecedor;
-                    delete p.data_previsao;
-                    try {
-                        await fetch('/api/producao/salvar', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ sku: p.sku, em_producao: false, quantidade_producao: 0, data_previsao: '', numero_pedido: '', fornecedor: '' })
-                        });
-                    } catch (errServ) {}
+            if (confirm(`Tem certeza que deseja remover TODOS os produtos do Pedido #${numPedido} da Produção? Ele não voltará mais a ser exibido.`)) {
+                btnRemoverPedido.disabled = true;
+                btnRemoverPedido.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Removendo...';
+                try {
+                    const resp = await fetch('/api/pedido_compra/remover', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ numero_pedido: String(numPedido) })
+                    });
+                    const resJson = await resp.json();
+                    if (resJson.success) {
+                        for (const p of itensPedido) {
+                            state.producao.delete(p.sku);
+                            p.em_producao = false;
+                            p.numero_pedido = '';
+                            p.fornecedor = '';
+                            p.data_previsao = '';
+                            p.qtd_producao = 0;
+                            p.quantidade_producao = 0;
+                        }
+                        if (typeof mostrarNotificacao === 'function') {
+                            mostrarNotificacao(`Pedido #${numPedido} removido da produção com sucesso!`, 'success');
+                        }
+                    } else {
+                        alert(resJson.error || 'Erro ao remover pedido.');
+                    }
+                } catch (errServ) {
+                    console.error('Erro ao remover pedido:', errServ);
+                    alert('Falha na comunicação com o servidor.');
+                } finally {
+                    btnRemoverPedido.disabled = false;
+                    btnRemoverPedido.innerHTML = '<i class="fa-solid fa-trash"></i> Remover Pedido Inteiro da Produção';
+                    modal.classList.remove('active');
+                    render();
                 }
-                modal.classList.remove('active');
-                render();
             }
         };
     }
