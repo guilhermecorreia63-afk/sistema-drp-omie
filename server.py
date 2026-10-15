@@ -885,11 +885,11 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                         p["data_previsao"] = match["data_previsao"]
                         p["numero_pedido"] = match["numero_pedido"]
                         atualizados += 1
-                        if db:
-                            db.salvar_status_producao(sku, True, data_previsao=match["data_previsao"], quantidade_producao=match["qtd"], numero_pedido=match["numero_pedido"])
                 else:
-                    # Se tinha requisição salva mas ela NÃO está mais ativa no Omie -> Limpa!
-                    if p.get("em_producao") and p.get("numero_pedido"):
+                    num_ped_str = str(p.get("numero_pedido") or "")
+                    # Limpa apenas se era uma Requisição de Compra temporária (ex: REQ_... ou ID de requisição Omie >= 9 dígitos)
+                    # Não limpa Pedidos de Compra (#477, #478, #481, LOYOLA...) nem itens manuais!
+                    if p.get("em_producao") and (num_ped_str.startswith("REQ_") or (num_ped_str.isdigit() and len(num_ped_str) >= 9)):
                         p["em_producao"] = False
                         p["qtd_producao"] = 0
                         p["quantidade_producao"] = 0
