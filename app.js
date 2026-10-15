@@ -4344,14 +4344,14 @@ function abrirModalDetalhesInteligencia(sku) {
         <!-- Bloco 2: Histórico e Velocidade de Vendas -->
         <div class="card mb-3" style="background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 12px;">
             <h5 style="margin:0 0 10px 0; color:#60a5fa; display:flex; align-items:center; gap:8px; font-size: 0.92rem;">
-                <i class="fa-solid fa-chart-line"></i> 2. Detalhamento de Saídas e Tendência
+                <i class="fa-solid fa-chart-line"></i> 2. Detalhamento de Vendas & Saídas Matriz (Alinhado com o Comitê)
             </h5>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 0.88rem;">
-                <div>• Vendas Diretas Matriz (30d): <strong>${d.vendas_diretas_30d || 0} un</strong></div>
-                <div>• Transferências CD_SP (30d): <strong>+${d.remessas_cd_sp_30d || 0} un</strong></div>
-                <div>• Demanda Total Matriz: <strong>${d.demanda_total_matriz_30d || 0} un/mês</strong></div>
-                <div>• Média Geral (90d - 3 meses): <strong>${d.media_mensal_90d || 0} un/mês</strong></div>
-                <div>• Média Base Anterior (M1 e M2): <strong>${d.media_anterior_m1_m2 != null ? d.media_anterior_m1_m2 : d.media_mensal_90d} un/mês</strong></div>
+                <div>• Vendas 30d (Geral): <strong>${d.vendas_diretas_30d || 0} un</strong></div>
+                <div>• Média Mensal (90d): <strong>${d.media_mensal_90d || 0} un/mês</strong></div>
+                <div>• Vendas Ano (365d): <strong>${d.vendas_365d || 0} un</strong></div>
+                <div>• Remessas CD_SP (30d): <strong>+${d.remessas_cd_sp_30d || 0} un</strong></div>
+                <div>• Saídas Totais Matriz (30d): <strong>${d.demanda_total_matriz_30d || 0} un/mês</strong> <small style="color:var(--text-muted);">(Vendas + Remessas)</small></div>
                 <div>• Variação Velocidade: <strong>${d.variacao_tendencia_pct > 0 ? '+' : ''}${d.variacao_tendencia_pct || 0}%</strong></div>
                 <div>• Status de Tendência: <strong>${p.tendencia_vendas || 'Estável'}</strong></div>
             </div>

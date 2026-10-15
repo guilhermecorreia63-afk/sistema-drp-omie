@@ -248,40 +248,39 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
             v30_direto = float(p.get("vendas_geral_30d") if p.get("vendas_geral_30d") is not None else (p.get("vendas_sul_sudeste_30d") or p.get("vendas_30d") or 0.0))
             v60_direto = float(p.get("vendas_geral_60d") if p.get("vendas_geral_60d") is not None else (p.get("vendas_sul_sudeste_60d") or p.get("vendas_60d") or 0.0))
             v90_direto = float(p.get("vendas_geral_90d") if p.get("vendas_geral_90d") is not None else (p.get("vendas_sul_sudeste_90d") or p.get("vendas_90d") or 0.0))
+            v365_direto = float(p.get("vendas_geral_365d") if p.get("vendas_geral_365d") is not None else (p.get("vendas_sul_sudeste_365d") or p.get("vendas_365d") or 0.0))
 
-            # Separação exata mês a mês (30d recentes, 31-60d, 61-90d)
+            # Separação exata mês a mês de VENDAS (30d recentes, 31-60d, 61-90d)
             m3_direto = v30_direto
             m2_direto = max(0.0, v60_direto - v30_direto)
             m1_direto = max(0.0, v90_direto - v60_direto)
 
-            m3_total = m3_direto + rem_qtd
-            m2_total = m2_direto
-            m1_total = m1_direto
-
-            p["_demanda_30d"] = m3_total
+            # As Vendas NÃO são misturadas com Remessas
+            p["_vendas_30d"] = m3_direto
+            p["_vendas_60d"] = v60_direto
+            p["_vendas_90d"] = v90_direto
+            p["_vendas_365d"] = v365_direto
             p["remessas_cd_sp_30d"] = rem_qtd
-            p["_m3_total"] = m3_total
-            p["_m2_total"] = m2_total
-            p["_m1_total"] = m1_total
             p["_m3_direto"] = m3_direto
             p["_m2_direto"] = m2_direto
             p["_m1_direto"] = m1_direto
+            p["_demanda_total_saidas_30d"] = m3_direto + rem_qtd
 
-        # Ordenar produtos da família pela demanda/faturamento total da Matriz
+        # Ordenar produtos da família pelas Vendas faturadas
         prods_sorted = sorted(
             prods_fam,
-            key=lambda x: (x["_demanda_30d"] * float(x.get("valor_unitario", 1.0))),
+            key=lambda x: (x["_vendas_30d"] * float(x.get("valor_unitario", 1.0))),
             reverse=True
         )
 
-        tot_val_fam = sum(p["_demanda_30d"] * float(p.get("valor_unitario", 1.0)) for p in prods_sorted)
-        tot_qtd_fam = sum(p["_demanda_30d"] for p in prods_sorted)
+        tot_val_fam = sum(p["_vendas_30d"] * float(p.get("valor_unitario", 1.0)) for p in prods_sorted)
+        tot_qtd_fam = sum(p["_vendas_30d"] for p in prods_sorted)
         n_prods = len(prods_sorted)
 
         acum_val = 0.0
         for idx, p in enumerate(prods_sorted):
             sku = str(p.get("sku", "")).strip()
-            val_p = p["_demanda_30d"] * float(p.get("valor_unitario", 1.0))
+            val_p = p["_vendas_30d"] * float(p.get("valor_unitario", 1.0))
             acum_val += val_p
             pct_acum = (acum_val / tot_val_fam) if tot_val_fam > 0 else (idx + 1) / n_prods
 
@@ -317,34 +316,35 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
                 lote_minimo = 0
                 origem_lote = "Sem Lote Mínimo"
 
-            # Tendência de Vendas Mês a Mês (Mês 3 Atual vs Média dos Meses M1 e M2)
-            m3 = p["_m3_total"]
-            m2 = p["_m2_total"]
-            m1 = p["_m1_total"]
-            m3_dir = float(p.get("_m3_direto", 0.0))
-            m2_dir = float(p.get("_m2_direto", 0.0))
-            m1_dir = float(p.get("_m1_direto", 0.0))
+            # Tendência de Vendas Mês a Mês (Vendas Mês 3 vs Média dos Meses M1 e M2)
+            m3_vendas = float(p.get("_m3_direto", 0.0))
+            m2_vendas = float(p.get("_m2_direto", 0.0))
+            m1_vendas = float(p.get("_m1_direto", 0.0))
+            v90 = float(p.get("_vendas_90d", 0.0))
+            v365 = float(p.get("_vendas_365d", 0.0))
+            rem_qtd = float(p.get("remessas_cd_sp_30d", 0.0))
+            demanda_total_saidas = m3_vendas + rem_qtd
 
-            media_m1_m2 = (m1 + m2) / 2.0
-            media_geral_90d = round((m1 + m2 + m3) / 3.0, 1)
+            media_m1_m2 = (m1_vendas + m2_vendas) / 2.0
+            media_mensal_90d = round(v90 / 3.0, 1)
 
             variacao_pct = 0.0
             if media_m1_m2 > 0:
-                variacao_pct = round(((m3 - media_m1_m2) / media_m1_m2) * 100, 1)
+                variacao_pct = round(((m3_vendas - media_m1_m2) / media_m1_m2) * 100, 1)
 
-            if m3 > (media_m1_m2 * 1.20) and m3 >= 5:
+            if m3_vendas > (media_m1_m2 * 1.20) and m3_vendas >= 5:
                 tendencia = "Acelerando 🔥"
                 if classe_abc == "A":
                     tot_classe_a_alta += 1
-            elif m3 < (media_m1_m2 * 0.70) and media_m1_m2 > 2:
+            elif m3_vendas < (media_m1_m2 * 0.70) and media_m1_m2 > 2:
                 tendencia = "Desacelerando 📉"
             else:
                 tendencia = "Estável ➡️"
 
             p_copia["tendencia_vendas"] = tendencia
 
-            # Cobertura c/ Lote Mínimo baseada no Estoque DISPONÍVEL (Saldo Livre)
-            v30_diaria = max(0.033, m3 / 30.0)
+            # Cobertura c/ Lote Mínimo baseada no Estoque DISPONÍVEL (Saldo Livre) e ritmo diário de vendas
+            v30_diaria = max(0.033, m3_vendas / 30.0)
             est_matriz_bruto = float(p.get("matriz", 0) or 0)
             est_matriz_res = float(p.get("matriz_reservado", 0) or 0)
             est_matriz_disp = p.get("matriz_disponivel")
@@ -354,10 +354,10 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
             est_matriz = int(est_matriz_disp) # Saldo livre/disponível
             p_copia["matriz"] = est_matriz # Usar saldo disponível no card e tabela
             
-            meses_cobertura_atual = round((est_matriz / (v30_diaria * 30.0)), 1) if m3 > 0 else (99.0 if est_matriz > 0 else 0.0)
+            meses_cobertura_atual = round((est_matriz / (v30_diaria * 30.0)), 1) if m3_vendas > 0 else (99.0 if est_matriz > 0 else 0.0)
             
             if lote_minimo > 0:
-                meses_cobertura_lote = round((lote_minimo / (v30_diaria * 30.0)), 1) if m3 > 0 else 99.0
+                meses_cobertura_lote = round((lote_minimo / (v30_diaria * 30.0)), 1) if m3_vendas > 0 else 99.0
             else:
                 meses_cobertura_lote = 0.0
 
@@ -375,11 +375,11 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
 
             # Explicação textual amigável do status de tendência
             if tendencia == "Acelerando 🔥":
-                explicacao_status = f"Acelerando 🔥: A demanda do mês recente ({round(m3)} un) superou a média dos 2 meses anteriores ({round(media_m1_m2, 1)} un/mês) em +{variacao_pct}%. O produto está em alta rotação."
+                explicacao_status = f"Acelerando 🔥: As vendas do mês recente ({round(m3_vendas)} un) superaram a média dos 2 meses anteriores ({round(media_m1_m2, 1)} un/mês) em +{variacao_pct}%. O produto está em alta rotação."
             elif tendencia == "Desacelerando 📉":
-                explicacao_status = f"Desacelerando 📉: A demanda do mês recente ({round(m3)} un) caiu {variacao_pct}% em relação à média recente ({round(media_m1_m2, 1)} un/mês). Alerta para evitar lote excessivo."
+                explicacao_status = f"Desacelerando 📉: As vendas do mês recente ({round(m3_vendas)} un) caíram {variacao_pct}% em relação à média anterior ({round(media_m1_m2, 1)} un/mês). Alerta para evitar lote excessivo."
             else:
-                explicacao_status = f"Estável ➡️: A demanda recente ({round(m3)} un) está alinhada à média dos meses anteriores ({round(media_m1_m2, 1)} un/mês) com variação de {variacao_pct}%."
+                explicacao_status = f"Estável ➡️: As vendas recentes ({round(m3_vendas)} un) estão alinhadas à média dos meses anteriores ({round(media_m1_m2, 1)} un/mês) com variação de {variacao_pct}%."
 
             # Detalhamento completo do cálculo para o Modal de Diagnóstico
             p_copia["detalhes_calculo"] = {
@@ -393,16 +393,19 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
                 "faturamento_familia_30d": round(tot_val_fam, 2),
                 "share_familia_pct": round((val_p / tot_val_fam * 100) if tot_val_fam > 0 else 0.0, 2),
                 "pct_acumulado_familia": round(pct_acum * 100, 1),
-                "vendas_diretas_30d": round(m3_dir, 1),
-                "remessas_cd_sp_30d": float(p.get("remessas_cd_sp_30d", 0)),
-                "demanda_total_matriz_30d": round(m3, 1),
-                "m3_total": round(m3, 1),
-                "m2_total": round(m2, 1),
-                "m1_total": round(m1, 1),
-                "m3_direto": round(m3_dir, 1),
-                "m2_direto": round(m2_dir, 1),
-                "m1_direto": round(m1_dir, 1),
-                "media_mensal_90d": media_geral_90d,
+                "vendas_diretas_30d": round(m3_vendas, 1),
+                "vendas_30d": round(m3_vendas, 1),
+                "vendas_90d": round(v90, 1),
+                "vendas_365d": round(v365, 1),
+                "remessas_cd_sp_30d": float(rem_qtd),
+                "demanda_total_matriz_30d": round(demanda_total_saidas, 1),
+                "m3_total": round(m3_vendas, 1),
+                "m2_total": round(m2_vendas, 1),
+                "m1_total": round(m1_vendas, 1),
+                "m3_direto": round(m3_vendas, 1),
+                "m2_direto": round(m2_vendas, 1),
+                "m1_direto": round(m1_vendas, 1),
+                "media_mensal_90d": media_mensal_90d,
                 "media_anterior_m1_m2": round(media_m1_m2, 1),
                 "variacao_tendencia_pct": variacao_pct,
                 "tendencia": tendencia,
