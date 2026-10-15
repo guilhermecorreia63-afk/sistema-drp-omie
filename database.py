@@ -697,6 +697,98 @@ def carregar_produtos_cache(force_refresh: bool = False) -> list:
 
     return []
 
+def obter_pauta_coordenacao() -> list:
+    """Retorna itens da pauta salvos na tabela drp_pauta_coordenacao do Turso/SQLite."""
+    try:
+        df = executar_query("SELECT sku, adicionado_em, decisao, observacao, qtd_sugerida FROM drp_pauta_coordenacao ORDER BY atualizado_em DESC")
+        if df is not None and not df.empty:
+            return df.to_dict('records')
+    except Exception as e:
+        print(f"[DB] Erro ao carregar pauta da coordenacao: {e}")
+    return []
+
+def salvar_item_pauta_coordenacao(sku: str, decisao: str = "PENDENTE", observacao: str = "", qtd_sugerida: float = 0.0) -> bool:
+    """Insere ou atualiza um item na tabela drp_pauta_coordenacao do Turso/SQLite."""
+    try:
+        sku_clean = str(sku).strip().upper()
+        agora = datetime.now().strftime('%d/%m/%Y %H:%M')
+        query = """
+            INSERT INTO drp_pauta_coordenacao (sku, adicionado_em, decisao, observacao, qtd_sugerida, atualizado_em)
+            VALUES (:sku, :adicionado_em, :decisao, :observacao, :qtd_sugerida, :atualizado_em)
+            ON CONFLICT(sku) DO UPDATE SET
+                decisao = excluded.decisao,
+                observacao = excluded.observacao,
+                qtd_sugerida = excluded.qtd_sugerida,
+                atualizado_em = excluded.atualizado_em
+        """
+        executar_query(query, {
+            "sku": sku_clean,
+            "adicionado_em": agora,
+            "decisao": decisao,
+            "observacao": observacao or "",
+            "qtd_sugerida": float(qtd_sugerida or 0.0),
+            "atualizado_em": datetime.now().isoformat()
+        }, is_select=False)
+        return True
+    except Exception as e:
+        print(f"[DB] Erro ao salvar item na pauta do Turso: {e}")
+        return False
+
+def remover_item_pauta_coordenacao(sku: str = None, todos: bool = False) -> bool:
+    """Remove um item ou todos da pauta no Turso/SQLite."""
+    try:
+        if todos:
+            executar_query("DELETE FROM drp_pauta_coordenacao", is_select=False)
+        elif sku:
+            executar_query("DELETE FROM drp_pauta_coordenacao WHERE UPPER(TRIM(sku)) = :sku", {"sku": str(sku).strip().upper()}, is_select=False)
+        return True
+    except Exception as e:
+        print(f"[DB] Erro ao remover item da pauta do Turso: {e}")
+        return False
+
+def obter_metas_fornecedores() -> dict:
+    metas_padrao = {
+        "DISTRIBUIDORA LOYOLA": 1000.0,
+        "LOYOLA": 1000.0,
+        "PAULUS": 1000.0,
+        "PAULUS LIVRARIA": 1000.0,
+        "AVE MARIA": 1000.0,
+        "EDITORA AVE MARIA": 1000.0,
+        "VOZES": 1000.0,
+        "EDITORA VOZES": 1000.0,
+        "QUADRANTE": 800.0,
+        "QUADRANTE MACUNAIMA": 800.0,
+        "CEDET": 1200.0,
+        "CEDET - CENTRO DE DESENVOL": 1200.0,
+        "APOSTOLADO DIVINA MISERIC": 800.0,
+        "FORTALEZA BRINDES": 800.0
+    }
+    try:
+        df = executar_query("SELECT fornecedor, valor FROM drp_metas_fornecedores")
+        if df is not None and not df.empty:
+            for _, r in df.iterrows():
+                f = str(r['fornecedor']).strip().upper()
+                v = float(r['valor'] or 0.0)
+                if f and v > 0:
+                    metas_padrao[f] = v
+    except Exception:
+        pass
+    return metas_padrao
+
+def salvar_meta_fornecedor(fornecedor: str, valor: float) -> bool:
+    try:
+        f_clean = str(fornecedor).strip().upper()
+        query = """
+            INSERT INTO drp_metas_fornecedores (fornecedor, valor)
+            VALUES (:fornecedor, :valor)
+            ON CONFLICT(fornecedor) DO UPDATE SET valor = excluded.valor
+        """
+        executar_query(query, {"fornecedor": f_clean, "valor": float(valor)}, is_select=False)
+        return True
+    except Exception as e:
+        print(f"[DB] Erro ao salvar meta no Turso: {e}")
+        return False
+
 if __name__ == "__main__":
     inicializar_banco()
     print("✅ Banco DRP inicializado com sucesso!")

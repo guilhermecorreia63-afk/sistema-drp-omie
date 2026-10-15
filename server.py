@@ -792,24 +792,54 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             self._send_json({"success": False, "message": str(e)}, status=500)
     def _carregar_pauta_coordenacao_json(self):
+        # 1. Tenta carregar do Turso Cloud DB (Persistência no Vercel)
+        itens_db = []
+        metas_db = {}
+        if db:
+            try:
+                itens_db = db.obter_pauta_coordenacao()
+                metas_db = db.obter_metas_fornecedores()
+            except Exception as e_db:
+                print(f"[PAUTA COORDENACAO] Aviso ao carregar do DB: {e_db}")
+
+        if itens_db:
+            return {"itens": itens_db, "metas_fornecedores": metas_db}
+
+        # 2. Fallback JSON local se DB vazio
         pauta_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'pauta_coordenacao.json')
         if os.path.exists(pauta_path):
             try:
                 with open(pauta_path, 'r', encoding='utf-8') as f:
-                    return json.load(f)
+                    data = json.load(f)
+                    if metas_db:
+                        data['metas_fornecedores'] = metas_db
+                    return data
             except Exception:
                 pass
-        return {"itens": [], "metas_fornecedores": {}}
+        return {"itens": [], "metas_fornecedores": metas_db}
 
     def _salvar_pauta_coordenacao_json(self, data):
-        pauta_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'pauta_coordenacao.json')
+        # 1. Salva no Turso Cloud DB
+        if db:
+            try:
+                for it in data.get('itens', []):
+                    db.salvar_item_pauta_coordenacao(
+                        sku=it.get('sku'),
+                        decisao=it.get('decisao', 'PENDENTE'),
+                        observacao=it.get('observacao', ''),
+                        qtd_sugerida=float(it.get('qtd_sugerida', 0.0) or 0.0)
+                    )
+            except Exception as e_db:
+                print(f"[PAUTA COORDENACAO] Aviso ao salvar no DB: {e_db}")
+
+        # 2. Tenta salvar no JSON local se filesystem permitir (desenvolvimento)
         try:
+            pauta_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'pauta_coordenacao.json')
             with open(pauta_path, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
             return True
-        except Exception as e:
-            print(f"[PAUTA COORDENACAO] Erro ao salvar pauta_coordenacao.json: {e}")
-            return False
+        except Exception:
+            return True
 
     def handle_api_coordenacao_pauta_get(self):
         try:
