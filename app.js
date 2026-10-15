@@ -335,6 +335,7 @@ function setupEventListeners() {
     addListener('btn-add-blacklist-checked-cd', 'click', moverSelecionadosParaBlacklistCD);
     addListener('btn-add-blacklist-selected-matriz', 'click', moverSelecionadosParaBlacklistMatriz);
     addListener('btn-add-blacklist-checked-matriz', 'click', moverSelecionadosParaBlacklistMatriz);
+    addListener('btn-enviar-coordenacao-matriz', 'click', enviarSelecionadosParaCoordenacao);
     addListener('btn-requisicao-compra-matriz-footer', 'click', () => abrirModalRequisicaoCompra());
 
     // Modais
@@ -857,6 +858,8 @@ function render() {
     if (elCD) elCD.innerText = state.skusChecadosCD.size;
     const elMat = document.getElementById('count-selected-blacklist-matriz');
     if (elMat) elMat.innerText = state.skusChecadosMatriz.size;
+    const elCoord = document.getElementById('count-selected-coordenacao');
+    if (elCoord) elCoord.innerText = state.skusChecadosMatriz.size;
     
     renderTabCD();
     renderTabMatriz();
@@ -1107,6 +1110,8 @@ function renderTabMatriz() {
             if (e.target.checked) state.skusChecadosMatriz.add(sku);
             else state.skusChecadosMatriz.delete(sku);
             document.getElementById('count-selected-blacklist-matriz').innerText = state.skusChecadosMatriz.size;
+            const elCoord = document.getElementById('count-selected-coordenacao');
+            if (elCoord) elCoord.innerText = state.skusChecadosMatriz.size;
         });
 
         tr.querySelector('.chk-prod').addEventListener('change', async (e) => {
@@ -4367,6 +4372,23 @@ function abrirModalDetalhesInteligencia(sku) {
                 </button>
             </div>
         </div>
+
+        <!-- Bloco 4: Envio para o Comitê de Decisão -->
+        <div class="card mb-3" style="background: rgba(192, 132, 252, 0.08); padding: 14px; border-radius: 8px; border: 1px solid rgba(192, 132, 252, 0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <h5 style="margin:0; color:#c084fc; display:flex; align-items:center; gap:8px; font-size: 0.92rem;">
+                        <i class="fa-solid fa-users-gear"></i> 4. Comitê de Decisão & Produção (Coordenação)
+                    </h5>
+                    <p style="margin:4px 0 0 0; font-size:0.82rem; color:var(--text-muted);">
+                        Encaminhe este produto para análise conjunta com a coordenação na Aba 8.
+                    </p>
+                </div>
+                <button class="btn btn-sm" onclick="enviarSkuIndividualParaCoordenacao('${p.sku}')" style="background: #a855f7; color: #fff; font-weight: 600; padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer;">
+                    <i class="fa-solid fa-paper-plane"></i> Enviar p/ Pauta do Comitê
+                </button>
+            </div>
+        </div>
     `;
 
     body.innerHTML = html;
@@ -5178,4 +5200,58 @@ function gerarAtaComitePdf() {
 
     doc.save(`Ata_Comite_Producao_${new Date().toISOString().slice(0, 10)}.pdf`);
 }
+
+// Enviar SKU Individual diretamente (ex: pelo Modal de Diagnóstico da Matriz)
+async function enviarSkuIndividualParaCoordenacao(sku) {
+    if (!sku) return;
+    const cleanSku = String(sku).trim().toUpperCase();
+    try {
+        const resp = await fetch('/api/coordenacao/adicionar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ skus: [cleanSku] })
+        });
+        const res = await resp.json();
+        if (res.success) {
+            alert(`✅ SKU ${cleanSku} adicionado à Pauta do Comitê de Decisão!`);
+            if (confirm('Deseja abrir a Aba 8 (Comitê de Decisão) agora para analisá-lo?')) {
+                const tabBtn = document.querySelector('.nav-tab[data-tab="tab-comite-decisao"]');
+                if (tabBtn) tabBtn.click();
+            }
+        } else {
+            alert('❌ ' + (res.message || 'Erro ao adicionar produto à pauta.'));
+        }
+    } catch (e) {
+        console.error('Erro ao enviar SKU individual:', e);
+        alert('❌ Falha na comunicação com o servidor.');
+    }
+}
+
+// Adicionar SKU digitado diretamente na Aba 8
+async function adicionarSkuAvulsoPauta() {
+    const input = document.getElementById('input-add-sku-pauta');
+    if (!input || !input.value.trim()) {
+        alert('Digite o código SKU do produto para adicionar à pauta.');
+        return;
+    }
+    const sku = input.value.trim().toUpperCase();
+    input.value = '';
+    await enviarSkuIndividualParaCoordenacao(sku);
+    carregarPautaCoordenacao(true);
+}
+
+// Exposição global das funções do Comitê de Decisão
+window.adicionarSkuAvulsoPauta = adicionarSkuAvulsoPauta;
+window.enviarSelecionadosParaCoordenacao = enviarSelecionadosParaCoordenacao;
+window.enviarSkuIndividualParaCoordenacao = enviarSkuIndividualParaCoordenacao;
+window.carregarPautaCoordenacao = carregarPautaCoordenacao;
+window.renderListaPauta = renderListaPauta;
+window.filtrarListaPauta = filtrarListaPauta;
+window.selecionarProdutoPauta = selecionarProdutoPauta;
+window.salvarLotePeloComite = salvarLotePeloComite;
+window.registrarDecisaoComite = registrarDecisaoComite;
+window.removerItemPauta = removerItemPauta;
+window.editarMetaFinanceiraFornecedor = editarMetaFinanceiraFornecedor;
+window.limparPautaCompleta = limparPautaCompleta;
+window.gerarAtaComitePdf = gerarAtaComitePdf;
 

@@ -920,6 +920,14 @@
                                 <span><i class="fa-solid fa-list-check"></i> Fila de Produtos (<span id="count-itens-pauta">0</span>)</span>
                             </h4>
 
+                            <!-- Adicionar SKU Rápido à Pauta -->
+                            <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+                                <input type="text" id="input-add-sku-pauta" placeholder="Digitar SKU (ex: 006433)..." class="form-control" style="font-size: 0.82rem; height: 34px;" onkeypress="if(event.key==='Enter') adicionarSkuAvulsoPauta()">
+                                <button class="btn btn-primary btn-sm" onclick="adicionarSkuAvulsoPauta()" style="height: 34px; white-space: nowrap; font-size: 0.8rem; background: #a855f7; border:none; padding: 0 12px; font-weight:600;">
+                                    <i class="fa-solid fa-plus"></i> Puxar SKU
+                                </button>
+                            </div>
+
                             <!-- Filtros da Fila -->
                             <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
                                 <input type="text" id="busca-pauta-comite" class="form-control" placeholder="🔍 Filtrar pauta..." onkeyup="filtrarListaPauta()">
