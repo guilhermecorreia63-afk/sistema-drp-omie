@@ -118,50 +118,66 @@ function setupSidebarToggle() {
     if (btnClose) btnClose.addEventListener('click', toggleSidebar);
 }
 
+window.navegarParaAba = function(tabId) {
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    
+    const tabBtn = document.querySelector(`.nav-tab[data-tab="${tabId}"]`);
+    if (tabBtn) tabBtn.classList.add('active');
+    
+    const tabContent = document.getElementById(tabId);
+    if (tabContent) tabContent.classList.add('active');
+    
+    // Atualizar títulos
+    if (tabId === 'tab-hub') {
+        document.getElementById('page-heading').innerText = '🏠 Início — Hub de Operações';
+        document.getElementById('page-subheading').innerHTML = 'Selecione o módulo de trabalho: <strong>DRP Matriz & CD_SP</strong> ou <strong>Controle de Consignação</strong>.';
+    } else if (tabId === 'tab-cd-sp') {
+        document.getElementById('page-heading').innerText = '🚚 1. Reposição de Estoque CD_SP';
+        document.getElementById('page-subheading').innerHTML = 'Vendas <strong>Sul e Sudeste</strong> | Estoque Alvo: (Demanda × (Dias + LeadTime)) + 20% Seg.';
+    } else if (tabId === 'tab-matriz') {
+        document.getElementById('page-heading').innerText = '🏭 2. Estoque & Ordem de Produção Matriz';
+        document.getElementById('page-subheading').innerHTML = 'Vendas <strong>Brasil Inteiro (Geral)</strong> | Estoque Alvo: (Demanda × (Dias + LeadTime)) + 20% Seg.';
+    } else if (tabId === 'tab-remessas') {
+        document.getElementById('page-heading').innerText = '📦 3. Gestão de Remessas & Trânsito CD_SP';
+        document.getElementById('page-subheading').innerHTML = 'Acompanhamento de Remessas de Transferência (Matriz → CD_SP) no <strong>Omie ERP</strong>';
+        carregarRemessasOmie();
+    } else if (tabId === 'tab-analise-matriz') {
+        document.getElementById('page-heading').innerText = '📊 4. Análise de Produtos da Matriz (Matriz BCG)';
+        document.getElementById('page-subheading').innerHTML = 'Classificação em <strong>Estrela, Vaca Leiteira, Interrogação e Abacaxi</strong> com base em volume e crescimento';
+        renderizarAbaAnaliseMatriz();
+    } else if (tabId === 'tab-depositos-matriz') {
+        document.getElementById('page-heading').innerText = '🏬 5. Depósitos da Matriz (Sub-locais)';
+        document.getElementById('page-subheading').innerHTML = 'Gestão de sub-locais (Fracionado, Depósito 1, Depósito 2) e saldo <strong>A localizar</strong>';
+        carregarEDesenharDepositosMatriz();
+    } else if (tabId === 'tab-inteligencia-matriz') {
+        document.getElementById('page-heading').innerText = '🧬 6. Inteligência de Produção & Compras (Matriz)';
+        document.getElementById('page-subheading').innerHTML = 'Curva ABC por Família, Ruptura Isolada por Grade (PP..3G e A3..A7) e Avaliação de Encalhe por Lote Mínimo';
+        carregarInteligenciaMatriz();
+    } else if (tabId === 'tab-comite-decisao') {
+        document.getElementById('page-heading').innerText = '🤝 Comitê de Decisão & Produção (Coordenação)';
+        document.getElementById('page-subheading').innerHTML = 'Análise de Rupturas e Alertas com Inteligência Matriz, Meta Financeira de Terceiros e Decisão com 1 Clique';
+        carregarPautaCoordenacao();
+    } else if (tabId === 'tab-consignacao') {
+        document.getElementById('page-heading').innerText = '🚚 Controle de Consignação (Ida e Volta)';
+        document.getElementById('page-subheading').innerHTML = 'Unificação de remessas, conferência de retorno por bipagem, espelho da vendedora e integração fiscal no Omie ERP.';
+        if (typeof inicializarModuloConsignacao === 'function') {
+            inicializarModuloConsignacao();
+        }
+    } else if (tabId === 'tab-combos-kit') {
+        document.getElementById('page-heading').innerText = '📦 Módulo 2 — Gestão de Combos & Kits Omie (SKU 000223)';
+        document.getElementById('page-subheading').innerHTML = 'Monitoramento de componentes e automação de redefinição de valor de venda do <strong>Kit Assinatura Pão da Vida (SKU 000223)</strong>';
+        carregarDetalhesCombo();
+    }
+};
+
 // Configurar Listeners de Eventos
 function setupEventListeners() {
     // Tabs
     document.querySelectorAll('.nav-tab').forEach(tab => {
         tab.addEventListener('click', (e) => {
-            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            
             const tabId = tab.dataset.tab;
-            tab.classList.add('active');
-            document.getElementById(tabId).classList.add('active');
-            
-            // Atualizar títulos
-            if (tabId === 'tab-cd-sp') {
-                document.getElementById('page-heading').innerText = '🚚 Reposição de Estoque CD_SP';
-                document.getElementById('page-subheading').innerHTML = 'Vendas <strong>Sul e Sudeste</strong> | Estoque Alvo: (Demanda × (Dias + LeadTime)) + 20% Seg.';
-            } else if (tabId === 'tab-matriz') {
-                document.getElementById('page-heading').innerText = '🏭 Estoque & Ordem de Produção Matriz';
-                document.getElementById('page-subheading').innerHTML = 'Vendas <strong>Brasil Inteiro (Geral)</strong> | Estoque Alvo: (Demanda × (Dias + LeadTime)) + 20% Seg.';
-            } else if (tabId === 'tab-remessas') {
-                document.getElementById('page-heading').innerText = '📦 Gestão de Remessas & Trânsito CD_SP';
-                document.getElementById('page-subheading').innerHTML = 'Acompanhamento de Remessas de Transferência (Matriz → CD_SP) no <strong>Omie ERP</strong>';
-                carregarRemessasOmie();
-            } else if (tabId === 'tab-analise-matriz') {
-                document.getElementById('page-heading').innerText = '📊 Aba 4 — Análise de Produtos da Matriz (Matriz BCG)';
-                document.getElementById('page-subheading').innerHTML = 'Classificação em <strong>Estrela, Vaca Leiteira, Interrogação e Abacaxi</strong> com base em volume e crescimento';
-                renderizarAbaAnaliseMatriz();
-            } else if (tabId === 'tab-depositos-matriz') {
-                document.getElementById('page-heading').innerText = '🏬 Aba 5 — Depósitos da Matriz (Sub-locais)';
-                document.getElementById('page-subheading').innerHTML = 'Gestão de sub-locais (Fracionado, Depósito 1, Depósito 2) e saldo <strong>A localizar</strong>';
-                carregarEDesenharDepositosMatriz();
-            } else if (tabId === 'tab-combos-kit') {
-                document.getElementById('page-heading').innerText = '📦 Aba 6 — Gestão de Combos & Kits Omie';
-                document.getElementById('page-subheading').innerHTML = 'Monitoramento de componentes e automação de redefinição de valor de venda do <strong>Kit Assinatura Pão da Vida (SKU 000223)</strong>';
-                carregarDetalhesCombo();
-            } else if (tabId === 'tab-inteligencia-matriz') {
-                document.getElementById('page-heading').innerText = '🧬 Aba 7 — Inteligência de Produção & Compras (Matriz)';
-                document.getElementById('page-subheading').innerHTML = 'Curva ABC por Família, Ruptura Isolada por Grade (PP..3G e A3..A7) e Avaliação de Encalhe por Lote Mínimo';
-                carregarInteligenciaMatriz();
-            } else if (tabId === 'tab-comite-decisao') {
-                document.getElementById('page-heading').innerText = '🤝 Aba 8 — Comitê de Decisão & Produção (Coordenação)';
-                document.getElementById('page-subheading').innerHTML = 'Análise de Rupturas e Alertas com Inteligência Matriz, Meta Financeira de Terceiros e Decisão com 1 Clique';
-                carregarPautaCoordenacao();
-            }
+            window.navegarParaAba(tabId);
         });
     });
 
@@ -5391,4 +5407,938 @@ window.limparPautaCompleta = limparPautaCompleta;
 window.adicionarItemAvulsoPauta = adicionarItemAvulsoPauta;
 window.adicionarSkusPauta = adicionarSkusPauta;
 window.gerarAtaComitePdf = gerarAtaComitePdf;
+
+// ==========================================================================
+// MÓDULO DE CONSIGNAÇÃO & LIVRARIAS (IDA E VOLTA)
+// ==========================================================================
+
+let stateConsignacao = {
+    clienteAtual: null,
+    remessasDisponiveis: [],
+    remessasSelecionadas: [],
+    itensUnificados: [],
+    descontoPadraoPct: 30.0,
+    acertoId: null,
+    codigoAcerto: null,
+    statusAcerto: 'EM_CONFERENCIA'
+};
+
+function inicializarModuloConsignacao() {
+    const inputBusca = document.getElementById('input-busca-cliente-consignacao');
+    const btnBusca = document.getElementById('btn-buscar-cliente-consignacao');
+    const btnUnificar = document.getElementById('btn-unificar-remessas-consignacao');
+    const inputBip = document.getElementById('input-leitor-bipagem-consignacao');
+    const inputFiltroItens = document.getElementById('input-filtro-itens-consignacao');
+    const btnRetornarTudo = document.getElementById('btn-retornar-tudo');
+    const btnZerarRetorno = document.getElementById('btn-zerar-retorno');
+    const btnGerarPdf = document.getElementById('btn-gerar-espelho-consignacao-pdf');
+    const btnReconferir = document.getElementById('btn-reconferir-consignacao');
+    const btnIntegrar = document.getElementById('btn-integrar-omie-consignacao');
+    const btnRecarregarHist = document.getElementById('btn-recarregar-historico-acertos');
+
+    if (btnBusca && !btnBusca._init) {
+        btnBusca._init = true;
+        btnBusca.addEventListener('click', () => {
+            const termo = (inputBusca?.value || '').trim();
+            if (termo) buscarClientesConsignacao(termo);
+        });
+        inputBusca?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const termo = (inputBusca.value || '').trim();
+                if (termo) buscarClientesConsignacao(termo);
+            }
+        });
+    }
+
+    if (btnUnificar && !btnUnificar._init) {
+        btnUnificar._init = true;
+        btnUnificar.addEventListener('click', unificarRemessasSelecionadas);
+    }
+
+    if (inputBip && !inputBip._init) {
+        inputBip._init = true;
+        inputBip.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const codigo = inputBip.value.trim();
+                inputBip.value = '';
+                if (codigo) processarBipagemItem(codigo);
+            }
+        });
+    }
+
+    if (inputFiltroItens && !inputFiltroItens._init) {
+        inputFiltroItens._init = true;
+        inputFiltroItens.addEventListener('input', () => {
+            filtrarTabelaConsignacao(inputFiltroItens.value.trim().toLowerCase());
+        });
+    }
+
+    if (btnRetornarTudo && !btnRetornarTudo._init) {
+        btnRetornarTudo._init = true;
+        btnRetornarTudo.addEventListener('click', () => {
+            stateConsignacao.itensUnificados.forEach(it => {
+                it.qtd_retorno = it.qtd_enviada;
+                it.qtd_vendida = 0;
+                it.valor_total_liquido = 0;
+            });
+            renderizarTabelaConsignacao();
+            recalcularTotaisConsignacao();
+            salvarRascunhoConsignacaoLocal();
+        });
+    }
+
+    if (btnZerarRetorno && !btnZerarRetorno._init) {
+        btnZerarRetorno._init = true;
+        btnZerarRetorno.addEventListener('click', () => {
+            stateConsignacao.itensUnificados.forEach(it => {
+                it.qtd_retorno = 0;
+                it.qtd_vendida = it.qtd_enviada;
+                const descVal = it.preco_unitario * (it.desconto_pct / 100);
+                const precoLiq = it.preco_unitario - descVal;
+                it.valor_total_liquido = it.qtd_vendida * precoLiq;
+            });
+            renderizarTabelaConsignacao();
+            recalcularTotaisConsignacao();
+            salvarRascunhoConsignacaoLocal();
+        });
+    }
+
+    if (btnGerarPdf && !btnGerarPdf._init) {
+        btnGerarPdf._init = true;
+        btnGerarPdf.addEventListener('click', gerarEspelhoConsignacaoPDF);
+    }
+
+    if (btnReconferir && !btnReconferir._init) {
+        btnReconferir._init = true;
+        btnReconferir.addEventListener('click', reconferirConsignacao);
+    }
+
+    if (btnIntegrar && !btnIntegrar._init) {
+        btnIntegrar._init = true;
+        btnIntegrar.addEventListener('click', confirmarIntegracaoOmieConsignacao);
+    }
+
+    if (btnRecarregarHist && !btnRecarregarHist._init) {
+        btnRecarregarHist._init = true;
+        btnRecarregarHist.addEventListener('click', carregarHistoricoAcertosConsignacao);
+    }
+
+    carregarHistoricoAcertosConsignacao();
+}
+
+async function buscarClientesConsignacao(termo) {
+    const listaBox = document.getElementById('lista-clientes-consignacao-resultado');
+    const gridClientes = document.getElementById('grid-clientes-consignacao');
+    if (!listaBox || !gridClientes) return;
+
+    gridClientes.innerHTML = '<div style="color: #38bdf8; padding: 12px;"><i class="fa-solid fa-spinner fa-spin"></i> Buscando no Omie ERP...</div>';
+    listaBox.style.display = 'block';
+
+    try {
+        const resp = await fetch(`/api/consignacao/clientes?q=${encodeURIComponent(termo)}`);
+        const data = await resp.json();
+        const clientes = data.clientes || [];
+
+        if (clientes.length === 0) {
+            gridClientes.innerHTML = `<div style="color: var(--text-muted); padding: 12px;">Nenhum cliente encontrado com o termo "<strong>${termo}</strong>".</div>`;
+            return;
+        }
+
+        gridClientes.innerHTML = '';
+        clientes.forEach(cli => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.style.cssText = 'background: #111b2e; border: 1px solid #1e2f4c; padding: 12px 14px; border-radius: 8px; cursor: pointer; transition: all 0.2s;';
+            card.innerHTML = `
+                <div style="font-weight: 700; color: #f1f5f9; font-size: 0.92rem; margin-bottom: 3px;">${cli.nome_fantasia || cli.razao_social}</div>
+                <div style="font-size: 0.78rem; color: #38bdf8;">${cli.razao_social || ''}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">CNPJ/CPF: ${cli.cnpj_cpf || '-'} ${cli.cidade ? `| ${cli.cidade}/${cli.estado || ''}` : ''}</div>
+            `;
+            card.onmouseenter = () => card.style.borderColor = '#38bdf8';
+            card.onmouseleave = () => card.style.borderColor = '#1e2f4c';
+            card.onclick = () => selecionarClienteConsignacao(cli);
+            gridClientes.appendChild(card);
+        });
+
+    } catch (e) {
+        gridClientes.innerHTML = `<div style="color: #f87171; padding: 12px;">Erro ao buscar clientes: ${e.message}</div>`;
+    }
+}
+
+async function selecionarClienteConsignacao(cliente) {
+    stateConsignacao.clienteAtual = cliente;
+    const areaRemessas = document.getElementById('area-remessas-consignacao');
+    const lblNome = document.getElementById('lbl-cliente-selecionado-nome');
+    const lblDoc = document.getElementById('lbl-cliente-selecionado-doc');
+    const gridRemessas = document.getElementById('grid-remessas-cliente');
+
+    if (lblNome) lblNome.innerText = cliente.nome_fantasia || cliente.razao_social;
+    if (lblDoc) lblDoc.innerText = `CNPJ/CPF: ${cliente.cnpj_cpf || '-'} | Cód. Omie: ${cliente.codigo_cliente}`;
+
+    if (areaRemessas) areaRemessas.style.display = 'block';
+    if (gridRemessas) gridRemessas.innerHTML = '<div style="color: #38bdf8; padding: 12px;"><i class="fa-solid fa-spinner fa-spin"></i> Carregando remessas emitidas no Omie...</div>';
+
+    try {
+        const resp = await fetch(`/api/consignacao/remessas?nCodCli=${cliente.codigo_cliente}`);
+        const data = await resp.json();
+        const remessas = data.remessas || [];
+        stateConsignacao.remessasDisponiveis = remessas;
+
+        if (remessas.length === 0) {
+            gridRemessas.innerHTML = '<div style="color: var(--text-muted); padding: 12px;">Nenhuma remessa em aberto encontrada para este cliente.</div>';
+            return;
+        }
+
+        gridRemessas.innerHTML = '';
+        remessas.forEach(r => {
+            const card = document.createElement('div');
+            card.style.cssText = 'background: #0f1c33; border: 1px solid #1e3a63; padding: 12px 14px; border-radius: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer;';
+            card.innerHTML = `
+                <input type="checkbox" id="chk-rem-${r.nCodRem}" value="${r.nCodRem}" class="chk-remessa-consignacao" style="width: 18px; height: 18px; cursor: pointer;" checked>
+                <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <strong style="color: #ffffff; font-size: 0.95rem;">Remessa #${r.numero_remessa}</strong>
+                        <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 0.75rem;">${r.etapa || 'Concluído'}</span>
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 3px;">
+                        Data: <strong>${r.data_previsao}</strong> | NF: <strong>${r.numero_nf || '-'}</strong>
+                    </div>
+                    <div style="font-size: 0.85rem; color: #38bdf8; font-weight: 700; margin-top: 2px;">
+                        Valor: R$ ${parseFloat(r.valor_total || 0).toFixed(2).replace('.', ',')}
+                    </div>
+                </div>
+            `;
+            card.onclick = (e) => {
+                if (e.target.tagName !== 'INPUT') {
+                    const chk = card.querySelector('input');
+                    if (chk) chk.checked = !chk.checked;
+                }
+            };
+            gridRemessas.appendChild(card);
+        });
+
+    } catch (e) {
+        if (gridRemessas) gridRemessas.innerHTML = `<div style="color: #f87171; padding: 12px;">Erro ao carregar remessas: ${e.message}</div>`;
+    }
+}
+
+async function unificarRemessasSelecionadas() {
+    const chks = document.querySelectorAll('.chk-remessa-consignacao:checked');
+    const remessasIds = Array.from(chks).map(c => parseInt(c.value));
+
+    if (remessasIds.length === 0) {
+        alert('Por favor, selecione ao menos uma remessa para unificar.');
+        return;
+    }
+
+    const btnUnificar = document.getElementById('btn-unificar-remessas-consignacao');
+    const originalText = btnUnificar.innerHTML;
+    btnUnificar.disabled = true;
+    btnUnificar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Consolidando produtos das remessas...';
+
+    const descInput = document.getElementById('input-desconto-consignacao-global');
+    const descontoGlobal = parseFloat(descInput?.value || 30.0);
+    stateConsignacao.descontoPadraoPct = descontoGlobal;
+
+    try {
+        const resp = await fetch('/api/consignacao/unificar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                remessas: remessasIds,
+                desconto_padrao_pct: descontoGlobal
+            })
+        });
+
+        const data = await resp.json();
+        if (!data.success) {
+            alert('Erro ao unificar remessas: ' + (data.message || ''));
+            return;
+        }
+
+        const resultado = data.data;
+        stateConsignacao.remessasSelecionadas = resultado.remessas || [];
+        stateConsignacao.itensUnificados = resultado.itens || [];
+        stateConsignacao.statusAcerto = 'EM_CONFERENCIA';
+        stateConsignacao.codigoAcerto = `AC-${new Date().toISOString().replace(/\D/g, '').substring(0, 14)}`;
+
+        // Alterna para Etapa 2
+        document.getElementById('painel-consignacao-etapa1').style.display = 'none';
+        document.getElementById('painel-consignacao-etapa2').style.display = 'block';
+
+        atualizarStepperConsignacao(2);
+
+        renderizarTabelaConsignacao();
+        recalcularTotaisConsignacao();
+
+        // Focar no input de bipagem
+        setTimeout(() => {
+            const inputBip = document.getElementById('input-leitor-bipagem-consignacao');
+            if (inputBip) inputBip.focus();
+        }, 150);
+
+        salvarRascunhoConsignacaoLocal();
+
+    } catch (e) {
+        alert('Erro de comunicação: ' + e.message);
+    } finally {
+        btnUnificar.disabled = false;
+        btnUnificar.innerHTML = originalText;
+    }
+}
+
+function renderizarTabelaConsignacao(itensParaExibir = null) {
+    const tbody = document.getElementById('tbody-consignacao-itens');
+    if (!tbody) return;
+
+    const itens = itensParaExibir || stateConsignacao.itensUnificados;
+    tbody.innerHTML = '';
+
+    if (itens.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 30px;">Nenhum item na lista.</td></tr>';
+        return;
+    }
+
+    itens.forEach(it => {
+        const tr = document.createElement('tr');
+        tr.id = `row-consig-${it.sku}`;
+        if (it.qtd_vendida > 0) {
+            tr.classList.add('row-vendido-destaque');
+        }
+
+        const descVal = it.preco_unitario * (it.desconto_pct / 100);
+        const precoLiq = it.preco_unitario - descVal;
+        const totalLiq = it.qtd_vendida * precoLiq;
+
+        let remsBadges = '';
+        if (it.remessas_origem && typeof it.remessas_origem === 'object') {
+            remsBadges = Object.entries(it.remessas_origem).map(([rNum, q]) => 
+                `<span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #cbd5e1; font-size: 0.7rem; padding: 2px 6px;">#${rNum} (${q})</span>`
+            ).join(' ');
+        }
+
+        tr.innerHTML = `
+            <td><strong>${it.sku}</strong></td>
+            <td>
+                <div style="font-weight: 600; color: #f8fafc;">${it.descricao}</div>
+            </td>
+            <td style="text-align: center; font-weight: 700; color: #38bdf8;">${it.qtd_enviada}</td>
+            <td style="text-align: center; background: rgba(56, 189, 248, 0.05);">
+                <input type="number" class="table-retorno-input" value="${it.qtd_retorno}" min="0" max="${it.qtd_enviada}" 
+                       onchange="alterarRetornoManual('${it.sku}', this.value)">
+            </td>
+            <td style="text-align: center; background: rgba(16, 185, 129, 0.05);">
+                <strong style="color: ${it.qtd_vendida > 0 ? '#10b981' : '#64748b'}; font-size: 1rem;">${it.qtd_vendida}</strong>
+            </td>
+            <td style="text-align: right; color: var(--text-muted);">R$ ${it.preco_unitario.toFixed(2).replace('.', ',')}</td>
+            <td style="text-align: center; color: #38bdf8;">${it.desconto_pct}%</td>
+            <td style="text-align: right;">
+                <strong style="color: ${totalLiq > 0 ? '#10b981' : '#64748b'};">R$ ${totalLiq.toFixed(2).replace('.', ',')}</strong>
+            </td>
+            <td>${remsBadges}</td>
+        `;
+
+        tbody.appendChild(tr);
+    });
+}
+
+function alterarRetornoManual(sku, valStr) {
+    const it = stateConsignacao.itensUnificados.find(x => x.sku === sku);
+    if (!it) return;
+
+    let ret = parseInt(valStr) || 0;
+    if (ret < 0) ret = 0;
+    if (ret > it.qtd_enviada) {
+        alert(`O retorno não pode ser maior do que o enviado (${it.qtd_enviada} un).`);
+        ret = it.qtd_enviada;
+    }
+
+    it.qtd_retorno = ret;
+    it.qtd_vendida = Math.max(0, it.qtd_enviada - ret);
+
+    const descVal = it.preco_unitario * (it.desconto_pct / 100);
+    const precoLiq = it.preco_unitario - descVal;
+    it.valor_total_liquido = it.qtd_vendida * precoLiq;
+
+    renderizarTabelaConsignacao();
+    recalcularTotaisConsignacao();
+    salvarRascunhoConsignacaoLocal();
+}
+
+function processarBipagemItem(codigoBipado) {
+    const inputMult = document.getElementById('input-qtd-multiplicador-bip');
+    const mult = parseInt(inputMult?.value || 1);
+
+    const termo = codigoBipado.toUpperCase();
+    const it = stateConsignacao.itensUnificados.find(x => 
+        x.sku.toUpperCase() === termo || 
+        (x.ean && x.ean === termo) ||
+        x.sku.replace(/^0+/, '') === termo.replace(/^0+/, '')
+    );
+
+    if (!it) {
+        // Toca alerta sonoro de não encontrado
+        tocarBeepFeedback(false);
+        alert(`Produto SKU/EAN "${codigoBipado}" não faz parte das remessas selecionadas!`);
+        return;
+    }
+
+    if (it.qtd_retorno + mult > it.qtd_enviada) {
+        tocarBeepFeedback(false);
+        alert(`Atenção: A quantidade de retorno (${it.qtd_retorno + mult}) ultrapassa o total enviado (${it.qtd_enviada})!`);
+        return;
+    }
+
+    it.qtd_retorno += mult;
+    it.qtd_vendida = Math.max(0, it.qtd_enviada - it.qtd_retorno);
+
+    const descVal = it.preco_unitario * (it.desconto_pct / 100);
+    const precoLiq = it.preco_unitario - descVal;
+    it.valor_total_liquido = it.qtd_vendida * precoLiq;
+
+    tocarBeepFeedback(true);
+    renderizarTabelaConsignacao();
+    recalcularTotaisConsignacao();
+    salvarRascunhoConsignacaoLocal();
+
+    // Rolar até a linha alterada e piscar
+    const tr = document.getElementById(`row-consig-${it.sku}`);
+    if (tr) {
+        tr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        tr.style.transition = 'background-color 0.4s';
+        tr.style.backgroundColor = 'rgba(56, 189, 248, 0.3)';
+        setTimeout(() => {
+            tr.style.backgroundColor = '';
+        }, 600);
+    }
+}
+
+function tocarBeepFeedback(sucesso = true) {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = sucesso ? 'sine' : 'sawtooth';
+        osc.frequency.setValueAtTime(sucesso ? 880 : 300, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        osc.start();
+        osc.stop(audioCtx.currentTime + (sucesso ? 0.1 : 0.25));
+    } catch (e) {
+        // Áudio não suportado ou bloqueado
+    }
+}
+
+function recalcularTotaisConsignacao() {
+    let totEnv = 0;
+    let totRet = 0;
+    let totVend = 0;
+    let totBruto = 0.0;
+    let totLiq = 0.0;
+
+    stateConsignacao.itensUnificados.forEach(it => {
+        totEnv += it.qtd_enviada;
+        totRet += it.qtd_retorno;
+        totVend += it.qtd_vendida;
+
+        totBruto += (it.qtd_vendida * it.preco_unitario);
+        const descVal = it.preco_unitario * (it.desconto_pct / 100);
+        const precoLiq = it.preco_unitario - descVal;
+        totLiq += (it.qtd_vendida * precoLiq);
+    });
+
+    const elEnv = document.getElementById('metric-consig-enviado');
+    const elRet = document.getElementById('metric-consig-retorno');
+    const elVend = document.getElementById('metric-consig-vendido');
+    const elTotLiq = document.getElementById('metric-consig-total-liq');
+
+    if (elEnv) elEnv.innerText = totEnv;
+    if (elRet) elRet.innerText = totRet;
+    if (elVend) elVend.innerText = totVend;
+    if (elTotLiq) elTotLiq.innerText = `R$ ${totLiq.toFixed(2).replace('.', ',')}`;
+
+    stateConsignacao.totalEnviado = totEnv;
+    stateConsignacao.totalRetorno = totRet;
+    stateConsignacao.totalVendido = totVend;
+    stateConsignacao.valorTotalBruto = totBruto;
+    stateConsignacao.valorTotalDesconto = totBruto - totLiq;
+    stateConsignacao.valorTotalLiquido = totLiq;
+}
+
+function filtrarTabelaConsignacao(termo) {
+    if (!termo) {
+        renderizarTabelaConsignacao();
+        return;
+    }
+    const filtrados = stateConsignacao.itensUnificados.filter(x => 
+        x.sku.toLowerCase().includes(termo) || 
+        x.descricao.toLowerCase().includes(termo)
+    );
+    renderizarTabelaConsignacao(filtrados);
+}
+
+function salvarRascunhoConsignacaoLocal() {
+    try {
+        localStorage.setItem('drp_rascunho_consignacao', JSON.stringify(stateConsignacao));
+    } catch (e) {
+        // LocalStorage quota
+    }
+}
+
+async function gerarEspelhoConsignacaoPDF() {
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+        alert('Biblioteca jsPDF não carregada. Verifique sua conexão.');
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    const cli = stateConsignacao.clienteAtual || {};
+    const itensVendidos = stateConsignacao.itensUnificados.filter(x => x.qtd_vendida > 0);
+    const remsNums = stateConsignacao.remessasSelecionadas.map(r => `#${r.numero_remessa}`).join(', ');
+
+    // 1. Cabeçalho
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, 210, 32, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(255, 255, 255);
+    doc.text("EDIÇÕES SHALOM — ESPELHO DE ACERTO DE CONSIGNAÇÃO", 14, 14);
+
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(148, 163, 184);
+    doc.text(`Cliente: ${cli.nome_fantasia || cli.razao_social} | CNPJ/CPF: ${cli.cnpj_cpf || '-'}`, 14, 21);
+    doc.text(`Remessas Unificadas: ${remsNums} | Emissão: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 14, 27);
+
+    // 2. Resumo Financeiro Box
+    doc.setFillColor(241, 245, 249);
+    doc.rect(14, 38, 182, 18, 'F');
+    doc.setDrawColor(203, 213, 225);
+    doc.rect(14, 38, 182, 18, 'S');
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 41, 59);
+    doc.text("TOTAL ENVIADO", 20, 44);
+    doc.text("DEVOLVIDO (FÍSICO)", 62, 44);
+    doc.text("PEÇAS VENDIDAS", 112, 44);
+    doc.text("FATURAMENTO LÍQUIDO", 152, 44);
+
+    doc.setFontSize(11);
+    doc.setTextColor(15, 23, 42);
+    doc.text(String(stateConsignacao.totalEnviado || 0), 20, 51);
+    doc.text(String(stateConsignacao.totalRetorno || 0), 62, 51);
+    doc.setTextColor(22, 163, 74);
+    doc.text(String(stateConsignacao.totalVendido || 0), 112, 51);
+    doc.setTextColor(2, 132, 199);
+    doc.text(`R$ ${(stateConsignacao.valorTotalLiquido || 0).toFixed(2).replace('.', ',')}`, 152, 51);
+
+    // 3. Tabela de Itens Vendidos
+    let y = 65;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(15, 23, 42);
+    doc.text(`Relação de Livros e Produtos Vendidos (${itensVendidos.length} títulos)`, 14, y);
+
+    y += 5;
+    doc.setFillColor(30, 41, 59);
+    doc.rect(14, y, 182, 6, 'F');
+
+    doc.setFontSize(7.5);
+    doc.setTextColor(255, 255, 255);
+    doc.text("SKU", 16, y + 4.2);
+    doc.text("Título / Descrição", 36, y + 4.2);
+    doc.text("Enviado", 115, y + 4.2);
+    doc.text("Retorno", 130, y + 4.2);
+    doc.text("Vendido", 145, y + 4.2);
+    doc.text("Preço Capa", 160, y + 4.2);
+    doc.text("Total Líq.", 180, y + 4.2);
+
+    y += 6;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(30, 41, 59);
+
+    if (itensVendidos.length === 0) {
+        y += 6;
+        doc.text("Nenhum item vendido (100% de retorno da mercadoria remetida).", 16, y);
+    } else {
+        itensVendidos.forEach((it, idx) => {
+            if (y > 275) {
+                doc.addPage();
+                y = 15;
+            }
+
+            if (idx % 2 === 1) {
+                doc.setFillColor(248, 250, 252);
+                doc.rect(14, y, 182, 5.5, 'F');
+            }
+
+            const descTrunc = it.descricao.length > 46 ? it.descricao.substring(0, 46) + '...' : it.descricao;
+
+            doc.text(it.sku, 16, y + 3.8);
+            doc.text(descTrunc, 36, y + 3.8);
+            doc.text(String(it.qtd_enviada), 118, y + 3.8, { align: 'center' });
+            doc.text(String(it.qtd_retorno), 134, y + 3.8, { align: 'center' });
+            doc.setFont('helvetica', 'bold');
+            doc.text(String(it.qtd_vendida), 149, y + 3.8, { align: 'center' });
+            doc.setFont('helvetica', 'normal');
+            doc.text(`R$ ${it.preco_unitario.toFixed(2).replace('.', ',')}`, 170, y + 3.8, { align: 'right' });
+            doc.setFont('helvetica', 'bold');
+            doc.text(`R$ ${it.valor_total_liquido.toFixed(2).replace('.', ',')}`, 194, y + 3.8, { align: 'right' });
+            doc.setFont('helvetica', 'normal');
+
+            y += 5.5;
+        });
+    }
+
+    // Rodapé de Assinatura Comercial
+    y = Math.min(y + 15, 270);
+    doc.setFontSize(7.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text("Conferido por: ____________________________     Validado Vendedora: ____________________________", 14, y);
+    doc.text("Este documento destina-se ao acerto comercial prévio para emissão da NF de Devolução (CFOP 1.917) e Venda.", 14, y + 5);
+
+    // Salvar PDF
+    const nomeArquivo = `Espelho_Consignacao_${(cli.nome_fantasia || 'Cliente').replace(/\s+/g, '_')}_${stateConsignacao.codigoAcerto}.pdf`;
+    doc.save(nomeArquivo);
+
+    // Atualizar status para AGUARDANDO_VENDEDORA
+    stateConsignacao.statusAcerto = 'AGUARDANDO_VENDEDORA';
+    atualizarStepperConsignacao(3);
+
+    const badge = document.getElementById('badge-status-acerto');
+    if (badge) {
+        badge.style.background = 'rgba(234, 179, 8, 0.2)';
+        badge.style.color = '#fbbf24';
+        badge.style.borderColor = 'rgba(234, 179, 8, 0.4)';
+        badge.innerHTML = '⏳ Aguardando Validação Comercial (Vendedora)';
+    }
+
+    // Salvar no Turso DB
+    await salvarAcertoNoTursoDB();
+    alert(`📄 Espelho em PDF gerado com sucesso!\nArquivo: ${nomeArquivo}\n\nStatus atualizado para: Aguardando Validação Comercial.`);
+}
+
+function atualizarStepperConsignacao(passo) {
+    for (let i = 1; i <= 4; i++) {
+        const item = document.getElementById(`step-${i}-indicador`);
+        if (!item) continue;
+        item.classList.remove('active', 'completed');
+        if (i < passo) {
+            item.classList.add('completed');
+        } else if (i === passo) {
+            item.classList.add('active');
+        }
+    }
+}
+
+function reconferirConsignacao() {
+    stateConsignacao.statusAcerto = 'EM_CONFERENCIA';
+    atualizarStepperConsignacao(2);
+
+    const badge = document.getElementById('badge-status-acerto');
+    if (badge) {
+        badge.style.background = 'rgba(56, 189, 248, 0.2)';
+        badge.style.color = '#38bdf8';
+        badge.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+        badge.innerHTML = '📝 Em Conferência Física (Reaberto)';
+    }
+
+    const btnIntegrar = document.getElementById('btn-integrar-omie-consignacao');
+    if (btnIntegrar) {
+        btnIntegrar.disabled = false;
+        btnIntegrar.style.opacity = '1';
+        btnIntegrar.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+        btnIntegrar.innerHTML = '<i class="fa-solid fa-paper-plane"></i> 2. Confirmar Acerto & Integrar no Omie';
+    }
+
+    const inputBip = document.getElementById('input-leitor-bipagem-consignacao');
+    if (inputBip) {
+        inputBip.focus();
+        inputBip.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+async function salvarAcertoNoTursoDB() {
+    const payload = {
+        codigo_acerto: stateConsignacao.codigoAcerto,
+        codigo_cliente_omie: stateConsignacao.clienteAtual?.codigo_cliente,
+        cliente_nome: stateConsignacao.clienteAtual?.nome_fantasia || stateConsignacao.clienteAtual?.razao_social,
+        cliente_cnpj_cpf: stateConsignacao.clienteAtual?.cnpj_cpf,
+        remessas_unificadas: stateConsignacao.remessasSelecionadas,
+        status: stateConsignacao.statusAcerto,
+        desconto_padrao_pct: stateConsignacao.descontoPadraoPct,
+        total_enviado: stateConsignacao.totalEnviado,
+        total_retorno: stateConsignacao.totalRetorno,
+        total_vendido: stateConsignacao.totalVendido,
+        valor_total_bruto: stateConsignacao.valorTotalBruto,
+        valor_total_desconto: stateConsignacao.valorTotalDesconto,
+        valor_total_liquido: stateConsignacao.valorTotalLiquido,
+        itens: stateConsignacao.itensUnificados
+    };
+
+    try {
+        const resp = await fetch('/api/consignacao/salvar_acerto', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await resp.json();
+        if (data.acerto_id) {
+            stateConsignacao.acertoId = data.acerto_id;
+        }
+        carregarHistoricoAcertosConsignacao();
+    } catch (e) {
+        console.error('Erro ao salvar acerto no Turso:', e);
+    }
+}
+
+async function confirmarIntegracaoOmieConsignacao() {
+    if (!stateConsignacao.acertoId) {
+        await salvarAcertoNoTursoDB();
+    }
+
+    const totVend = stateConsignacao.totalVendido || 0;
+    const totLiq = (stateConsignacao.valorTotalLiquido || 0).toFixed(2).replace('.', ',');
+    const totRet = stateConsignacao.totalRetorno || 0;
+
+    const msg = `Confirma a integração oficial do acerto no Omie ERP?\n\n` +
+                `• Cliente: ${stateConsignacao.clienteAtual?.nome_fantasia || 'Não selecionado'}\n` +
+                `• Peças Físicas Devolvidas ao Estoque: ${totRet} un (CFOP 1.917 / Compras para Revenda)\n` +
+                `• Peças Faturadas em Venda: ${totVend} un\n` +
+                `• Valor Líquido do Pedido de Venda: R$ ${totLiq}\n\n` +
+                `Esta operação liquidará as remessas de origem no Omie e registrará a devolução (CFOP 1.917) e o Pedido de Venda. Deseja continuar?`;
+
+    if (!confirm(msg)) return;
+
+    const btnIntegrar = document.getElementById('btn-integrar-omie-consignacao');
+    const originalText = btnIntegrar.innerHTML;
+    btnIntegrar.disabled = true;
+    btnIntegrar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Integrando com Omie ERP...';
+
+    try {
+        const resp = await fetch('/api/consignacao/integrar_omie', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ acerto_id: stateConsignacao.acertoId })
+        });
+
+        const data = await resp.json();
+        if (data.success) {
+            let infoMsg = '✅ Acerto integrado no Omie com sucesso!\n\n';
+            if (data.pedido_venda) {
+                infoMsg += `• Pedido de Venda: #${data.pedido_venda.numero_pedido || ''} (${data.pedido_venda.descricao_status || 'OK'})\n`;
+            }
+            if (data.devolucoes && data.devolucoes.length > 0) {
+                infoMsg += `• Remessas com Devolução Registrada: ${data.devolucoes.map(d => '#' + d.numero_remessa).join(', ')}\n`;
+            }
+
+            const badge = document.getElementById('badge-status-acerto');
+            if (badge) {
+                badge.style.background = 'rgba(16, 185, 129, 0.2)';
+                badge.style.color = '#34d399';
+                badge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                badge.innerHTML = '✅ Finalizado & Integrado no Omie ERP';
+            }
+
+            atualizarStepperConsignacao(4);
+            stateConsignacao.statusAcerto = 'FINALIZADO_OMIE';
+
+            btnIntegrar.disabled = true;
+            btnIntegrar.innerHTML = '<i class="fa-solid fa-check-double"></i> Acerto Finalizado no Omie';
+            btnIntegrar.style.background = '#047857';
+
+            alert(infoMsg);
+            carregarHistoricoAcertosConsignacao();
+        } else {
+            alert('Atenção na integração: ' + (data.message || (data.erros || []).join('\n')));
+            btnIntegrar.disabled = false;
+            btnIntegrar.innerHTML = originalText;
+        }
+    } catch (e) {
+        alert('Erro ao comunicar com backend: ' + e.message);
+        btnIntegrar.disabled = false;
+        btnIntegrar.innerHTML = originalText;
+    }
+}
+
+async function carregarHistoricoAcertosConsignacao() {
+    const tbody = document.getElementById('tbody-historico-consignacao');
+    if (!tbody) return;
+
+    try {
+        const resp = await fetch('/api/consignacao/acertos');
+        const data = await resp.json();
+        const acertos = data.acertos || [];
+
+        if (acertos.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 20px;">Nenhum acerto salvo ainda.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = '';
+        acertos.forEach(ac => {
+            const tr = document.createElement('tr');
+            let statusBadge = '';
+            if (ac.status === 'FINALIZADO_OMIE') {
+                statusBadge = '<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">✅ Concluído Omie</span>';
+            } else if (ac.status === 'AGUARDANDO_VENDEDORA') {
+                statusBadge = '<span class="badge" style="background: rgba(234, 179, 8, 0.2); color: #fbbf24;">⏳ Aguardando Vendedora</span>';
+            } else {
+                statusBadge = '<span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;">📝 Em Conferência</span>';
+            }
+
+            let remsTxt = '-';
+            if (Array.isArray(ac.remessas_unificadas)) {
+                remsTxt = ac.remessas_unificadas.map(r => `#${r.numero_remessa || r}`).join(', ');
+            }
+
+            tr.innerHTML = `
+                <td><strong>${ac.codigo_acerto}</strong></td>
+                <td>${ac.cliente_nome}</td>
+                <td><small style="color: var(--text-muted);">${remsTxt}</small></td>
+                <td style="text-align: center;">${ac.total_enviado}</td>
+                <td style="text-align: center; color: #eab308;">${ac.total_retorno}</td>
+                <td style="text-align: center; color: #10b981; font-weight: 700;">${ac.total_vendido}</td>
+                <td style="text-align: right; font-weight: 700; color: #38bdf8;">R$ ${(parseFloat(ac.valor_total_liquido) || 0).toFixed(2).replace('.', ',')}</td>
+                <td>${statusBadge}</td>
+                <td><small style="color: var(--text-muted);">${(ac.criado_em || '').substring(0, 16)}</small></td>
+                <td>
+                    <button class="btn btn-sm btn-secondary" onclick="carregarAcertoSalvo(${ac.id})" title="Abrir acerto para conferência">
+                        <i class="fa-solid fa-folder-open"></i> Abrir
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #f87171;">Erro ao carregar histórico: ${e.message}</td></tr>`;
+    }
+}
+
+async function carregarAcertoSalvo(acertoId) {
+    try {
+        const resp = await fetch(`/api/consignacao/acerto?id=${acertoId}`);
+        const data = await resp.json();
+        const acerto = data.acerto;
+
+        if (!acerto || !acerto.id) {
+            alert('Acerto não encontrado.');
+            return;
+        }
+
+        stateConsignacao.acertoId = acerto.id;
+        stateConsignacao.codigoAcerto = acerto.codigo_acerto;
+        stateConsignacao.clienteAtual = {
+            codigo_cliente: acerto.codigo_cliente_omie,
+            nome_fantasia: acerto.cliente_nome,
+            razao_social: acerto.cliente_nome,
+            cnpj_cpf: acerto.cliente_cnpj_cpf
+        };
+        stateConsignacao.remessasSelecionadas = acerto.remessas_unificadas || [];
+        stateConsignacao.descontoPadraoPct = parseFloat(acerto.desconto_padrao_pct) || 30.0;
+        stateConsignacao.statusAcerto = acerto.status;
+
+        // Normalização completa dos itens para garantir reatividade e cálculos corretos
+        stateConsignacao.itensUnificados = (acerto.itens || []).map(it => {
+            let remsOrig = it.remessas_origem || {};
+            if (typeof remsOrig === 'string') {
+                try { remsOrig = JSON.parse(remsOrig); } catch(e) { remsOrig = {}; }
+            }
+            return {
+                sku: it.sku || '',
+                codigo_produto: it.codigo_produto_omie || it.codigo_produto || 0,
+                descricao: it.descricao || '',
+                qtd_enviada: parseInt(it.qtd_enviada) || 0,
+                qtd_retorno: parseInt(it.qtd_retorno) || 0,
+                qtd_vendida: parseInt(it.qtd_vendida) || 0,
+                preco_unitario: parseFloat(it.preco_unitario) || 0.0,
+                desconto_pct: parseFloat(it.desconto_pct) || 30.0,
+                valor_total_liquido: parseFloat(it.valor_total_liquido) || 0.0,
+                remessas_origem: remsOrig
+            };
+        });
+
+        // Alternar visualização para a Mesa de Conferência
+        const pEtapa1 = document.getElementById('painel-consignacao-etapa1');
+        const pEtapa2 = document.getElementById('painel-consignacao-etapa2');
+        if (pEtapa1) pEtapa1.style.display = 'none';
+        if (pEtapa2) {
+            pEtapa2.style.display = 'block';
+            pEtapa2.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        const badge = document.getElementById('badge-status-acerto');
+        const btnIntegrar = document.getElementById('btn-integrar-omie-consignacao');
+
+        if (acerto.status === 'FINALIZADO_OMIE') {
+            if (badge) {
+                badge.style.background = 'rgba(16, 185, 129, 0.2)';
+                badge.style.color = '#34d399';
+                badge.innerHTML = '✅ Finalizado & Integrado no Omie ERP';
+            }
+            atualizarStepperConsignacao(4);
+            if (btnIntegrar) {
+                btnIntegrar.disabled = true;
+                btnIntegrar.innerHTML = '<i class="fa-solid fa-check-double"></i> Acerto Finalizado no Omie';
+                btnIntegrar.style.background = '#047857';
+            }
+        } else if (acerto.status === 'AGUARDANDO_VENDEDORA') {
+            if (badge) {
+                badge.style.background = 'rgba(234, 179, 8, 0.2)';
+                badge.style.color = '#fbbf24';
+                badge.innerHTML = '⏳ Aguardando Validação Comercial (Vendedora)';
+            }
+            atualizarStepperConsignacao(3);
+            if (btnIntegrar) {
+                btnIntegrar.disabled = false;
+                btnIntegrar.style.opacity = '1';
+                btnIntegrar.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                btnIntegrar.innerHTML = '<i class="fa-solid fa-paper-plane"></i> 2. Confirmar Acerto & Integrar no Omie';
+            }
+        } else {
+            if (badge) {
+                badge.style.background = 'rgba(56, 189, 248, 0.2)';
+                badge.style.color = '#38bdf8';
+                badge.innerHTML = '📝 Em Conferência Física';
+            }
+            atualizarStepperConsignacao(2);
+            if (btnIntegrar) {
+                btnIntegrar.disabled = false;
+                btnIntegrar.style.opacity = '1';
+                btnIntegrar.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                btnIntegrar.innerHTML = '<i class="fa-solid fa-paper-plane"></i> 2. Confirmar Acerto & Integrar no Omie';
+            }
+        }
+
+        renderizarTabelaConsignacao();
+        recalcularTotaisConsignacao();
+
+    } catch (e) {
+        alert('Erro ao carregar acerto: ' + e.message);
+    }
+}
+
+// Expor funções globais da Consignação
+window.inicializarModuloConsignacao = inicializarModuloConsignacao;
+window.buscarClientesConsignacao = buscarClientesConsignacao;
+window.selecionarClienteConsignacao = selecionarClienteConsignacao;
+window.unificarRemessasSelecionadas = unificarRemessasSelecionadas;
+window.alterarRetornoManual = alterarRetornoManual;
+window.processarBipagemItem = processarBipagemItem;
+window.gerarEspelhoConsignacaoPDF = gerarEspelhoConsignacaoPDF;
+window.reconferirConsignacao = reconferirConsignacao;
+window.confirmarIntegracaoOmieConsignacao = confirmarIntegracaoOmieConsignacao;
+window.carregarHistoricoAcertosConsignacao = carregarHistoricoAcertosConsignacao;
+window.carregarAcertoSalvo = carregarAcertoSalvo;
+window.atualizarStepperConsignacao = atualizarStepperConsignacao;
+
+
 

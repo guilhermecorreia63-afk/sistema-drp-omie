@@ -91,3 +91,6 @@ class OmieClient:
             time.sleep(0.05)  # Intervalo de segurança preventiva contra 429
 
         return todos_itens
+
+def create_omie_client(unidade="MATRIZ"):
+    return OmieClient(unidade)

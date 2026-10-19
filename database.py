@@ -209,6 +209,41 @@ def inicializar_banco():
             sku TEXT PRIMARY KEY,
             dados_json TEXT,
             ultima_atualizacao TEXT
+        )""",
+        """CREATE TABLE IF NOT EXISTS consignacao_acertos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            codigo_acerto TEXT UNIQUE,
+            codigo_cliente_omie INTEGER,
+            cliente_nome TEXT,
+            cliente_cnpj_cpf TEXT,
+            remessas_unificadas TEXT,
+            status TEXT DEFAULT 'EM_CONFERENCIA',
+            desconto_padrao_pct REAL DEFAULT 30.0,
+            total_enviado INTEGER DEFAULT 0,
+            total_retorno INTEGER DEFAULT 0,
+            total_vendido INTEGER DEFAULT 0,
+            valor_total_bruto REAL DEFAULT 0.0,
+            valor_total_desconto REAL DEFAULT 0.0,
+            valor_total_liquido REAL DEFAULT 0.0,
+            dados_devolucao_omie TEXT,
+            dados_pedido_venda_omie TEXT,
+            pdf_gerado_em TEXT,
+            criado_em TEXT,
+            atualizado_em TEXT
+        )""",
+        """CREATE TABLE IF NOT EXISTS consignacao_acerto_itens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            acerto_id INTEGER,
+            sku TEXT,
+            codigo_produto_omie INTEGER,
+            descricao TEXT,
+            qtd_enviada INTEGER DEFAULT 0,
+            qtd_retorno INTEGER DEFAULT 0,
+            qtd_vendida INTEGER DEFAULT 0,
+            preco_unitario REAL DEFAULT 0.0,
+            desconto_pct REAL DEFAULT 30.0,
+            valor_total_liquido REAL DEFAULT 0.0,
+            remessas_origem TEXT
         )"""
     ]
     for sql in tabelas:

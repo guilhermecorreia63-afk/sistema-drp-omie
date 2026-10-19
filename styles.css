@@ -991,3 +991,340 @@ body {
     50% { border-color: rgba(239, 68, 68, 0.9); }
     100% { border-color: rgba(239, 68, 68, 0.4); }
 }
+
+/* ==========================================================================
+   HUB INICIAL DE OPERAÇÕES (Estilo Tipo de Operação)
+   ========================================================================== */
+.hub-wrapper {
+    max-width: 960px;
+    margin: 20px auto;
+    padding: 10px;
+}
+
+.hub-card {
+    background: #0d1524;
+    border: 1px solid #1e2c45;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+    margin-bottom: 25px;
+}
+
+.hub-header {
+    background: linear-gradient(180deg, #131f33 0%, #0d1524 100%);
+    padding: 22px 28px;
+    border-bottom: 1px solid #1e2c45;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.hub-header-icon {
+    width: 44px;
+    height: 44px;
+    background: rgba(0, 203, 169, 0.15);
+    color: var(--primary);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    border: 1px solid rgba(0, 203, 169, 0.3);
+}
+
+.hub-header-text h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 4px;
+}
+
+.hub-header-text p {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+}
+
+.hub-body {
+    padding: 24px 28px;
+}
+
+.hub-section-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #94a3b8;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.hub-section-title span.badge-num {
+    background: #1e293b;
+    color: #38bdf8;
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+}
+
+.hub-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.hub-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: #111b2e;
+    border: 1px solid #1e2f4c;
+    border-radius: var(--radius-md);
+    color: #f1f5f9;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    font-size: 0.92rem;
+    text-align: left;
+    width: 100%;
+}
+
+.hub-action-btn:hover {
+    background: #18263f;
+    border-color: #38bdf8;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(56, 189, 248, 0.15);
+}
+
+.hub-action-btn.btn-featured {
+    background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+    border: 1px solid #14b8a6;
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(20, 184, 166, 0.2);
+}
+
+.hub-action-btn.btn-featured:hover {
+    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+    box-shadow: 0 6px 20px rgba(20, 184, 166, 0.35);
+}
+
+.hub-action-btn.btn-highlight {
+    background: #131c31;
+    border: 1px solid #eab308;
+    color: #fef08a;
+}
+
+.hub-action-btn.btn-highlight:hover {
+    background: #1e293b;
+    border-color: #fde047;
+    box-shadow: 0 4px 14px rgba(234, 179, 8, 0.2);
+}
+
+.hub-btn-content {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.hub-btn-icon {
+    font-size: 1.15rem;
+    width: 24px;
+    text-align: center;
+    color: var(--primary);
+}
+
+.hub-action-btn.btn-featured .hub-btn-icon {
+    color: #ffffff;
+}
+
+.hub-action-btn.btn-highlight .hub-btn-icon {
+    color: #eab308;
+}
+
+/* ==========================================================================
+   MÓDULO DE CONSIGNAÇÃO (IDA E VOLTA)
+   ========================================================================== */
+.consignacao-stepper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: var(--radius-lg);
+    padding: 12px 20px;
+    margin-bottom: 20px;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+.step-item.active {
+    color: #38bdf8;
+    font-weight: 600;
+}
+
+.step-item.completed {
+    color: #10b981;
+}
+
+.step-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #1e293b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.step-item.active .step-circle {
+    background: #0284c7;
+    color: white;
+}
+
+.step-item.completed .step-circle {
+    background: #10b981;
+    color: white;
+}
+
+.bipagem-box {
+    background: #0b1322;
+    border: 2px dashed #0284c7;
+    border-radius: var(--radius-lg);
+    padding: 18px 24px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 4px 18px rgba(2, 132, 199, 0.12);
+}
+
+.bipagem-input-wrapper {
+    flex: 1;
+    min-width: 280px;
+    position: relative;
+}
+
+.bipagem-input-wrapper i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #38bdf8;
+    font-size: 1.15rem;
+}
+
+.input-bipagem {
+    width: 100%;
+    padding: 14px 16px 14px 44px;
+    background: #0f1c33;
+    border: 1px solid #1e3a63;
+    border-radius: var(--radius-md);
+    color: #ffffff;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.input-bipagem:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+}
+
+.table-retorno-input {
+    width: 72px;
+    padding: 6px 8px;
+    text-align: center;
+    background: #0f1c33;
+    border: 1px solid #2b4369;
+    border-radius: var(--radius-sm);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    outline: none;
+}
+
+.table-retorno-input:focus {
+    border-color: #38bdf8;
+    background: #172847;
+    box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+}
+
+.row-vendido-destaque {
+    background: rgba(16, 185, 129, 0.08) !important;
+}
+
+.row-vendido-destaque:hover {
+    background: rgba(16, 185, 129, 0.14) !important;
+}
+
+.consignacao-stepper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #0d1524;
+    border: 1px solid #1e2c45;
+    border-radius: var(--radius-lg);
+    padding: 16px 28px;
+    margin-bottom: 22px;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 0.92rem;
+    transition: all 0.3s;
+}
+
+.step-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #1e293b;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 700;
+    transition: all 0.3s;
+}
+
+.step-item.active {
+    color: #38bdf8;
+}
+
+.step-item.active .step-circle {
+    background: #0284c7;
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(2, 132, 199, 0.5);
+}
+
+.step-item.completed {
+    color: #10b981;
+}
+
+.step-item.completed .step-circle {
+    background: #059669;
+    color: #ffffff;
+}
+
+

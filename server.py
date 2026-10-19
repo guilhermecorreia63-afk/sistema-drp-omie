@@ -66,6 +66,14 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self.handle_api_depositos_enderecos_get()
         elif url_path == '/api/combo/detalhes':
             self.handle_api_combo_detalhes()
+        elif url_path == '/api/consignacao/clientes':
+            self.handle_api_consignacao_clientes()
+        elif url_path == '/api/consignacao/remessas':
+            self.handle_api_consignacao_remessas()
+        elif url_path == '/api/consignacao/acertos':
+            self.handle_api_consignacao_acertos_listar()
+        elif url_path == '/api/consignacao/acerto':
+            self.handle_api_consignacao_acerto_obter()
         elif url_path in ['/api/inteligencia_matriz', '/api/drp/inteligencia_matriz']:
             self.handle_api_inteligencia_matriz()
         elif url_path in ['/api/coordenacao/pauta', '/api/drp/coordenacao/pauta']:
@@ -131,6 +139,12 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_combo_remover_componente()
         elif url_path == '/api/combo/alterar_preco':
             self.handle_api_combo_alterar_preco()
+        elif url_path == '/api/consignacao/unificar':
+            self.handle_api_consignacao_unificar()
+        elif url_path == '/api/consignacao/salvar_acerto':
+            self.handle_api_consignacao_salvar_acerto()
+        elif url_path == '/api/consignacao/integrar_omie':
+            self.handle_api_consignacao_integrar_omie()
         else:
             self.send_error(404, f"Endpoint não encontrado: {self.path}")
 
@@ -2041,7 +2055,28 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         try:
             from omie_client import OmieClient
             client = OmieClient("MATRIZ")
-            kit = client.executar('geral/produtos/', 'ConsultarProduto', [{'codigo': sku}])
+            
+            cache_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'scratch', f'cache_combo_{sku}.json')
+            kit = None
+
+            # Tenta consultar Omie
+            try:
+                res_omie = client.executar('geral/produtos/', 'ConsultarProduto', [{'codigo': sku}])
+                if res_omie and 'codigo_produto' in res_omie:
+                    kit = res_omie
+                    with open(cache_file, 'w', encoding='utf-8') as f:
+                        json.dump(kit, f, ensure_ascii=False, indent=2)
+            except Exception as ex_omie:
+                print(f"[COMBO] Consulta Omie falhou ({ex_omie}), buscando cache...")
+
+            # Fallback para cache se Omie falhar ou der erro redundante
+            if not kit and os.path.exists(cache_file):
+                try:
+                    with open(cache_file, 'r', encoding='utf-8') as f:
+                        kit = json.load(f)
+                except Exception:
+                    pass
+
             if not kit or 'codigo_produto' not in kit:
                 self._send_json({"success": False, "message": f"Kit SKU {sku} não encontrado no Omie ERP."})
                 return
@@ -2051,33 +2086,36 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             valor_venda = float(kit.get('valor_unitario') or 0.0)
             comps_raw = kit.get('componentes_kit') or []
 
-            estoques_matriz = {}
+            # Mapeamento rápido de produtos pelo cache Turso
+            prods_by_id = {}
             json_turso = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'produtos_turso.json')
             if os.path.exists(json_turso):
                 try:
                     with open(json_turso, 'r', encoding='utf-8') as f:
-                        prods = json.load(f)
-                        for p in prods:
-                            sk = str(p.get('sku', '')).strip()
-                            if sk:
-                                estoques_matriz[sk] = int(p.get('matriz', 0))
+                        for p in json.load(f):
+                            if p.get('id_produto'):
+                                prods_by_id[int(p['id_produto'])] = p
                 except Exception:
                     pass
 
             componentes = []
             for c in comps_raw:
-                ncod_comp = c.get('codigo_produto_componente')
+                ncod_comp = int(c.get('codigo_produto_componente') or 0)
                 cod_comp_id = c.get('codigo_componente')
-                p_info = client.executar('geral/produtos/', 'ConsultarProduto', [{'codigo_produto': ncod_comp}])
-                sku_comp = (p_info.get('codigo_produto_integracao') or p_info.get('codigo') or '').strip()
-                desc_comp = p_info.get('descricao', '')
                 
-                est_matriz = estoques_matriz.get(sku_comp, 0)
-                if est_matriz <= 0 and ncod_comp:
+                # Busca rápida no cache local Turso
+                p_info = prods_by_id.get(ncod_comp, {})
+                sku_comp = str(p_info.get('codigo') or p_info.get('sku') or '').strip()
+                desc_comp = p_info.get('nome') or p_info.get('descricao') or f"Componente #{ncod_comp}"
+                est_matriz = int(p_info.get('matriz') or p_info.get('matriz_disponivel') or 0)
+
+                # Fallback se não achou no cache Turso
+                if not sku_comp and ncod_comp:
                     try:
-                        est = client.executar('estoque/consulta/', 'ObterEstoqueProduto', [{'nCodProd': ncod_comp}])
-                        if est and 'listaEstoque' in est and est['listaEstoque']:
-                            est_matriz = int(est['listaEstoque'][0].get('saldo', 0))
+                        p_omie = client.executar('geral/produtos/', 'ConsultarProduto', [{'codigo_produto': ncod_comp}])
+                        if p_omie and 'codigo' in p_omie:
+                            sku_comp = (p_omie.get('codigo_produto_integracao') or p_omie.get('codigo') or '').strip()
+                            desc_comp = p_omie.get('descricao', desc_comp)
                     except Exception:
                         pass
 
@@ -2213,6 +2251,97 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             print(f"[API SERVER] Erro ao alterar preço do combo: {e}")
             self._send_json({"success": False, "message": str(e)}, status=500)
+
+    # ==========================================
+    # MÓDULO DE CONSIGNAÇÃO (IDA E VOLTA)
+    # ==========================================
+    def handle_api_consignacao_clientes(self):
+        try:
+            query = parse_qs(urlparse(self.path).query)
+            q = query.get('q', [''])[0].strip()
+            from services.consignacao_service import ConsignacaoService
+            service = ConsignacaoService()
+            clientes = service.buscar_clientes(q)
+            self._send_json({"success": True, "clientes": clientes})
+        except Exception as e:
+            print(f"[API SERVER] Erro em consignacao_clientes: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_consignacao_remessas(self):
+        try:
+            query = parse_qs(urlparse(self.path).query)
+            cli_id = query.get('nCodCli', ['0'])[0].strip()
+            from services.consignacao_service import ConsignacaoService
+            service = ConsignacaoService()
+            remessas = service.listar_remessas_cliente(int(cli_id) if cli_id.isdigit() else 0)
+            self._send_json({"success": True, "remessas": remessas})
+        except Exception as e:
+            print(f"[API SERVER] Erro em consignacao_remessas: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_consignacao_unificar(self):
+        try:
+            body = self._read_body()
+            rems = body.get('remessas', [])
+            desc = float(body.get('desconto_padrao_pct', 30.0))
+            from services.consignacao_service import ConsignacaoService
+            service = ConsignacaoService()
+            rems_ids = [int(x) for x in rems if str(x).isdigit()]
+            res = service.unificar_remessas(rems_ids, desconto_padrao_pct=desc)
+            self._send_json({"success": True, "data": res})
+        except Exception as e:
+            print(f"[API SERVER] Erro em consignacao_unificar: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_consignacao_salvar_acerto(self):
+        try:
+            body = self._read_body()
+            from services.consignacao_service import ConsignacaoService
+            service = ConsignacaoService()
+            res = service.salvar_acerto(body)
+            self._send_json(res)
+        except Exception as e:
+            print(f"[API SERVER] Erro em consignacao_salvar_acerto: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_consignacao_acertos_listar(self):
+        try:
+            from services.consignacao_service import ConsignacaoService
+            service = ConsignacaoService()
+            acertos = service.listar_acertos()
+            self._send_json({"success": True, "acertos": acertos})
+        except Exception as e:
+            print(f"[API SERVER] Erro em consignacao_acertos_listar: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_consignacao_acerto_obter(self):
+        try:
+            query = parse_qs(urlparse(self.path).query)
+            ac_id = query.get('id', ['0'])[0].strip()
+            from services.consignacao_service import ConsignacaoService
+            service = ConsignacaoService()
+            acerto = service.obter_acerto(int(ac_id) if ac_id.isdigit() else 0)
+            self._send_json({"success": True, "acerto": acerto})
+        except Exception as e:
+            print(f"[API SERVER] Erro em consignacao_acerto_obter: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_consignacao_integrar_omie(self):
+        try:
+            body = self._read_body()
+            acerto_id = int(body.get('acerto_id', 0))
+            from services.consignacao_service import ConsignacaoService
+            service = ConsignacaoService()
+            acerto = service.obter_acerto(acerto_id)
+            if not acerto:
+                self._send_json({"success": False, "message": f"Acerto #{acerto_id} não encontrado."})
+                return
+            res = service.integrar_omie(acerto)
+            self._send_json(res)
+        except Exception as e:
+            print(f"[API SERVER] Erro em consignacao_integrar_omie: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
 
 import threading
 

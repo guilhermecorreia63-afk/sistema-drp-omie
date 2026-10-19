@@ -31,7 +31,15 @@
             </div>
 
             <nav class="nav-tabs">
-                <button class="nav-tab active" data-tab="tab-cd-sp">
+                <button class="nav-tab active" data-tab="tab-hub" style="background: rgba(2, 132, 199, 0.15); border-left: 3px solid #38bdf8;">
+                    <i class="fa-solid fa-house" style="color: #38bdf8;"></i>
+                    <span style="font-weight: 700; color: #38bdf8;">🏠 Início / Hub</span>
+                </button>
+
+                <div style="padding: 10px 14px 4px; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.8px; color: #64748b; text-transform: uppercase;">
+                    MÓDULO 1: DRP MATRIZ & CD
+                </div>
+                <button class="nav-tab" data-tab="tab-cd-sp">
                     <i class="fa-solid fa-truck-ramp-box"></i>
                     <span>1. Reposição CD_SP</span>
                 </button>
@@ -51,17 +59,25 @@
                     <i class="fa-solid fa-warehouse"></i>
                     <span>5. Depósitos da Matriz</span>
                 </button>
-                <button class="nav-tab" data-tab="tab-combos-kit">
-                    <i class="fa-solid fa-boxes-packing" style="color: #f59e0b;"></i>
-                    <span>6. Gestão de Combos & Kits</span>
-                </button>
                 <button class="nav-tab" data-tab="tab-inteligencia-matriz">
                     <i class="fa-solid fa-dna" style="color: #34d399;"></i>
-                    <span>7. Inteligência Matriz 🧬</span>
+                    <span>6. Inteligência Matriz 🧬</span>
                 </button>
                 <button class="nav-tab" data-tab="tab-comite-decisao">
                     <i class="fa-solid fa-users-gear" style="color: #c084fc;"></i>
-                    <span>8. Comitê de Decisão 🤝</span>
+                    <span>🤝 Comitê de Decisão</span>
+                </button>
+
+                <div style="padding: 14px 14px 4px; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.8px; color: #f59e0b; text-transform: uppercase;">
+                    MÓDULO 2: LOGÍSTICA & VENDAS
+                </div>
+                <button class="nav-tab" data-tab="tab-consignacao" style="background: rgba(16, 185, 129, 0.1); border-left: 3px solid #10b981;">
+                    <i class="fa-solid fa-arrow-right-arrow-left" style="color: #10b981;"></i>
+                    <span style="font-weight: 700; color: #10b981;">🚚 Consignação (Ida e Volta)</span>
+                </button>
+                <button class="nav-tab" data-tab="tab-combos-kit">
+                    <i class="fa-solid fa-boxes-packing" style="color: #f59e0b;"></i>
+                    <span>📦 Gestão de Combos & Kits</span>
                 </button>
             </nav>
 
@@ -158,8 +174,139 @@
                 </div>
             </header>
 
+            <!-- ABA INICIAL: HUB CENTRAL / TIPO DE OPERAÇÃO -->
+            <section id="tab-hub" class="tab-content active">
+                <div class="hub-wrapper">
+                    <div class="hub-card">
+                        <div class="hub-header">
+                            <div class="hub-header-icon">
+                                <i class="fa-solid fa-diagram-project"></i>
+                            </div>
+                            <div class="hub-header-text">
+                                <h2>Tipo de operação</h2>
+                                <p>O que você deseja fazer?</p>
+                            </div>
+                        </div>
+
+                        <div class="hub-body">
+                            <!-- SEÇÃO 1: MÓDULO 1 DRP -->
+                            <div class="hub-section-title">
+                                <i class="fa-solid fa-boxes-stacked" style="color: #38bdf8;"></i>
+                                MÓDULO 1: DRP EDIÇÕES SHALOM <span class="badge-num">1 AO 6</span>
+                            </div>
+                            <div class="hub-grid">
+                                <button class="hub-action-btn" onclick="navegarParaAba('tab-cd-sp')">
+                                    <div class="hub-btn-content">
+                                        <i class="fa-solid fa-truck-ramp-box hub-btn-icon"></i>
+                                        <div>
+                                            <strong>1. Reposição CD_SP</strong>
+                                            <div style="font-size: 0.75rem; color: var(--text-muted);">Vendas Sul e Sudeste</div>
+                                        </div>
+                                    </div>
+                                    <i class="fa-solid fa-chevron-right" style="color: #475569;"></i>
+                                </button>
+
+                                <button class="hub-action-btn" onclick="navegarParaAba('tab-matriz')">
+                                    <div class="hub-btn-content">
+                                        <i class="fa-solid fa-industry hub-btn-icon"></i>
+                                        <div>
+                                            <strong>2. Estoque & Produção Matriz</strong>
+                                            <div style="font-size: 0.75rem; color: var(--text-muted);">Demanda Nacional</div>
+                                        </div>
+                                    </div>
+                                    <i class="fa-solid fa-chevron-right" style="color: #475569;"></i>
+                                </button>
+
+                                <button class="hub-action-btn" onclick="navegarParaAba('tab-remessas')">
+                                    <div class="hub-btn-content">
+                                        <i class="fa-solid fa-boxes-packing hub-btn-icon"></i>
+                                        <div>
+                                            <strong>3. Remessas & Trânsito</strong>
+                                            <div style="font-size: 0.75rem; color: var(--text-muted);">Matriz ➔ CD_SP</div>
+                                        </div>
+                                    </div>
+                                    <i class="fa-solid fa-chevron-right" style="color: #475569;"></i>
+                                </button>
+
+                                <button class="hub-action-btn" onclick="navegarParaAba('tab-analise-matriz')">
+                                    <div class="hub-btn-content">
+                                        <i class="fa-solid fa-chart-pie hub-btn-icon"></i>
+                                        <div>
+                                            <strong>4. Análise Matriz (BCG)</strong>
+                                            <div style="font-size: 0.75rem; color: var(--text-muted);">Curvas e Tendências</div>
+                                        </div>
+                                    </div>
+                                    <i class="fa-solid fa-chevron-right" style="color: #475569;"></i>
+                                </button>
+
+                                <button class="hub-action-btn" onclick="navegarParaAba('tab-depositos-matriz')">
+                                    <div class="hub-btn-content">
+                                        <i class="fa-solid fa-warehouse hub-btn-icon"></i>
+                                        <div>
+                                            <strong>5. Depósitos da Matriz</strong>
+                                            <div style="font-size: 0.75rem; color: var(--text-muted);">Fracionado / Dep 1 / Dep 2</div>
+                                        </div>
+                                    </div>
+                                    <i class="fa-solid fa-chevron-right" style="color: #475569;"></i>
+                                </button>
+
+                                <button class="hub-action-btn" onclick="navegarParaAba('tab-inteligencia-matriz')">
+                                    <div class="hub-btn-content">
+                                        <i class="fa-solid fa-dna hub-btn-icon" style="color: #34d399;"></i>
+                                        <div>
+                                            <strong>6. Inteligência Matriz 🧬</strong>
+                                            <div style="font-size: 0.75rem; color: var(--text-muted);">Curva ABC e Ruptura</div>
+                                        </div>
+                                    </div>
+                                    <i class="fa-solid fa-chevron-right" style="color: #475569;"></i>
+                                </button>
+                            </div>
+
+                            <!-- SEÇÃO 2: MÓDULO 2 CONSIGNAÇÃO & LOGÍSTICA -->
+                            <div class="hub-section-title" style="margin-top: 28px; color: #10b981;">
+                                <i class="fa-solid fa-truck-fast" style="color: #10b981;"></i>
+                                CONSIGNAÇÃO E LOGÍSTICA COMERCIAL (MÓDULO 2)
+                            </div>
+                            
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                <!-- Botão Destaque Consignação -->
+                                <button class="hub-action-btn btn-featured" onclick="navegarParaAba('tab-consignacao')" style="padding: 18px 22px;">
+                                    <div class="hub-btn-content">
+                                        <i class="fa-solid fa-arrow-right-arrow-left" style="font-size: 1.4rem;"></i>
+                                        <div>
+                                            <div style="font-size: 1.05rem; font-weight: 700;">Controle de Consignação (Ida e Volta)</div>
+                                            <div style="font-size: 0.8rem; color: rgba(255,255,255,0.85); font-weight: 400;">Unificar remessas, conferência de retorno por bipagem, espelho da vendedora e devolução no Omie</div>
+                                        </div>
+                                    </div>
+                                    <span class="badge" style="background: rgba(255,255,255,0.25); color: #ffffff; font-size: 0.75rem; padding: 5px 10px; border-radius: 6px;">
+                                        Novo Módulo ⚡
+                                    </span>
+                                </button>
+
+                                <!-- Botão Gestão de Combos e Kits -->
+                                <button class="hub-action-btn btn-highlight" onclick="navegarParaAba('tab-combos-kit')">
+                                    <div class="hub-btn-content">
+                                        <i class="fa-solid fa-boxes-packing" style="font-size: 1.2rem;"></i>
+                                        <div>
+                                            <strong>Gestão de Combos & Kits (SKU 000223)</strong>
+                                            <div style="font-size: 0.78rem; color: #cbd5e1;">Monitoramento de componentes e valor de venda do Kit Assinatura Pão da Vida</div>
+                                        </div>
+                                    </div>
+                                    <i class="fa-solid fa-arrow-right" style="color: #eab308;"></i>
+                                </button>
+                            </div>
+
+                            <div style="margin-top: 24px; padding: 14px 18px; background: rgba(15, 23, 42, 0.6); border: 1px solid #1e293b; border-radius: var(--radius-md); font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 10px;">
+                                <i class="fa-solid fa-circle-info" style="color: #38bdf8; font-size: 1rem;"></i>
+                                <span>No <strong>Controle de Consignação</strong>, o sistema unifica automaticamente as remessas em aberto do cliente, calcula o que retornou e o que vendeu, gerando a devolução fiscal (CFOP 1.917) e a venda sem nenhum furo de estoque.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- ABA 1: REPOSIÇÃO CD_SP -->
-            <section id="tab-cd-sp" class="tab-content active">
+            <section id="tab-cd-sp" class="tab-content">
                 <!-- Cards de Métricas Clicáveis -->
                 <div class="metrics-grid">
                     <div class="metric-card card-ruptura clickable-card" data-status-filter="Ruptura" title="Clique para filtrar apenas Rupturas">
@@ -969,6 +1116,233 @@
                     </div>
                 </div>
             </section>
+
+            <!-- ABA CONSIGNAÇÃO: CONTROLE DE CONSIGNAÇÃO (IDA E VOLTA) -->
+            <section id="tab-consignacao" class="tab-content">
+                <!-- Stepper de Fluxo -->
+                <div class="consignacao-stepper">
+                    <div class="step-item active" id="step-1-indicador">
+                        <div class="step-circle">1</div>
+                        <span>Cliente & Remessas</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right" style="color: #334155;"></i>
+                    <div class="step-item" id="step-2-indicador">
+                        <div class="step-circle">2</div>
+                        <span>Bipagem & Retorno</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right" style="color: #334155;"></i>
+                    <div class="step-item" id="step-3-indicador">
+                        <div class="step-circle">3</div>
+                        <span>Espelho Vendedora</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right" style="color: #334155;"></i>
+                    <div class="step-item" id="step-4-indicador">
+                        <div class="step-circle">4</div>
+                        <span>Integração Omie</span>
+                    </div>
+                </div>
+
+                <!-- ETAPA 1: SELEÇÃO DE CLIENTE & REMESSAS -->
+                <div id="painel-consignacao-etapa1" class="card" style="background: #0d1524; border: 1px solid #1e2c45; padding: 22px; border-radius: var(--radius-lg); margin-bottom: 20px;">
+                    <h3 style="font-size: 1.15rem; color: #ffffff; margin-bottom: 6px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-solid fa-magnifying-glass" style="color: #38bdf8;"></i> 
+                        1. Localizar Cliente ou Número da Remessa
+                    </h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+                        Busque pelo Nome Fantasia (ex: <em>Cascavel</em>), Razão Social, CNPJ ou digite direto o número da remessa.
+                    </p>
+
+                    <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 280px; position: relative;">
+                            <input type="text" id="input-busca-cliente-consignacao" class="form-control" placeholder="Digite o nome do cliente (ex: Cascavel) ou CNPJ..." style="padding-left: 38px; height: 46px; font-size: 0.95rem;">
+                            <i class="fa-solid fa-user" style="position: absolute; left: 14px; top: 15px; color: #64748b;"></i>
+                        </div>
+                        <button id="btn-buscar-cliente-consignacao" class="btn btn-primary" style="height: 46px; padding: 0 24px; font-weight: 600;">
+                            <i class="fa-solid fa-magnifying-glass"></i> Buscar no Omie
+                        </button>
+                    </div>
+
+                    <!-- Resultados da busca de clientes -->
+                    <div id="lista-clientes-consignacao-resultado" style="display: none; margin-bottom: 20px;">
+                        <div style="font-size: 0.8rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px;">Clientes Encontrados:</div>
+                        <div id="grid-clientes-consignacao" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px;">
+                            <!-- Preenchido via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Área de Remessas em Aberto do Cliente Selecionado -->
+                    <div id="area-remessas-consignacao" style="display: none; padding-top: 15px; border-top: 1px solid #1e293b;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                            <div>
+                                <h4 style="color: #38bdf8; margin-bottom: 2px;" id="lbl-cliente-selecionado-nome">Cliente Selecionado</h4>
+                                <span style="font-size: 0.8rem; color: var(--text-muted);" id="lbl-cliente-selecionado-doc">CNPJ: -</span>
+                            </div>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <label style="font-size: 0.85rem; color: #cbd5e1;">Desconto Comercial Padrão:</label>
+                                <input type="number" id="input-desconto-consignacao-global" class="form-control inline" value="30" min="0" max="100" style="width: 70px; text-align: center; font-weight: 700;">
+                                <span style="font-weight: 700; color: #38bdf8;">%</span>
+                            </div>
+                        </div>
+
+                        <div style="font-size: 0.82rem; font-weight: 700; color: #cbd5e1; margin-bottom: 8px;">
+                            Selecione as remessas que deseja unificar neste acerto:
+                        </div>
+                        <div id="grid-remessas-cliente" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-bottom: 18px;">
+                            <!-- Cards de remessas via JS -->
+                        </div>
+
+                        <button id="btn-unificar-remessas-consignacao" class="btn btn-primary" style="background: linear-gradient(135deg, #0d9488, #0f766e); height: 48px; width: 100%; font-size: 1rem; font-weight: 700; border: none;">
+                            <i class="fa-solid fa-layer-group"></i> Carregar & Unificar Remessas Selecionadas
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ETAPA 2 & 3: MESA DE BIPAGEM & CONFERÊNCIA FÍSICA -->
+                <div id="painel-consignacao-etapa2" style="display: none;">
+                    <!-- Barra de Bipagem Rápida -->
+                    <div class="bipagem-box">
+                        <div class="bipagem-input-wrapper">
+                            <i class="fa-solid fa-barcode"></i>
+                            <input type="text" id="input-leitor-bipagem-consignacao" class="input-bipagem" placeholder="Bipe o código de barras ou digite o SKU...">
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <label style="font-size: 0.85rem; color: #94a3b8; font-weight: 600;">Multiplicador:</label>
+                            <input type="number" id="input-qtd-multiplicador-bip" class="form-control" value="1" min="1" style="width: 70px; text-align: center; font-weight: 700;">
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button id="btn-retornar-tudo" class="btn btn-sm btn-secondary" title="Preenche o retorno igual ao enviado (0 vendas)">
+                                <i class="fa-solid fa-arrow-rotate-left"></i> Retornar Tudo (0 Vendas)
+                            </button>
+                            <button id="btn-zerar-retorno" class="btn btn-sm btn-secondary" title="Zera todo o retorno (100% vendido)">
+                                <i class="fa-solid fa-rotate-left"></i> Zerar Retornos
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Métricas Consolidadas do Acerto -->
+                    <div class="metrics-grid" style="margin-bottom: 20px;">
+                        <div class="metric-card" style="border-left: 4px solid #38bdf8;">
+                            <div class="metric-icon"><i class="fa-solid fa-boxes-packing" style="color: #38bdf8;"></i></div>
+                            <div class="metric-data">
+                                <span class="metric-val" id="metric-consig-enviado">0</span>
+                                <span class="metric-lbl">Total Peças Enviadas</span>
+                            </div>
+                        </div>
+                        <div class="metric-card" style="border-left: 4px solid #eab308;">
+                            <div class="metric-icon"><i class="fa-solid fa-rotate-left" style="color: #eab308;"></i></div>
+                            <div class="metric-data">
+                                <span class="metric-val" id="metric-consig-retorno">0</span>
+                                <span class="metric-lbl">Peças Devolvidas (Físico)</span>
+                            </div>
+                        </div>
+                        <div class="metric-card" style="border-left: 4px solid #10b981;">
+                            <div class="metric-icon"><i class="fa-solid fa-bag-shopping" style="color: #10b981;"></i></div>
+                            <div class="metric-data">
+                                <span class="metric-val" id="metric-consig-vendido" style="color: #10b981;">0</span>
+                                <span class="metric-lbl">Peças Vendidas</span>
+                            </div>
+                        </div>
+                        <div class="metric-card" style="border-left: 4px solid #a855f7;">
+                            <div class="metric-icon"><i class="fa-solid fa-receipt" style="color: #a855f7;"></i></div>
+                            <div class="metric-data">
+                                <span class="metric-val" id="metric-consig-total-liq" style="color: #c084fc; font-size: 1.4rem;">R$ 0,00</span>
+                                <span class="metric-lbl">Faturamento Líquido (30% Desc.)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabela de Itens Unificados & Retorno -->
+                    <div class="table-container" style="margin-bottom: 20px;">
+                        <div class="table-header" style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h2 style="font-size: 1.1rem; color: #ffffff;">Conferência de Produtos da Consignação</h2>
+                                <span style="font-size: 0.78rem; color: var(--text-muted);">Digite a quantidade que retornou fisicamente em cada linha ou bipe com o leitor.</span>
+                            </div>
+                            <div>
+                                <input type="text" id="input-filtro-itens-consignacao" class="form-control" placeholder="Filtrar por SKU ou Título..." style="width: 250px;">
+                            </div>
+                        </div>
+
+                        <div class="table-wrapper" style="max-height: 520px; overflow-y: auto;">
+                            <table class="drp-table" id="tabela-consignacao-conferencia">
+                                <thead>
+                                    <tr>
+                                        <th width="90">SKU</th>
+                                        <th>Descrição do Livro / Produto</th>
+                                        <th width="80" style="text-align: center;">Enviado</th>
+                                        <th width="110" style="text-align: center; background: rgba(56, 189, 248, 0.1);">Retorno (Físico)</th>
+                                        <th width="80" style="text-align: center; background: rgba(16, 185, 129, 0.1);">Vendido</th>
+                                        <th width="95" style="text-align: right;">Preço Capa</th>
+                                        <th width="75" style="text-align: center;">Desc. %</th>
+                                        <th width="105" style="text-align: right;">Total Líquido</th>
+                                        <th width="130">Remessas Origem</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-consignacao-itens">
+                                    <!-- Linhas via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Barra de Ações e Fechamento -->
+                    <div class="card" style="background: #0d1524; border: 1px solid #1e2c45; padding: 20px; border-radius: var(--radius-lg); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <div style="font-size: 0.78rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Status do Acerto:</div>
+                            <div id="badge-status-acerto" class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; font-size: 0.95rem; padding: 6px 14px; margin-top: 4px; border: 1px solid rgba(56, 189, 248, 0.4);">
+                                📝 Em Conferência Física
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <!-- Botão 1: Gerar Espelho em PDF -->
+                            <button id="btn-gerar-espelho-consignacao-pdf" class="btn btn-secondary" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-weight: 600; padding: 12px 20px;">
+                                <i class="fa-solid fa-file-pdf"></i> 1. Gerar Espelho em PDF (Vendedora)
+                            </button>
+
+                            <!-- Botão Central: Reconferir / Ajustar -->
+                            <button id="btn-reconferir-consignacao" class="btn btn-secondary" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); font-weight: 600; padding: 12px 20px;">
+                                <i class="fa-solid fa-arrow-rotate-left"></i> 🔄 Reconferir / Ajustar
+                            </button>
+
+                            <!-- Botão 2: Confirmar Acerto & Integrar Omie -->
+                            <button id="btn-integrar-omie-consignacao" class="btn btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); border: none; font-weight: 700; padding: 12px 24px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
+                                <i class="fa-solid fa-check-double"></i> 2. Confirmar Acerto & Integrar no Omie
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ETAPA 4: HISTÓRICO DE ACERTOS SALVOS -->
+                <div class="card" style="background: #0d1524; border: 1px solid #1e2c45; padding: 20px; border-radius: var(--radius-lg); margin-top: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                        <h3 style="font-size: 1rem; color: #ffffff;"><i class="fa-solid fa-clock-rotate-left" style="color: #a855f7;"></i> Histórico de Acertos de Consignação (Turso DB)</h3>
+                        <button id="btn-recarregar-historico-acertos" class="btn btn-sm btn-secondary"><i class="fa-solid fa-rotate"></i> Atualizar Histórico</button>
+                    </div>
+
+                    <div class="table-wrapper" style="max-height: 280px; overflow-y: auto;">
+                        <table class="drp-table">
+                            <thead>
+                                <tr>
+                                    <th>Cód. Acerto</th>
+                                    <th>Cliente</th>
+                                    <th>Remessas</th>
+                                    <th>Enviado</th>
+                                    <th>Devolvido</th>
+                                    <th>Vendido</th>
+                                    <th>Faturamento Líquido</th>
+                                    <th>Status</th>
+                                    <th>Data</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-historico-consignacao">
+                                <tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 20px;">Nenhum acerto salvo ainda.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
 
@@ -1493,7 +1867,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=20261015_alinhamento_comite_v2"></script>
+    <script src="app.js?v=20261016_consignacao_v3"></script>
 </body>
 
 
