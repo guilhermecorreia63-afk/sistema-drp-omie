@@ -25,7 +25,7 @@ CENARIO_VENDA_CONSIGNACAO = 1800980891
 CATEGORIA_COMERCIAL_PADRAO = "1.01.01"
 # Categoria padrão para o Retorno de Remessa (Nota de Entrada): Compras de Mercadorias para Revenda
 CATEGORIA_RETORNO_REMESSA_PADRAO = "2.01.01"
-CONTA_CORRENTE_MATRIZ = 1794541768
+CONTA_CORRENTE_MATRIZ = 1808861086
 LOCAL_ESTOQUE_MATRIZ = 1794541746
 
 def _df_to_records(df_or_list) -> List[Dict[str, Any]]:
@@ -549,7 +549,7 @@ class ConsignacaoService:
                         "data_previsao": datetime.now().strftime("%d/%m/%Y"),
                         "etapa": "10", # Etapa inicial Proposta / Pedido
                         "codigo_parcela": "000",
-                        "codigo_integracao": cod_int_pv,
+                        "codigo_pedido_integracao": cod_int_pv,
                         "origem_pedido": "API"
                     },
                     "informacoes_adicionais": {
@@ -580,26 +580,58 @@ class ConsignacaoService:
                 resultado["erros"].append(f"Exceção Pedido de Venda: {str(e)}")
 
         # 2. Registrar Devolução de Remessa no Omie
+        # Descobrir UF do cliente para definir CFOP (1.917 no CE ou 2.917 fora do CE)
+        uf_cli = "CE"
+        try:
+            cli_det = self.client.executar("geral/clientes/", "ConsultarCliente", [{"codigo_cliente_omie": cod_cli}])
+            uf_cli = str(cli_det.get("estado") or "CE").upper().strip()
+        except Exception:
+            pass
+        cfop_retorno = "1.917" if uf_cli == "CE" else "2.917"
+
         remessas_unificadas = acerto.get("remessas_unificadas", [])
         for rem_info in remessas_unificadas:
             nCodRem = rem_info.get("nCodRem") if isinstance(rem_info, dict) else None
             num_rem = rem_info.get("numero_remessa") if isinstance(rem_info, dict) else str(rem_info)
             if nCodRem:
                 try:
-                    # Garantir que a Categoria do Retorno de Remessa seja padronizada como Compras de Mercadorias para Revenda (2.01.01)
-                    try:
-                        rem_det = self.obter_detalhes_remessa(int(nCodRem))
-                        if rem_det and "cabec" in rem_det:
-                            inf_adic = rem_det.get("infAdic") or {}
-                            if inf_adic.get("cCodCateg") != CATEGORIA_RETORNO_REMESSA_PADRAO:
-                                inf_adic["cCodCateg"] = CATEGORIA_RETORNO_REMESSA_PADRAO
-                                rem_det["infAdic"] = inf_adic
-                                self.client.executar("produtos/remessa/", "AlterarRemessa", [rem_det])
-                    except Exception as e_cat:
-                        print(f"[CONSIGNACAO] Aviso ao definir categoria 2.01.01 na remessa {nCodRem}: {e_cat}")
-
                     payload_dev = {"nCodRem": int(nCodRem)}
                     res_dev = self.client.executar("produtos/remessa/", "DevolverRemessa", [payload_dev])
+                    
+                    # 2.1 Ajustar a Nota de Entrada gerada automaticamente: Categoria 2.01.01, CFOP correto e Movimentar Estoque (cNaoMovEstoque: 'N')
+                    nIdDev = res_dev.get("nIdDevolucao")
+                    if nIdDev:
+                        try:
+                            nota_det = self.client.executar("produtos/notaentrada/", "ConsultarNotaEnt", [{"nCodNotaEnt": int(nIdDev)}])
+                            if nota_det and "cabec" in nota_det:
+                                prods_alt = []
+                                for p in nota_det.get("produtos", []):
+                                    prods_alt.append({
+                                        "nCodIt": p.get("nCodIt"),
+                                        "nCodProd": p.get("nCodProd"),
+                                        "cCFOP": cfop_retorno,
+                                        "nQtde": p.get("nQtde"),
+                                        "nValUnit": p.get("nValUnit"),
+                                        "codigo_local_estoque": LOCAL_ESTOQUE_MATRIZ,
+                                        "infAdicItem": {
+                                            "cNaoMovEstoque": "N"
+                                        },
+                                        "cAcaoItem": "A"
+                                    })
+                                payload_alt_nota = {
+                                    "cabec": {
+                                        "nCodNotaEnt": int(nIdDev),
+                                        "nCodCli": nota_det["cabec"].get("nCodCli") or cod_cli
+                                    },
+                                    "infAdic": {
+                                        "cCodCateg": CATEGORIA_RETORNO_REMESSA_PADRAO
+                                    },
+                                    "produtos": prods_alt
+                                }
+                                self.client.executar("produtos/notaentrada/", "AlterarNotaEnt", [payload_alt_nota])
+                        except Exception as e_ne:
+                            print(f"[CONSIGNACAO] Aviso ao ajustar Nota de Entrada {nIdDev}: {e_ne}")
+
                     resultado["devolucoes"].append({
                         "numero_remessa": num_rem,
                         "nCodRem": nCodRem,
