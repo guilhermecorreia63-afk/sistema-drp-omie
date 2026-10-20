@@ -1456,8 +1456,8 @@
                         </p>
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                        <button class="btn btn-secondary" onclick="baixarPdfRelatorio('todos')" style="background: rgba(99, 102, 241, 0.15); border: 1px solid #6366f1; color: #a5b4fc; font-weight: 600; padding: 8px 14px;">
-                            <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> PDF Geral (Todos os Grupos)
+                        <button class="btn btn-secondary" onclick="baixarPdfRelatorio('todos')" style="background: rgba(99, 102, 241, 0.15); border: 1px solid #6366f1; color: #a5b4fc; font-weight: 600; padding: 8px 14px;" title="Baixar Romaneio Geral de Separação consolidando todos os assinantes">
+                            <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> Romaneio Geral (Todos os Grupos)
                         </button>
                         <button class="btn btn-secondary" onclick="exportarArquivoCorreios('todos_correios', 'csv')" style="background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; color: #fcd34d; font-weight: 600; padding: 8px 14px;">
                             <i class="fa-solid fa-truck" style="color: #f59e0b;"></i> Correios Brasil (.CSV)
@@ -1524,8 +1524,8 @@
                             <p id="grupo-descricao" style="margin: 0; font-size: 0.85rem; color: #94a3b8; line-height: 1.4;">--</p>
                         </div>
                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <button class="btn btn-secondary" onclick="baixarPdfRelatorioAtivo()" style="background: #1e293b; border-color: #ef4444; color: #f87171; font-weight: 600; padding: 8px 14px;" title="Baixar relatório de conferência em PDF com totais do mês e detalhe por cliente">
-                                <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> PDF Conferência 🖨️
+                            <button class="btn btn-secondary" onclick="baixarPdfRelatorioAtivo()" style="background: #1e293b; border-color: #ef4444; color: #f87171; font-weight: 600; padding: 8px 14px;" title="Baixar Romaneio de Separação e Espelho de Remessa em PDF para conferência antes da emissão">
+                                <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> Romaneio de Separação (PDF) 🖨️
                             </button>
                             <button class="btn btn-secondary" onclick="exportarArquivoCorreiosAtivo('csv')" style="background: #1e293b; border-color: #f59e0b; color: #fbbf24; font-weight: 600; padding: 8px 14px;" title="Exportar no modelo oficial dos Correios (28 colunas) em formato .CSV">
                                 <i class="fa-solid fa-file-csv" style="color: #f59e0b;"></i> Correios (.CSV) 🚚
@@ -2183,11 +2183,16 @@
 
                 <div id="modal-baixa-status" style="display: none; padding: 12px; border-radius: 8px; margin-top: 10px; font-size: 0.85rem;"></div>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="fecharModalBaixaAssinaturas()">Cancelar</button>
-                <button class="btn btn-primary" id="btn-confirmar-disparo-baixa" onclick="executarDisparoBaixaOmie()" style="background: linear-gradient(135deg, #10b981, #059669); border: none; font-weight: bold;">
-                    <i class="fa-solid fa-check"></i> Confirmar & Transmitir ao Omie
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <button class="btn btn-secondary" onclick="baixarPdfRelatorioAtivo()" style="background: rgba(239, 68, 68, 0.15); border-color: #ef4444; color: #f87171; font-weight: 600;" title="Imprimir Romaneio de Separação de Estoque antes de emitir a baixa">
+                    <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> Romaneio de Separação (PDF) 🖨️
                 </button>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-secondary" onclick="fecharModalBaixaAssinaturas()">Cancelar</button>
+                    <button class="btn btn-primary" id="btn-confirmar-disparo-baixa" onclick="executarDisparoBaixaOmie()" style="background: linear-gradient(135deg, #10b981, #059669); border: none; font-weight: bold;">
+                        <i class="fa-solid fa-check"></i> Confirmar & Transmitir ao Omie
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -2258,16 +2263,21 @@
 
                 <div id="modal-paroquia-status" style="display: none; padding: 12px; border-radius: 8px; margin-top: 10px; font-size: 0.85rem;"></div>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="fecharModalParoquia()">Cancelar</button>
-                <button class="btn btn-primary" id="btn-confirmar-disparo-paroquia" onclick="executarDisparoParoquiaOmie()" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); border: none; font-weight: bold;">
-                    <i class="fa-solid fa-paper-plane"></i> Emitir Remessa no Omie
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <button class="btn btn-secondary" onclick="baixarPdfRomaneioParoquiaSelecionada()" style="background: rgba(239, 68, 68, 0.15); border-color: #ef4444; color: #f87171; font-weight: 600;" title="Gerar espelho de remessa e ordem de separação desta paróquia">
+                    <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> Romaneio de Separação (PDF) 🖨️
                 </button>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-secondary" onclick="fecharModalParoquia()">Cancelar</button>
+                    <button class="btn btn-primary" id="btn-confirmar-disparo-paroquia" onclick="executarDisparoParoquiaOmie()" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); border: none; font-weight: bold;">
+                        <i class="fa-solid fa-paper-plane"></i> Emitir Remessa no Omie
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <script src="app.js?v=20261019_modulo3_pdv"></script>
+    <script src="app.js?v=20261020_romaneio_pdf"></script>
 </body>
 
 </html>

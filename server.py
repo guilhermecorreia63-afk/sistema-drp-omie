@@ -2474,11 +2474,13 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             parsed = urlparse(self.path)
             qs = parse_qs(parsed.query)
             grupo = qs.get("grupo", ["finais_fortaleza"])[0]
+            linha = qs.get("linha", [None])[0]
             from services import assinaturas_service
-            pdf_bytes = assinaturas_service.gerar_pdf_relatorio_grupo(grupo)
+            pdf_bytes = assinaturas_service.gerar_pdf_relatorio_grupo(grupo, linha=linha)
             self.send_response(200)
             self.send_header('Content-Type', 'application/pdf')
-            self.send_header('Content-Disposition', f'inline; filename="relatorio_assinaturas_{grupo}.pdf"')
+            nome_arq = f"romaneio_remessa_linha_{linha}.pdf" if linha else f"romaneio_separacao_{grupo}.pdf"
+            self.send_header('Content-Disposition', f'inline; filename="{nome_arq}"')
             self.send_header('Content-Length', str(len(pdf_bytes)))
             self.end_headers()
             self.wfile.write(pdf_bytes)

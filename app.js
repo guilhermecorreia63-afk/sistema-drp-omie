@@ -6827,10 +6827,15 @@ function renderizarTabelaAssinaturas(clientes) {
             // Paróquia / Grande volume
             const freteLabel = c.frete_previsto ? `R$ ${c.frete_previsto.toFixed(2)}` : (c.frete_obs || 'A calcular');
             acaoCol = `
-                <button class="btn btn-primary" onclick="abrirModalRemessaParoquia(${c.linha_planilha})" style="padding: 4px 10px; font-size: 0.75rem; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border:none;" title="Emitir remessa padrão no Omie para esta paróquia">
-                    <i class="fa-solid fa-paper-plane"></i> Emitir Omie
-                </button>
-                <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 3px;">Frete: ${freteLabel}</div>
+                <div style="display:flex; flex-direction:column; gap:4px; align-items:center;">
+                    <button class="btn btn-primary" onclick="abrirModalRemessaParoquia(${c.linha_planilha})" style="padding: 4px 10px; font-size: 0.75rem; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border:none; width:100%;" title="Emitir remessa padrão no Omie para esta paróquia">
+                        <i class="fa-solid fa-paper-plane"></i> Emitir Omie
+                    </button>
+                    <button class="btn btn-secondary" onclick="baixarPdfRomaneioLinha(${c.linha_planilha})" style="padding: 3px 8px; font-size: 0.7rem; border-color: #ef4444; color: #f87171; background: rgba(239,68,68,0.1); width:100%;" title="Imprimir espelho de remessa e ordem de separação antes de emitir">
+                        <i class="fa-solid fa-file-pdf"></i> Separação (PDF)
+                    </button>
+                    <div style="font-size: 0.68rem; color: #94a3b8; margin-top: 1px;">Frete: ${freteLabel}</div>
+                </div>
             `;
         } else {
             // Cliente Final
@@ -6906,6 +6911,18 @@ function baixarPdfRelatorio(grupoId) {
 function baixarPdfRelatorioAtivo() {
     const gid = window.grupoAtivoAssinaturas || 'finais_fortaleza';
     baixarPdfRelatorio(gid);
+}
+
+function baixarPdfRomaneioLinha(linha) {
+    const gid = window.grupoAtivoAssinaturas || 'paroquias_ce';
+    window.open(`/api/assinaturas/relatorio_pdf?linha=${linha}&grupo=${gid}`, '_blank');
+}
+
+function baixarPdfRomaneioParoquiaSelecionada() {
+    const cliente = window.paroquiaSelecionadaParaRemessa;
+    if (!cliente) return;
+    const linha = cliente.linha_planilha || cliente.codigo_cliente;
+    baixarPdfRomaneioLinha(linha);
 }
 
 function exportarArquivoCorreios(grupoId, formato) {
@@ -7100,6 +7117,8 @@ window.fecharModalParoquia = fecharModalParoquia;
 window.executarDisparoParoquiaOmie = executarDisparoParoquiaOmie;
 window.baixarPdfRelatorio = baixarPdfRelatorio;
 window.baixarPdfRelatorioAtivo = baixarPdfRelatorioAtivo;
+window.baixarPdfRomaneioLinha = baixarPdfRomaneioLinha;
+window.baixarPdfRomaneioParoquiaSelecionada = baixarPdfRomaneioParoquiaSelecionada;
 window.exportarArquivoCorreios = exportarArquivoCorreios;
 window.exportarArquivoCorreiosAtivo = exportarArquivoCorreiosAtivo;
 

@@ -9,17 +9,27 @@ import requests
 from dotenv import load_dotenv
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable, KeepTogether
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.pdfgen import canvas
 import csv
+
+import tempfile
 
 load_dotenv()
 logger = logging.getLogger("assinaturas_service")
 
 GOOGLE_SHEETS_URL = "https://docs.google.com/spreadsheets/d/1lqDiqjD5fmQ9r2f3KS-MK2ebn4YxMRTDBwybsvm7wDw/export?format=xlsx"
-LOCAL_SHEET_LIVE = os.path.join(os.path.dirname(__file__), "..", "planilha_ao_vivo.xlsx")
+
+# Cache seguro no diretório temporário do sistema (/tmp no Vercel/Linux)
+TEMP_DIR = tempfile.gettempdir()
+CACHE_SHEET_LIVE = os.path.join(TEMP_DIR, "planilha_ao_vivo.xlsx")
+LOCAL_SHEET_REPO = os.path.join(os.path.dirname(__file__), "..", "planilha_ao_vivo.xlsx")
 LOCAL_SHEET_FALLBACK = os.path.join(os.path.dirname(__file__), "..", "1° Assinatura PDV (respostas) (1).xlsx")
+
+# Cache em memória RAM da instância serverless
+_CACHED_BYTES_EXCEL = None
+_CACHED_DOWNLOAD_TIME = None
 
 # Produtos Omie
 PRODUTOS_LITURGIA = {
@@ -98,37 +108,102 @@ def is_fortaleza_metro(cep_clean):
     # 61900-000 a 61939-999 (Maracanaú / Região Metropolitana)
     return (60000 <= c5 <= 60899) or (61900 <= c5 <= 61939)
 
-def sincronizar_planilha():
-    """Baixa a planilha mais recente do Google Sheets com fallback local."""
+def sincronizar_planilha(forcar=True):
+    """
+    Baixa a planilha mais recente do Google Sheets com proteção total a Read-only filesystem.
+    Salva no diretório temporário do sistema (/tmp no Linux/Vercel) e mantém cópia em memória RAM.
+    """
+    global _CACHED_BYTES_EXCEL, _CACHED_DOWNLOAD_TIME
+    
+    agora = datetime.now()
+    if not forcar and _CACHED_BYTES_EXCEL and _CACHED_DOWNLOAD_TIME:
+        if (agora - _CACHED_DOWNLOAD_TIME).total_seconds() < 600:
+            return {"sucesso": True, "mensagem": "Usando planilha em cache da memória."}
+
+    logger.info("Baixando planilha ao vivo do Google Sheets...")
+    req = urllib.request.Request(
+        GOOGLE_SHEETS_URL,
+        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+    )
+    
     try:
-        logger.info("Baixando planilha ao vivo do Google Sheets...")
-        urllib.request.urlretrieve(GOOGLE_SHEETS_URL, LOCAL_SHEET_LIVE)
-        logger.info("Planilha baixada com sucesso!")
-        return {"sucesso": True, "mensagem": "Planilha sincronizada diretamente do Google Sheets com sucesso!"}
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = resp.read()
+            if len(data) < 5000:
+                raise ValueError(f"Download retornou arquivo inválido ou vazio ({len(data)} bytes).")
+            
+            _CACHED_BYTES_EXCEL = data
+            _CACHED_DOWNLOAD_TIME = agora
+            
+            # Tenta persistir no diretório /tmp (permitido no Vercel/Linux)
+            try:
+                with open(CACHE_SHEET_LIVE, "wb") as f:
+                    f.write(data)
+                logger.info(f"Planilha salva em cache temporário: {CACHE_SHEET_LIVE} ({len(data)} bytes)")
+            except Exception as fe:
+                logger.warning(f"Não foi possível salvar em disco ({fe}), mantida com sucesso em memória RAM.")
+                
+            return {"sucesso": True, "mensagem": "Planilha sincronizada diretamente do Google Sheets com sucesso!"}
     except Exception as e:
-        logger.warning(f"Erro ao baixar planilha do Google Sheets: {e}. Usando cópia local.")
-        if os.path.exists(LOCAL_SHEET_LIVE) or os.path.exists(LOCAL_SHEET_FALLBACK):
-            return {"sucesso": True, "aviso": f"Usando cópia local em cache ({e})"}
+        logger.warning(f"Erro ao baixar planilha do Google Sheets: {e}. Verificando caches...")
+        if _CACHED_BYTES_EXCEL:
+            return {"sucesso": True, "aviso": f"Usando última versão baixada em memória ({e})"}
+        if os.path.exists(CACHE_SHEET_LIVE):
+            return {"sucesso": True, "aviso": f"Usando cópia em cache temporário ({e})"}
+        if os.path.exists(LOCAL_SHEET_REPO):
+            return {"sucesso": True, "aviso": f"Usando cópia estática do repositório ({e})"}
+        if os.path.exists(LOCAL_SHEET_FALLBACK):
+            return {"sucesso": True, "aviso": f"Usando cópia de backup do repositório ({e})"}
         raise RuntimeError(f"Não foi possível obter a planilha: {e}")
 
+def carregar_workbook_assinaturas(forcar_download=False):
+    """
+    Retorna o workbook do OpenpyXL priorizando cache em memória RAM,
+    seguido por /tmp, arquivo estático e backup.
+    """
+    global _CACHED_BYTES_EXCEL
+    
+    if forcar_download or (_CACHED_BYTES_EXCEL is None and not os.path.exists(CACHE_SHEET_LIVE)):
+        try:
+            sincronizar_planilha(forcar=forcar_download)
+        except Exception as e:
+            logger.warning(f"Falha na sincronização inicial: {e}")
+
+    if _CACHED_BYTES_EXCEL:
+        return openpyxl.load_workbook(io.BytesIO(_CACHED_BYTES_EXCEL), data_only=True)
+
+    if os.path.exists(CACHE_SHEET_LIVE):
+        return openpyxl.load_workbook(CACHE_SHEET_LIVE, data_only=True)
+
+    if os.path.exists(LOCAL_SHEET_REPO):
+        return openpyxl.load_workbook(LOCAL_SHEET_REPO, data_only=True)
+
+    if os.path.exists(LOCAL_SHEET_FALLBACK):
+        return openpyxl.load_workbook(LOCAL_SHEET_FALLBACK, data_only=True)
+
+    # Tentativa final forçada de download
+    sincronizar_planilha(forcar=True)
+    if _CACHED_BYTES_EXCEL:
+        return openpyxl.load_workbook(io.BytesIO(_CACHED_BYTES_EXCEL), data_only=True)
+
+    raise RuntimeError("Nenhuma fonte de planilha de assinaturas disponível.")
+
 def obter_caminho_planilha():
-    if os.path.exists(LOCAL_SHEET_LIVE):
-        return LOCAL_SHEET_LIVE
+    """Mantido para compatibilidade."""
+    if os.path.exists(CACHE_SHEET_LIVE):
+        return CACHE_SHEET_LIVE
+    if os.path.exists(LOCAL_SHEET_REPO):
+        return LOCAL_SHEET_REPO
     if os.path.exists(LOCAL_SHEET_FALLBACK):
         return LOCAL_SHEET_FALLBACK
-    sincronizar_planilha()
-    return LOCAL_SHEET_LIVE
+    return CACHE_SHEET_LIVE
 
 def processar_assinaturas_pdv(forcar_download=False):
     """
     Lê a planilha e calcula elegibilidade para Jan/27, Fev/27, Mar/27
     e divide nos 5 grupos operacionais.
     """
-    if forcar_download:
-        sincronizar_planilha()
-
-    filepath = obter_caminho_planilha()
-    wb = openpyxl.load_workbook(filepath, data_only=True)
+    wb = carregar_workbook_assinaturas(forcar_download=forcar_download)
     
     # Selecionar aba 'Envios PDV'
     ws = None
@@ -959,28 +1034,309 @@ class NumberedCanvas(canvas.Canvas):
         self.drawRightString(822, 15, page_str)
         self.restoreState()
 
-def gerar_pdf_relatorio_grupo(grupo_id):
+def gerar_pdf_espelho_remessa_individual(cliente):
     """
-    Gera PDF completo em formato A4 Paisagem (Landscape) com totais consolidados
-    do mês e conferência detalhada por cliente / etiqueta.
+    Gera um Espelho de Remessa / Ordem de Separação Individual (A4 Retrato)
+    específico para uma Paróquia ou Assinante individual, parecendo a DANFE/espelho de remessa
+    do Omie para conferência física antes da emissão.
     """
-    from reportlab.lib.pagesizes import A4, landscape
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.units import cm
+    pdf_buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        pdf_buffer,
+        pagesize=A4, # 595.27 x 841.89 pt
+        leftMargin=25,
+        rightMargin=25,
+        topMargin=25,
+        bottomMargin=25
+    )
 
-    dados = processar_assinaturas_pdv(forcar_download=False)
+    styles = getSampleStyleSheet()
+
+    st_title = ParagraphStyle('RTitle', fontName='Helvetica-Bold', fontSize=13, leading=16, textColor=colors.HexColor("#0F172A"))
+    st_sub = ParagraphStyle('RSub', fontName='Helvetica', fontSize=8.5, leading=11, textColor=colors.HexColor("#475569"))
+    st_sec = ParagraphStyle('RSec', fontName='Helvetica-Bold', fontSize=9, leading=12, textColor=colors.HexColor("#1E3A8A"))
+    st_th = ParagraphStyle('RTH', fontName='Helvetica-Bold', fontSize=8, leading=10, textColor=colors.white, alignment=1)
+    st_td = ParagraphStyle('RTD', fontName='Helvetica', fontSize=8, leading=10.5, textColor=colors.HexColor("#1E293B"))
+    st_td_center = ParagraphStyle('RTDC', fontName='Helvetica', fontSize=8, leading=10.5, alignment=1, textColor=colors.HexColor("#1E293B"))
+    st_td_bold_center = ParagraphStyle('RTDBC', fontName='Helvetica-Bold', fontSize=8.5, leading=11, alignment=1, textColor=colors.HexColor("#047857"))
+
+    story = []
+
+    # Cabeçalho Oficial
+    cli_cod = cliente.get("codigo_cliente") or cliente.get("linha_planilha") or "-"
+    num_remessa_prev = f"REM-SEP-{cli_cod}-2027"
     
-    # Identificar título do grupo e clientes
+    header_data = [
+        [
+            Paragraph("<b>EDIÇÕES SHALOM</b><br/><font size=7.5 color='#475569'>Comunidade Católica Shalom | CNPJ: 07.044.456/0001-00<br/>Rua Maria Tomásia, 72 - Aldeota, Fortaleza - CE | CEP: 60150-170</font>", st_sub),
+            Paragraph(f"<b>ESPELHO DE REMESSA & SEPARAÇÃO</b><br/><font size=9 color='#B45309'><b>{num_remessa_prev}</b></font><br/><font size=7.5 color='#64748B'>Emissão: {datetime.now().strftime('%d/%m/%Y %H:%M')}</font>", st_title)
+        ]
+    ]
+    t_header = Table(header_data, colWidths=[315, 230])
+    t_header.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('LINEBELOW', (0,0), (-1,-1), 1, colors.HexColor("#CBD5E1")),
+    ]))
+    story.append(t_header)
+    story.append(Spacer(1, 8))
+
+    # Natureza da Operação e Dados Fiscais Previstos
+    is_ce = (cliente.get("uf") == "CE") or is_fortaleza_metro(cliente.get("cep_limpo", ""))
+    cfop_prev = cliente.get("cfop") or ("5949" if is_ce else "6949")
+    fisc_data = [
+        [
+            Paragraph("<b>NATUREZA DA OPERAÇÃO:</b> REMESSA PARA DISTRIBUIÇÃO / ASSINATURA PÃO DA VIDA", st_sub),
+            Paragraph(f"<b>CFOP PREVISTO:</b> {cfop_prev}", st_sub),
+            Paragraph("<b>CATEGORIA OMIE:</b> 1.01.01", st_sub),
+        ]
+    ]
+    t_fisc = Table(fisc_data, colWidths=[270, 135, 140])
+    t_fisc.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#F8FAFC")),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E1")),
+        ('TOPPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+    ]))
+    story.append(t_fisc)
+    story.append(Spacer(1, 8))
+
+    # Bloco Destinatário
+    compl_txt = f" ({cliente.get('complemento')})" if cliente.get('complemento') else ""
+    end_dest = f"{cliente.get('rua', '')}, {cliente.get('numero', '')}{compl_txt} - {cliente.get('bairro', '')}"
+    dest_data = [
+        [Paragraph("<b>DADOS DO DESTINATÁRIO / ASSINANTE</b>", st_sec), Paragraph("", st_sec)],
+        [
+            Paragraph(f"<b>Razão Social / Nome:</b> {cliente.get('cliente', '')}", st_td),
+            Paragraph(f"<b>CPF / CNPJ:</b> {cliente.get('cpf_cnpj') or 'Não informado'}", st_td)
+        ],
+        [
+            Paragraph(f"<b>Endereço de Entrega:</b> {end_dest}", st_td),
+            Paragraph(f"<b>Cód. Cliente:</b> {cliente.get('codigo_cliente') or '-'} (Linha: {cliente.get('linha_planilha')})", st_td)
+        ],
+        [
+            Paragraph(f"<b>Município / UF:</b> {cliente.get('cidade', '')} / <b>{cliente.get('uf', '')}</b>", st_td),
+            Paragraph(f"<b>CEP:</b> {cliente.get('cep', '')}", st_td)
+        ]
+    ]
+    t_dest = Table(dest_data, colWidths=[365, 180])
+    t_dest.setStyle(TableStyle([
+        ('SPAN', (0,0), (1,0)),
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#EFF6FF")),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor("#93C5FD")),
+        ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor("#DBEAFE")),
+        ('TOPPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('LEFTPADDING', (0,0), (-1,-1), 6),
+        ('RIGHTPADDING', (0,0), (-1,-1), 6),
+    ]))
+    story.append(t_dest)
+    story.append(Spacer(1, 8))
+
+    # Bloco Transportador & Frete
+    transp_nome = cliente.get("transportadora") or cliente.get("entregador") or ("Roberto Souza de Oliveira" if is_ce else "PAC / Correios / Braspress")
+    frete_val_txt = f"R$ {cliente.get('frete_previsto', 0):,.2f}" if cliente.get('frete_previsto') else (f"R$ {cliente.get('custo_entrega', 0):,.2f}" if cliente.get('custo_entrega') else "A calcular na cotação")
+    transp_data = [
+        [Paragraph("<b>DADOS DA LOGÍSTICA & TRANSPORTE</b>", st_sec), Paragraph("", st_sec)],
+        [
+            Paragraph(f"<b>Transportadora / Entregador:</b> {transp_nome}", st_td),
+            Paragraph(f"<b>Frete Previsto:</b> <b>{frete_val_txt}</b>", st_td)
+        ],
+        [
+            Paragraph(f"<b>Modalidade de Frete:</b> Conta do Emitente (CIF / Contratual Shalom)", st_td),
+            Paragraph(f"<b>Condição de Envio:</b> {cliente.get('frete_obs') or 'Entrega Direta no Endereço'}", st_td)
+        ]
+    ]
+    t_transp = Table(transp_data, colWidths=[365, 180])
+    t_transp.setStyle(TableStyle([
+        ('SPAN', (0,0), (1,0)),
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#F1F5F9")),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E1")),
+        ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor("#E2E8F0")),
+        ('TOPPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('LEFTPADDING', (0,0), (-1,-1), 6),
+        ('RIGHTPADDING', (0,0), (-1,-1), 6),
+    ]))
+    story.append(t_transp)
+    story.append(Spacer(1, 10))
+
+    # Tabela Grade de Itens da Remessa / Almoxarifado
+    q_jan = int(cliente.get("qtd_jan27", 0))
+    q_fev = int(cliente.get("qtd_fev27", 0))
+    q_mar = int(cliente.get("qtd_mar27", 0))
+    tot_pecas = q_jan + q_fev + q_mar
+    tot_peso = round(tot_pecas * 0.100, 3)
+
+    items_header = [
+        Paragraph("Item", st_th),
+        Paragraph("Cód. Omie", st_th),
+        Paragraph("Descrição do Produto", st_th),
+        Paragraph("Mês Ref.", st_th),
+        Paragraph("Qtd Separar", st_th),
+        Paragraph("Peso Unit.", st_th),
+        Paragraph("Peso Total", st_th),
+        Paragraph("Visto [ ✓ ]", st_th)
+    ]
+    items_rows = [items_header]
+
+    idx_item = 1
+    if q_jan > 0:
+        items_rows.append([
+            Paragraph(str(idx_item), st_td_center),
+            Paragraph("PRD00561", st_td_center),
+            Paragraph("LITURGIA DIARIA JANEIRO - 2027", st_td),
+            Paragraph("Jan/2027", st_td_center),
+            Paragraph(f"<b>{q_jan} un</b>", st_td_bold_center),
+            Paragraph("0,100 kg", st_td_center),
+            Paragraph(f"{round(q_jan * 0.100, 2):,.2f} kg", st_td_center),
+            Paragraph("[    ]", st_td_center)
+        ])
+        idx_item += 1
+
+    if q_fev > 0:
+        items_rows.append([
+            Paragraph(str(idx_item), st_td_center),
+            Paragraph("PRD00562", st_td_center),
+            Paragraph("LITURGIA DIARIA FEVEREIRO - 2027", st_td),
+            Paragraph("Fev/2027", st_td_center),
+            Paragraph(f"<b>{q_fev} un</b>", st_td_bold_center),
+            Paragraph("0,100 kg", st_td_center),
+            Paragraph(f"{round(q_fev * 0.100, 2):,.2f} kg", st_td_center),
+            Paragraph("[    ]", st_td_center)
+        ])
+        idx_item += 1
+
+    if q_mar > 0:
+        items_rows.append([
+            Paragraph(str(idx_item), st_td_center),
+            Paragraph("PRD00563", st_td_center),
+            Paragraph("LITURGIA DIARIA MARÇO - 2027", st_td),
+            Paragraph("Mar/2027", st_td_center),
+            Paragraph(f"<b>{q_mar} un</b>", st_td_bold_center),
+            Paragraph("0,100 kg", st_td_center),
+            Paragraph(f"{round(q_mar * 0.100, 2):,.2f} kg", st_td_center),
+            Paragraph("[    ]", st_td_center)
+        ])
+        idx_item += 1
+
+    # Exemplar extra de Dez/26 se houver
+    if cliente.get("qtd_dez26_extra"):
+        items_rows.append([
+            Paragraph(str(idx_item), st_td_center),
+            Paragraph("EXTRA", st_td_center),
+            Paragraph("LITURGIA DIARIA DEZEMBRO - 2026 (Item Complementar)", st_td),
+            Paragraph("Dez/2026", st_td_center),
+            Paragraph("<b>1 un</b>", st_td_bold_center),
+            Paragraph("0,100 kg", st_td_center),
+            Paragraph("0,10 kg", st_td_center),
+            Paragraph("[    ]", st_td_center)
+        ])
+        tot_pecas += 1
+        tot_peso = round(tot_peso + 0.100, 3)
+
+    # Linha Total
+    items_rows.append([
+        Paragraph("<b>TOTAL</b>", st_td_center),
+        Paragraph("", st_td_center),
+        Paragraph("<b>TOTAL GERAL DE VOLUMES E EXEMPLARES A SEPARAR</b>", st_td),
+        Paragraph("", st_td_center),
+        Paragraph(f"<b>{tot_pecas} un</b>", st_td_bold_center),
+        Paragraph("", st_td_center),
+        Paragraph(f"<b>{tot_peso:,.2f} kg</b>", st_td_bold_center),
+        Paragraph("[ ✓ ]", st_td_center)
+    ])
+
+    t_items = Table(items_rows, colWidths=[28, 62, 195, 52, 60, 48, 52, 48])
+    t_items.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#1E293B")),
+        ('ALIGN', (0,0), (-1,0), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E1")),
+        ('TOPPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('BACKGROUND', (0,-1), (-1,-1), colors.HexColor("#F1F5F9")),
+    ]))
+    story.append(t_items)
+    story.append(Spacer(1, 10))
+
+    # Observações e Instruções de Separação
+    obs_extra_txt = f"<br/><font color='#B45309'><b>⚠️ ALERTA: {cliente['observacao_especial']}</b></font>" if cliente.get("observacao_especial") else ""
+    obs_data = [
+        [Paragraph(f"<b>INSTRUÇÕES & OBSERVAÇÕES DE SEPARAÇÃO:</b><br/>"
+                   f"1. Material consignado para distribuição de assinantes. Sem valor de venda comercial avulsa.<br/>"
+                   f"2. Conferir integridade física dos exemplares antes de acondicionar na caixa/envelope de transporte.<br/>"
+                   f"3. Após a separação e conferência física, confirmar a transmissão da Remessa no sistema DRP/Omie.{obs_extra_txt}", st_sub)]
+    ]
+    t_obs = Table(obs_data, colWidths=[545])
+    t_obs.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#FEF3C7") if cliente.get("observacao_especial") else colors.HexColor("#F8FAFC")),
+        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor("#F59E0B") if cliente.get("observacao_especial") else colors.HexColor("#CBD5E1")),
+        ('TOPPADDING', (0,0), (-1,-1), 6),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('LEFTPADDING', (0,0), (-1,-1), 8),
+    ]))
+    story.append(t_obs)
+    story.append(Spacer(1, 15))
+
+    # Termo de Assinaturas e Validação de Separação
+    term_data = [
+        [
+            Paragraph("<b>SEPARAÇÃO FÍSICA NO ESTOQUE</b><br/><br/>Assinatura: ___________________________<br/>Nome do Separador: ___________________<br/>Data: _____/_____/2027", st_sub),
+            Paragraph("<b>CONFERÊNCIA DE EMBALAGEM</b><br/><br/>Assinatura: ___________________________<br/>Nome do Conferente: ___________________<br/>Data: _____/_____/2027", st_sub),
+            Paragraph("<b>EXPEDIÇÃO / COLETA</b><br/><br/>Assinatura: ___________________________<br/>Motorista/Coleta: _____________________<br/>Data: _____/_____/2027", st_sub),
+        ]
+    ]
+    t_term = Table(term_data, colWidths=[181, 182, 182])
+    t_term.setStyle(TableStyle([
+        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E1")),
+        ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E1")),
+        ('TOPPADDING', (0,0), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+        ('LEFTPADDING', (0,0), (-1,-1), 8),
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#FFFFFF")),
+    ]))
+    story.append(t_term)
+
+    doc.build(story)
+    pdf_buffer.seek(0)
+    return pdf_buffer.getvalue()
+
+
+def gerar_pdf_relatorio_grupo(grupo_id="todos", linha=None):
+    """
+    Gera Romaneio de Separação e Conferência de Remessa.
+    - Se linha for informada: Gera o Espelho de Remessa Individual da Paróquia/Cliente (A4 Retrato).
+    - Se linha for None: Gera o Romaneio Geral de Separação do Grupo (A4 Paisagem).
+    """
+    dados = processar_assinaturas_pdv(forcar_download=False)
+
+    # Caso 1: Espelho de Remessa Individual
+    if linha is not None:
+        linha_str = str(linha).strip()
+        todos_clientes = []
+        for g in dados["grupos"].values():
+            todos_clientes.extend(g.get("clientes", []))
+            
+        cliente_alvo = None
+        for c in todos_clientes:
+            if str(c.get("linha_planilha")) == linha_str or str(c.get("codigo_cliente")) == linha_str:
+                cliente_alvo = c
+                break
+                
+        if cliente_alvo:
+            return gerar_pdf_espelho_remessa_individual(cliente_alvo)
+
+    # Caso 2: Romaneio de Separação do Grupo / Geral (A4 Paisagem)
     if grupo_id == "todos":
-        titulo_grupo = "Relatório Geral Consolidado (Todos os Grupos)"
-        desc_grupo = "Consolidação de todos os assinantes elegíveis para o 1º Trimestre de 2027."
+        titulo_grupo = "Romaneio Geral de Separação (Todos os Grupos)"
+        desc_grupo = "Consolidação geral de separação de estoque de todos os assinantes elegíveis para o 1º Tri/2027."
         clientes = []
         for g in dados["grupos"].values():
             clientes.extend(g.get("clientes", []))
     elif grupo_id == "todos_correios":
-        titulo_grupo = "Clientes Finais Brasil (Impresso Módico + PAC Norte)"
-        desc_grupo = "Todos os envios via Correios em território nacional."
+        titulo_grupo = "Romaneio de Separação - Correios Brasil (Impresso Módico + PAC Norte)"
+        desc_grupo = "Separação para todos os envios via Correios em território nacional."
         g_mod = dados["grupos"].get("finais_modico_brasil", {}).get("clientes", [])
         g_pac = dados["grupos"].get("finais_pac_norte", {}).get("clientes", [])
         clientes = g_mod + g_pac
@@ -988,7 +1344,7 @@ def gerar_pdf_relatorio_grupo(grupo_id):
         grupo = dados["grupos"].get(grupo_id)
         if not grupo:
             raise ValueError(f"Grupo {grupo_id} não encontrado.")
-        titulo_grupo = grupo.get("titulo", grupo_id)
+        titulo_grupo = f"Romaneio de Separação — {grupo.get('titulo', grupo_id)}"
         desc_grupo = grupo.get("descricao", "")
         clientes = grupo.get("clientes", [])
 
@@ -1005,7 +1361,7 @@ def gerar_pdf_relatorio_grupo(grupo_id):
     frete_texto = ""
     if grupo_id == "finais_fortaleza":
         custo_frete = round(tot_clientes * 4.50, 2)
-        frete_texto = f" | Frete Roberto: R$ {custo_frete:,.2f} ({tot_clientes} entregas a R$ 4,50)"
+        frete_texto = f" | Frete Roberto: R$ {custo_frete:,.2f} ({tot_clientes} entregas x R$ 4,50)"
 
     pdf_buffer = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -1024,33 +1380,33 @@ def gerar_pdf_relatorio_grupo(grupo_id):
         'DocTitle',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        fontSize=15,
-        leading=18,
+        fontSize=14,
+        leading=17,
         textColor=colors.HexColor("#0F172A")
     )
     style_subtitle = ParagraphStyle(
         'DocSub',
         parent=styles['Normal'],
         fontName='Helvetica',
-        fontSize=9,
-        leading=12,
+        fontSize=8.5,
+        leading=11,
         textColor=colors.HexColor("#475569")
     )
     style_card_val = ParagraphStyle(
         'CardVal',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        fontSize=11,
-        leading=13,
-        alignment=1, # Centralizado
+        fontSize=10.5,
+        leading=12.5,
+        alignment=1,
         textColor=colors.HexColor("#0F172A")
     )
     style_card_lbl = ParagraphStyle(
         'CardLbl',
         parent=styles['Normal'],
         fontName='Helvetica',
-        fontSize=7.5,
-        leading=9,
+        fontSize=7,
+        leading=8.5,
         alignment=1,
         textColor=colors.HexColor("#64748B")
     )
@@ -1058,8 +1414,8 @@ def gerar_pdf_relatorio_grupo(grupo_id):
         'TH',
         parent=styles['Normal'],
         fontName='Helvetica-Bold',
-        fontSize=8,
-        leading=10,
+        fontSize=7.5,
+        leading=9.5,
         textColor=colors.white,
         alignment=1
     )
@@ -1067,8 +1423,8 @@ def gerar_pdf_relatorio_grupo(grupo_id):
         'TD',
         parent=styles['Normal'],
         fontName='Helvetica',
-        fontSize=7.5,
-        leading=9.5,
+        fontSize=7,
+        leading=9,
         textColor=colors.HexColor("#1E293B")
     )
     style_td_center = ParagraphStyle(
@@ -1086,23 +1442,24 @@ def gerar_pdf_relatorio_grupo(grupo_id):
 
     story = []
 
-    # 1. Cabeçalho Superior
+    # 1. Cabeçalho Superior tipo Remessa
     header_data = [
         [
-            Paragraph(f"<b>EDIÇÕES SHALOM — LOGÍSTICA DE ASSINATURAS</b><br/><font size=10 color='#4338CA'><b>{titulo_grupo}</b></font>", style_title),
+            Paragraph(f"<b>EDIÇÕES SHALOM — ORDEM DE SEPARAÇÃO & ROMANEIO DE REMESSA</b><br/><font size=9.5 color='#1E40AF'><b>{titulo_grupo}</b></font>", style_title),
             Paragraph(f"<b>Emissão:</b> {datetime.now().strftime('%d/%m/%Y %H:%M')}<br/><font color='#64748B'>{desc_grupo}</font>", style_subtitle)
         ]
     ]
-    t_header = Table(header_data, colWidths=[460, 342])
+    t_header = Table(header_data, colWidths=[470, 332])
     t_header.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ('BOTTOMPADDING', (0,0), (-1,-1), 4),
         ('TOPPADDING', (0,0), (-1,-1), 0),
+        ('LINEBELOW', (0,0), (-1,-1), 1, colors.HexColor("#CBD5E1")),
     ]))
     story.append(t_header)
-    story.append(Spacer(1, 6))
+    story.append(Spacer(1, 5))
 
-    # 2. Cartões de Resumo e Métricas
+    # 2. Grade de Separação de Estoque no Almoxarifado (Cards/Tabela)
     kpi_data = [
         [
             Paragraph(f"<b>{tot_clientes}</b>", style_card_val),
@@ -1115,44 +1472,45 @@ def gerar_pdf_relatorio_grupo(grupo_id):
             Paragraph(f"<b>{frete_texto or 'Padrão Grupo'}</b>", style_card_val),
         ],
         [
-            Paragraph("Total Clientes", style_card_lbl),
+            Paragraph("Total Volumes/Entregas", style_card_lbl),
             Paragraph("Assinaturas Ativas", style_card_lbl),
-            Paragraph("Janeiro/27 (PRD00561)", style_card_lbl),
-            Paragraph("Fevereiro/27 (PRD00562)", style_card_lbl),
-            Paragraph("Março/27 (PRD00563)", style_card_lbl),
-            Paragraph("Total de Exemplares", style_card_lbl),
-            Paragraph("Peso Total Estimado", style_card_lbl),
+            Paragraph("PRD00561 (Jan/27)", style_card_lbl),
+            Paragraph("PRD00562 (Fev/27)", style_card_lbl),
+            Paragraph("PRD00563 (Mar/27)", style_card_lbl),
+            Paragraph("Total Peças a Retirar", style_card_lbl),
+            Paragraph("Peso Bruto Total", style_card_lbl),
             Paragraph("Logística / Frete", style_card_lbl),
         ]
     ]
-    t_kpis = Table(kpi_data, colWidths=[75, 80, 100, 100, 100, 105, 95, 147])
+    t_kpis = Table(kpi_data, colWidths=[80, 80, 100, 100, 100, 105, 90, 147])
     t_kpis.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#F1F5F9")),
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#F8FAFC")),
         ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E1")),
         ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor("#E2E8F0")),
-        ('TOPPADDING', (0,0), (-1,-1), 4),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('TOPPADDING', (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
     ]))
     story.append(t_kpis)
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 8))
 
-    # 3. Tabela Detalhada dos Clientes (com colunas de meses e etiqueta)
+    # 3. Romaneio Detalhado por Assinante/Pacote (com caixa de visto de separação)
     # Largura total disponível: 802 pt
-    col_widths = [26, 38, 140, 208, 95, 55, 34, 34, 34, 36, 102]
+    col_widths = [24, 24, 34, 140, 204, 90, 52, 30, 30, 30, 34, 110]
     table_rows = [
         [
+            Paragraph("Sep.", style_th),
             Paragraph("Linha", style_th),
             Paragraph("Cód.", style_th),
             Paragraph("Destinatário / Cliente", style_th),
             Paragraph("Endereço / Bairro", style_th),
             Paragraph("Cidade / UF", style_th),
             Paragraph("CEP", style_th),
-            Paragraph("Jan/27", style_th),
-            Paragraph("Fev/27", style_th),
-            Paragraph("Mar/27", style_th),
+            Paragraph("Jan", style_th),
+            Paragraph("Fev", style_th),
+            Paragraph("Mar", style_th),
             Paragraph("Total", style_th),
-            Paragraph("Etiqueta / Conteúdo", style_th)
+            Paragraph("Embalagem / Rota", style_th)
         ]
     ]
 
@@ -1166,16 +1524,19 @@ def gerar_pdf_relatorio_grupo(grupo_id):
         mar_str = f"✓ {c.get('qtd_mar27')}" if c.get("mar27") else "-"
 
         nome_cell = f"<b>{c.get('cliente', '')}</b>"
+        if c.get("cpf_cnpj"):
+            nome_cell += f"<br/><font size=6 color='#64748B'>{c['cpf_cnpj']}</font>"
         if c.get("observacao_especial"):
-            nome_cell += f"<br/><font size=6.5 color='#B45309'><b>⚠️ {c['observacao_especial']}</b></font>"
+            nome_cell += f"<br/><font size=6 color='#B45309'><b>⚠️ {c['observacao_especial']}</b></font>"
 
         tot_cell = str(c.get('total_exemplares', 0))
         if c.get("qtd_dez26_extra"):
-            tot_cell = f"<b>{c.get('total_exemplares_envio', c.get('total_exemplares', 0))}</b><br/><font size=6 color='#B45309'><b>(3 + 1 Dez)</b></font>"
+            tot_cell = f"<b>{c.get('total_exemplares_envio', c.get('total_exemplares', 0))}</b><br/><font size=5.5 color='#B45309'><b>(+1 Dez)</b></font>"
         else:
             tot_cell = f"<b>{tot_cell}</b>"
 
         table_rows.append([
+            Paragraph("[  ]", style_td_center),
             Paragraph(str(c.get("linha_planilha", "")), style_td_center),
             Paragraph(str(c.get("codigo_cliente", "-") or "-"), style_td_center),
             Paragraph(nome_cell, style_td),
@@ -1186,7 +1547,7 @@ def gerar_pdf_relatorio_grupo(grupo_id):
             Paragraph(fev_str, style_td_center),
             Paragraph(mar_str, style_td_center),
             Paragraph(tot_cell, style_td_bold_center),
-            Paragraph(f"<font color='#1E40AF'><b>{txt_etiqueta}</b></font><br/><font size=6.5 color='#64748B'>LITURGIAS</font>", style_td_center),
+            Paragraph(f"<font color='#1E40AF'><b>{txt_etiqueta}</b></font><br/><font size=6 color='#64748B'>{c.get('entregador') or c.get('transportadora') or c.get('tipo_envio') or 'LITURGIAS'}</font>", style_td),
         ])
 
     t_main = Table(table_rows, colWidths=col_widths, repeatRows=1)
@@ -1196,20 +1557,41 @@ def gerar_pdf_relatorio_grupo(grupo_id):
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
         ('ALIGN', (0,0), (-1,0), 'CENTER'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('TOPPADDING', (0,0), (-1,-1), 3),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
-        ('LEFTPADDING', (0,0), (-1,-1), 4),
-        ('RIGHTPADDING', (0,0), (-1,-1), 4),
+        ('TOPPADDING', (0,0), (-1,-1), 2.5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 2.5),
+        ('LEFTPADDING', (0,0), (-1,-1), 3),
+        ('RIGHTPADDING', (0,0), (-1,-1), 3),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E1")),
     ]
 
-    # Zebra striping
     for r in range(1, len(table_rows)):
         if r % 2 == 0:
             t_style.append(('BACKGROUND', (0, r), (-1, r), colors.HexColor("#F8FAFC")))
 
     t_main.setStyle(TableStyle(t_style))
     story.append(t_main)
+    story.append(Spacer(1, 10))
+
+    # 4. Termo de Separação e Liberação Física no Rodapé
+    term_data = [
+        [
+            Paragraph("<b>SEPARAÇÃO FÍSICA NO ALMOXARIFADO</b><br/><br/>Assinatura: _________________________________<br/>Nome do Separador: _________________________<br/>Data: _____/_____/2027", style_subtitle),
+            Paragraph("<b>CONFERÊNCIA DE VOLUMES / EXPEDIÇÃO</b><br/><br/>Assinatura: _________________________________<br/>Nome do Conferente: _________________________<br/>Data: _____/_____/2027", style_subtitle),
+            Paragraph("<b>RECEBIMENTO TRANSPORTE / COLETA</b><br/><br/>Assinatura: _________________________________<br/>Motorista / RG: ______________________________<br/>Data: _____/_____/2027", style_subtitle),
+        ]
+    ]
+    t_term = Table(term_data, colWidths=[267, 267, 268])
+    t_term.setStyle(TableStyle([
+        ('BOX', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E1")),
+        ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor("#CBD5E1")),
+        ('TOPPADDING', (0,0), (-1,-1), 6),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('LEFTPADDING', (0,0), (-1,-1), 8),
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#FFFFFF")),
+    ]))
+    
+    # Mantém o quadro de assinaturas junto
+    story.append(KeepTogether(t_term))
 
     doc.build(story, canvasmaker=NumberedCanvas)
     pdf_buffer.seek(0)
