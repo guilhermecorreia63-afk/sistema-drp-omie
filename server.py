@@ -2397,6 +2397,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             if not acerto:
                 self._send_json({"success": False, "message": f"Acerto #{acerto_id} não encontrado."})
                 return
+            if body.get('numero_pedido_manual'):
+                acerto['numero_pedido_manual'] = str(body['numero_pedido_manual']).strip()
             res = service.integrar_omie(acerto)
             self._send_json(res)
         except Exception as e:

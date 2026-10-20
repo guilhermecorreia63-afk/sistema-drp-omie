@@ -6419,10 +6419,14 @@ async function confirmarIntegracaoOmieConsignacao() {
     btnIntegrar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Integrando com Omie ERP...';
 
     try {
+        const pedManual = document.getElementById('input-pedido-manual-consignacao')?.value.trim() || '';
         const resp = await fetch('/api/consignacao/integrar_omie', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ acerto_id: stateConsignacao.acertoId })
+            body: JSON.stringify({ 
+                acerto_id: stateConsignacao.acertoId,
+                numero_pedido_manual: pedManual
+            })
         });
 
         const data = await resp.json();
@@ -6596,6 +6600,22 @@ async function carregarAcertoSalvo(acertoId) {
 
         const badge = document.getElementById('badge-status-acerto');
         const btnIntegrar = document.getElementById('btn-integrar-omie-consignacao');
+
+        const inpPedManual = document.getElementById('input-pedido-manual-consignacao');
+        if (inpPedManual) {
+            let numP = '';
+            if (typeof acerto.dados_pedido_venda_omie === 'string' && acerto.dados_pedido_venda_omie.trim()) {
+                try {
+                    const parsedPv = JSON.parse(acerto.dados_pedido_venda_omie);
+                    numP = parsedPv.numero_pedido || '';
+                } catch(e) {
+                    numP = acerto.dados_pedido_venda_omie;
+                }
+            } else if (typeof acerto.dados_pedido_venda_omie === 'object' && acerto.dados_pedido_venda_omie) {
+                numP = acerto.dados_pedido_venda_omie.numero_pedido || '';
+            }
+            inpPedManual.value = numP ? String(numP).replace(/^0+/, '') : '';
+        }
 
         if (acerto.status === 'FINALIZADO_OMIE') {
             if (badge) {

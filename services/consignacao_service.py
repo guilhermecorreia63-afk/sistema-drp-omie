@@ -19,13 +19,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import database as db
 from omie_client import OmieClient
 
-# ID do cenário fiscal oficial no Omie para Venda Mercadoria (Consignação sem contrato / 1800980891)
-CENARIO_VENDA_CONSIGNACAO = 1800980891 
+# ID do cenário fiscal oficial no Omie para Venda Mercadoria (Consignação sem contrato / 1818515488)
+CENARIO_VENDA_CONSIGNACAO = 1818515488 
 # ID da categoria comercial padrão Matriz
 CATEGORIA_COMERCIAL_PADRAO = "1.01.01"
 # Categoria padrão para o Retorno de Remessa (Nota de Entrada): Compras de Mercadorias para Revenda
 CATEGORIA_RETORNO_REMESSA_PADRAO = "2.01.01"
-CONTA_CORRENTE_MATRIZ = 1808861086
+# Conta Corrente: Omie.CASH
+CONTA_CORRENTE_MATRIZ = 1794541768
 LOCAL_ESTOQUE_MATRIZ = 1794541746
 
 def _df_to_records(df_or_list) -> List[Dict[str, Any]]:
@@ -541,13 +542,20 @@ class ConsignacaoService:
                         }
                     })
 
+                cli_email = ""
+                try:
+                    cli_det = self.client.executar("geral/clientes/", "ConsultarCliente", [{"codigo_cliente_omie": cod_cli}])
+                    cli_email = str(cli_det.get("email") or "").strip()
+                except Exception:
+                    pass
+
                 cod_int_pv = f"PV_CONSIG_{int(time.time())}"[:20]
                 payload_pv = {
                     "cabecalho": {
                         "codigo_cliente": cod_cli,
                         "codigo_cenario_impostos": str(CENARIO_VENDA_CONSIGNACAO),
                         "data_previsao": datetime.now().strftime("%d/%m/%Y"),
-                        "etapa": "10", # Etapa inicial Proposta / Pedido
+                        "etapa": "20", # Etapa Separar Estoque
                         "codigo_parcela": "000",
                         "codigo_pedido_integracao": cod_int_pv,
                         "origem_pedido": "API"
@@ -556,6 +564,8 @@ class ConsignacaoService:
                         "codigo_categoria": CATEGORIA_COMERCIAL_PADRAO,
                         "codigo_conta_corrente": CONTA_CORRENTE_MATRIZ,
                         "consumidor_final": "S",
+                        "enviar_email": "S",
+                        "utilizar_emails": cli_email,
                         "dados_adicionais_nf": f"Venda de mercadoria remetida em consignação sem contrato - Acerto {acerto.get('codigo_acerto')}"
                     },
                     "det": det_produtos
