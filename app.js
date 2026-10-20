@@ -6420,12 +6420,14 @@ async function confirmarIntegracaoOmieConsignacao() {
 
     try {
         const pedManual = document.getElementById('input-pedido-manual-consignacao')?.value.trim() || '';
+        const codVend = document.getElementById('select-vendedora-consignacao')?.value || '1818533448';
         const resp = await fetch('/api/consignacao/integrar_omie', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 acerto_id: stateConsignacao.acertoId,
-                numero_pedido_manual: pedManual
+                numero_pedido_manual: pedManual,
+                codigo_vendedora: codVend
             })
         });
 

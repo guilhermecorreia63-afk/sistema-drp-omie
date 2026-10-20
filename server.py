@@ -2399,6 +2399,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 return
             if body.get('numero_pedido_manual'):
                 acerto['numero_pedido_manual'] = str(body['numero_pedido_manual']).strip()
+            if body.get('codigo_vendedora'):
+                acerto['codigo_vendedora'] = body['codigo_vendedora']
             res = service.integrar_omie(acerto)
             self._send_json(res)
         except Exception as e:

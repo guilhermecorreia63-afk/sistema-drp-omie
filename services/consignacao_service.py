@@ -549,6 +549,8 @@ class ConsignacaoService:
                 except Exception:
                     pass
 
+                cod_vend = int(acerto.get("codigo_vendedora") or 1818533448)
+
                 cod_int_pv = f"PV_CONSIG_{int(time.time())}"[:20]
                 payload_pv = {
                     "cabecalho": {
@@ -561,6 +563,7 @@ class ConsignacaoService:
                         "origem_pedido": "API"
                     },
                     "informacoes_adicionais": {
+                        "codVend": cod_vend,
                         "codigo_categoria": CATEGORIA_COMERCIAL_PADRAO,
                         "codigo_conta_corrente": CONTA_CORRENTE_MATRIZ,
                         "consumidor_final": "S",
