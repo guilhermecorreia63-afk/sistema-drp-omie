@@ -5553,13 +5553,16 @@ function calcularDescontoPoliticaComercialClient(it, condicao = 'A_VISTA_AUTO', 
     if (d.includes('MANUAL') && d.includes('RECICLAGEM') && d.includes('2026')) return 0.0;
     if (d.includes('REMESSA CD') || d.includes('TRANSFERENCIA')) return 0.0;
 
-    // Inferência caso não tenha família cadastrada
-    if (!f || f === 'NONE') {
+    // Inferência caso não tenha família cadastrada ou esteja como DIVERSOS
+    if (!f || f === 'NONE' || f === 'DIVERSOS') {
         if (d.includes('CAMISA') || d.includes('BABY LOOK')) f = 'CAMISAS';
         else if (d.includes('TERCO') || d.includes('ROSARIO')) f = 'TERCO';
         else if (d.includes('CADERNETA') || d.includes('BLOCO')) f = 'PAPELARIA';
         else if (d.includes('BIBLIA')) f = 'BIBLIAS';
-        else f = 'EDICOES';
+        else f = 'ESPIRITUALIDADE - EDICOES';
+        if (!it.familia || it.familia === 'DIVERSOS') {
+            it.familia = f;
+        }
     }
 
     // 2. Grupo Especial (50% por Volume)
@@ -5629,6 +5632,7 @@ function inicializarModuloConsignacao() {
     const selCond = document.getElementById('select-condicao-comercial-consignacao');
     const wrapFixo = document.getElementById('wrapper-desconto-fixo');
     const inputFixo = document.getElementById('input-desconto-consignacao-global');
+    const btnRecalcDesc = document.getElementById('btn-recalcular-descontos-consignacao');
 
     if (selCond && !selCond._init) {
         selCond._init = true;
@@ -5638,6 +5642,20 @@ function inicializarModuloConsignacao() {
             stateConsignacao.itensUnificados.forEach(it => delete it._descontoManual);
             recalcularTotaisConsignacao();
             renderizarTabelaConsignacao();
+            salvarRascunhoConsignacaoLocal();
+        });
+    }
+
+    if (btnRecalcDesc && !btnRecalcDesc._init) {
+        btnRecalcDesc._init = true;
+        btnRecalcDesc.addEventListener('click', () => {
+            stateConsignacao.itensUnificados.forEach(it => {
+                delete it._descontoManual;
+            });
+            recalcularTotaisConsignacao();
+            renderizarTabelaConsignacao();
+            salvarRascunhoConsignacaoLocal();
+            alert('Descontos recalculados com sucesso com base nas famílias oficiais de cada produto e na condição comercial selecionada!');
         });
     }
 
@@ -6112,6 +6130,31 @@ function recalcularTotaisConsignacao() {
         }
     }
 
+    const badgeVol = document.getElementById('badge-status-volume-consignacao');
+    if (badgeVol) {
+        if (cond === 'FIXO') {
+            badgeVol.style.background = 'rgba(148, 163, 184, 0.15)';
+            badgeVol.style.color = '#cbd5e1';
+            badgeVol.style.borderColor = 'rgba(148, 163, 184, 0.3)';
+            badgeVol.innerHTML = '<i class="fa-solid fa-calculator"></i> Desconto Fixo Manual Ativo';
+        } else if (stateConsignacao.atingeVolume5000) {
+            badgeVol.style.background = 'rgba(16, 185, 129, 0.2)';
+            badgeVol.style.color = '#34d399';
+            badgeVol.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+            badgeVol.innerHTML = '<i class="fa-solid fa-rocket"></i> Volume &gt; R$ 5.000 Atingido! (50% Liberado no Grupo Edições)';
+        } else if (cond === 'A_PRAZO') {
+            badgeVol.style.background = 'rgba(234, 179, 8, 0.15)';
+            badgeVol.style.color = '#fbbf24';
+            badgeVol.style.borderColor = 'rgba(234, 179, 8, 0.3)';
+            badgeVol.innerHTML = '<i class="fa-solid fa-calendar"></i> Condição A Prazo (35% Edições / 20% Camisas)';
+        } else {
+            badgeVol.style.background = 'rgba(56, 189, 248, 0.15)';
+            badgeVol.style.color = '#38bdf8';
+            badgeVol.style.borderColor = 'rgba(56, 189, 248, 0.3)';
+            badgeVol.innerHTML = '<i class="fa-solid fa-info-circle"></i> À Vista Normal (40% Edições — corte de volume é R$ 5.000)';
+        }
+    }
+
     stateConsignacao.totalEnviado = totEnv;
     stateConsignacao.totalRetorno = totRet;
     stateConsignacao.totalVendido = totVend;
@@ -6498,26 +6541,49 @@ async function carregarAcertoSalvo(acertoId) {
         stateConsignacao.remessasSelecionadas = acerto.remessas_unificadas || [];
         stateConsignacao.descontoPadraoPct = parseFloat(acerto.desconto_padrao_pct) || 30.0;
         stateConsignacao.statusAcerto = acerto.status;
+        stateConsignacao.condicaoComercial = acerto.condicao_comercial || 'A_VISTA_AUTO';
 
-        // Normalização completa dos itens para garantir reatividade e cálculos corretos
+        const selCond = document.getElementById('select-condicao-comercial-consignacao');
+        if (selCond) selCond.value = stateConsignacao.condicaoComercial;
+
+        // Normalização completa dos itens com enriquecimento de Família do catálogo
         stateConsignacao.itensUnificados = (acerto.itens || []).map(it => {
+            const sku = String(it.sku || '').trim();
+            const ncod = parseInt(it.codigo_produto_omie || it.codigo_produto || 0);
+
+            // Tenta associar com o catálogo para puxar a Família Oficial
+            let fam = it.familia || '';
+            const pCat = (state.produtos || []).find(p => 
+                String(p.sku || '').trim() === sku || 
+                String(p.codigo || '').trim() === sku || 
+                (ncod && p.id_produto == ncod)
+            );
+            if (!fam || fam === 'DIVERSOS') {
+                if (pCat && pCat.familia) fam = pCat.familia;
+            }
+
             let remsOrig = it.remessas_origem || {};
             if (typeof remsOrig === 'string') {
                 try { remsOrig = JSON.parse(remsOrig); } catch(e) { remsOrig = {}; }
             }
             return {
-                sku: it.sku || '',
-                codigo_produto: it.codigo_produto_omie || it.codigo_produto || 0,
-                descricao: it.descricao || '',
+                sku: sku,
+                codigo_produto: ncod,
+                descricao: it.descricao || (pCat ? pCat.nome : ''),
+                familia: fam,
                 qtd_enviada: parseInt(it.qtd_enviada) || 0,
                 qtd_retorno: parseInt(it.qtd_retorno) || 0,
                 qtd_vendida: parseInt(it.qtd_vendida) || 0,
-                preco_unitario: parseFloat(it.preco_unitario) || 0.0,
-                desconto_pct: parseFloat(it.desconto_pct) || 30.0,
+                preco_unitario: parseFloat(it.preco_unitario) || (pCat ? pCat.valor_unitario : 0.0),
+                desconto_pct: parseFloat(it.desconto_pct) || 0.0,
                 valor_total_liquido: parseFloat(it.valor_total_liquido) || 0.0,
                 remessas_origem: remsOrig
             };
         });
+
+        // Aplica a política comercial de descontos por família e recalcula totais
+        recalcularTotaisConsignacao();
+        renderizarTabelaConsignacao();
 
         // Alternar visualização para a Mesa de Conferência
         const pEtapa1 = document.getElementById('painel-consignacao-etapa1');

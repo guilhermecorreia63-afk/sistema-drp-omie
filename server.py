@@ -2381,7 +2381,7 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             ac_id = query.get('id', ['0'])[0].strip()
             from services.consignacao_service import ConsignacaoService
             service = ConsignacaoService()
-            acerto = service.obter_acerto(int(ac_id) if ac_id.isdigit() else 0)
+            acerto = service.obter_acerto(ac_id)
             self._send_json({"success": True, "acerto": acerto})
         except Exception as e:
             print(f"[API SERVER] Erro em consignacao_acerto_obter: {e}")

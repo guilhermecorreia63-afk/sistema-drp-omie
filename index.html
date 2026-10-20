@@ -1212,17 +1212,10 @@
                                 <h4 style="color: #38bdf8; margin-bottom: 2px;" id="lbl-cliente-selecionado-nome">Cliente Selecionado</h4>
                                 <span style="font-size: 0.8rem; color: var(--text-muted);" id="lbl-cliente-selecionado-doc">CNPJ: -</span>
                             </div>
-                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                                <label style="font-size: 0.85rem; color: #cbd5e1;"><i class="fa-solid fa-tags" style="color: #38bdf8;"></i> Política de Descontos Comercial:</label>
-                                <select id="select-condicao-comercial-consignacao" class="form-control inline" style="padding: 5px 10px; font-weight: 600; background: #0f172a; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; cursor: pointer;">
-                                    <option value="A_VISTA_AUTO" selected>À Vista (Volume Auto: 50% Edições se &gt; R$ 5.000 / 40% se menor)</option>
-                                    <option value="A_PRAZO">A Prazo (35% Edições / 30% Bíblias / 20% Camisas / 25% Papelaria)</option>
-                                    <option value="FIXO">Desconto Fixo Manual (%)</option>
-                                </select>
-                                <div id="wrapper-desconto-fixo" style="display: none; align-items: center; gap: 4px;">
-                                    <input type="number" id="input-desconto-consignacao-global" class="form-control inline" value="30" min="0" max="100" style="width: 60px; text-align: center; font-weight: 700;">
-                                    <span style="font-weight: 700; color: #38bdf8;">%</span>
-                                </div>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 0.82rem; padding: 4px 10px; border: 1px solid rgba(56, 189, 248, 0.3);">
+                                    <i class="fa-solid fa-tags"></i> Política Comercial por Família Ativa
+                                </span>
                             </div>
                         </div>
 
@@ -1257,6 +1250,32 @@
                             </button>
                             <button id="btn-zerar-retorno" class="btn btn-sm btn-secondary" title="Zera todo o retorno (100% vendido)">
                                 <i class="fa-solid fa-rotate-left"></i> Zerar Retornos
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Barra de Política Comercial & Condição de Pagamento (Mesa de Conferência) -->
+                    <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 12px 18px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <label style="font-size: 0.9rem; font-weight: 700; color: #f8fafc;">
+                                <i class="fa-solid fa-hand-holding-dollar" style="color: #38bdf8;"></i> Forma de Pagamento / Condição:
+                            </label>
+                            <select id="select-condicao-comercial-consignacao" class="form-control inline" style="padding: 6px 12px; font-weight: 700; background: #0f172a; color: #38bdf8; border: 1px solid #38bdf8; border-radius: 6px; cursor: pointer; font-size: 0.88rem;">
+                                <option value="A_VISTA_AUTO" selected>À Vista (Volume Auto: 50% Edições se &gt; R$ 5.000 / 40% se menor)</option>
+                                <option value="A_PRAZO">A Prazo (35% Edições / 30% Bíblias / 20% Camisas / 25% Papelaria)</option>
+                                <option value="FIXO">Desconto Fixo Manual (%)</option>
+                            </select>
+                            <div id="wrapper-desconto-fixo" style="display: none; align-items: center; gap: 4px;">
+                                <input type="number" id="input-desconto-consignacao-global" class="form-control inline" value="30" min="0" max="100" style="width: 65px; text-align: center; font-weight: 700;">
+                                <span style="font-weight: 700; color: #38bdf8;">%</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span id="badge-status-volume-consignacao" class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 0.8rem; padding: 6px 12px; border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px;">
+                                <i class="fa-solid fa-chart-line"></i> Simulação Comercial Ativa
+                            </span>
+                            <button id="btn-recalcular-descontos-consignacao" class="btn btn-sm btn-secondary" style="font-weight: 600;" title="Recalcula todos os descontos dos produtos conforme a política oficial de famílias">
+                                <i class="fa-solid fa-rotate"></i> Recalcular Descontos
                             </button>
                         </div>
                     </div>

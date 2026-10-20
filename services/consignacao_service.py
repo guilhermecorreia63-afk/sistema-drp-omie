@@ -267,6 +267,7 @@ class ConsignacaoService:
                 sku = str(p.get('cCodItInt') or p.get('cCodigo') or '').strip()
                 desc = p.get('cDescricao') or ''
                 qtd = int(p.get('nQtde') or 0)
+                val_unit = float(p.get('nValUnit') or 0.0)
                 fam = ""
                 if ncod in cache['by_id']:
                     prod_info = cache['by_id'][ncod]
@@ -437,15 +438,18 @@ class ConsignacaoService:
             print(f"[CONSIGNACAO] Erro ao listar acertos: {e}")
             return []
 
-    def obter_acerto(self, acerto_id: int) -> Dict[str, Any]:
+    def obter_acerto(self, acerto_id_ou_cod: Any) -> Dict[str, Any]:
         """Obtém um acerto completo e seus itens do Turso DB."""
-        sql = "SELECT * FROM consignacao_acertos WHERE id = :id"
-        df = db.executar_query(sql, {"id": acerto_id})
+        val_id = int(acerto_id_ou_cod) if str(acerto_id_ou_cod).isdigit() else 0
+        cod_str = str(acerto_id_ou_cod).strip()
+        sql = "SELECT * FROM consignacao_acertos WHERE id = :id_val OR codigo_acerto = :cod_val"
+        df = db.executar_query(sql, {"id_val": val_id, "cod_val": cod_str})
         rows = _df_to_records(df)
         if not rows:
             return {}
         
         acerto = rows[0]
+        rec_id = acerto.get("id")
         if acerto.get("remessas_unificadas") and isinstance(acerto["remessas_unificadas"], str):
             try:
                 acerto["remessas_unificadas"] = json.loads(acerto["remessas_unificadas"])
@@ -453,8 +457,9 @@ class ConsignacaoService:
                 pass
 
         sql_itens = "SELECT * FROM consignacao_acerto_itens WHERE acerto_id = :id ORDER BY descricao ASC"
-        df_itens = db.executar_query(sql_itens, {"id": acerto_id})
+        df_itens = db.executar_query(sql_itens, {"id": rec_id})
         rows_itens = _df_to_records(df_itens)
+        cache = self._carregar_produtos_cache()
         itens = []
         for it_dict in rows_itens:
             if it_dict.get("remessas_origem") and isinstance(it_dict["remessas_origem"], str):
@@ -462,6 +467,16 @@ class ConsignacaoService:
                     it_dict["remessas_origem"] = json.loads(it_dict["remessas_origem"])
                 except Exception:
                     pass
+
+            sku = str(it_dict.get("sku") or "").strip()
+            ncod = int(it_dict.get("codigo_produto_omie") or 0)
+            fam = it_dict.get("familia") or ""
+            if not fam:
+                if ncod in cache["by_id"]:
+                    fam = cache["by_id"][ncod].get("familia") or ""
+                elif sku in cache.get("by_sku", {}):
+                    fam = cache["by_sku"][sku].get("familia") or ""
+            it_dict["familia"] = fam
             itens.append(it_dict)
 
         acerto["itens"] = itens

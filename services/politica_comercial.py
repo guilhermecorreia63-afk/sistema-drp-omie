@@ -47,7 +47,7 @@ def obter_desconto_item(sku: str, descricao: str, familia: str, condicao: str = 
         return 0.0
 
     # Se a família não estiver preenchida, inferir por palavras-chave na descrição
-    if not f or f == 'NONE':
+    if not f or f == 'NONE' or f == 'DIVERSOS':
         if 'CAMISA' in d or 'BABY LOOK' in d:
             f = 'CAMISAS'
         elif 'TERCO' in d or 'ROSARIO' in d:
