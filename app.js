@@ -168,6 +168,12 @@ window.navegarParaAba = function(tabId) {
         document.getElementById('page-heading').innerText = '📦 Módulo 2 — Gestão de Combos & Kits Omie (SKU 000223)';
         document.getElementById('page-subheading').innerHTML = 'Monitoramento de componentes e automação de redefinição de valor de venda do <strong>Kit Assinatura Pão da Vida (SKU 000223)</strong>';
         carregarDetalhesCombo();
+    } else if (tabId === 'tab-assinaturas') {
+        document.getElementById('page-heading').innerText = '📖 Módulo 3 — Assinaturas Pão da Vida (Liturgia Diária)';
+        document.getElementById('page-subheading').innerHTML = 'Lote Trimestral Chegado: <strong>Janeiro, Fevereiro e Março/2027</strong> | Elegibilidade, consolidados, etiquetas e remessas Omie.';
+        if (typeof carregarAssinaturasPDV === 'function') {
+            carregarAssinaturasPDV();
+        }
     }
 };
 
@@ -730,10 +736,13 @@ function getProdutosFiltrados(modo = 'cd') {
         const skuNorm = String(p.sku || '').trim();
         const skuPad = skuNorm.padStart(6, '0');
         const isDestaque = state.destaqueDRP && (state.destaqueDRP.has(skuNorm) || state.destaqueDRP.has(skuPad));
+        const temBuscaAtiva = Boolean(state.termoBusca || state.colFilterProdCD || state.colFilterProdMatriz);
+        const nomeUpper = String(p.nome || '').toUpperCase();
+        const ehSazonalOuLiturgiaComEstoque = (fam.includes('SAZONA') || fam.includes('LITURGIA') || nomeUpper.includes('NATAL') || nomeUpper.includes('LITURGIA')) && (p.matriz > 0 || estEfetivoCD > 0);
 
-        // Regra 1: Produtos SEM movimentação no período NÃO entram na reposição (somente entram se tiverem estoque > 0 ou forem destaque)
-        if (vendas <= 0 && estEfetivoCD <= 0 && modo === 'cd' && !isDestaque) return false;
-        if (vendas <= 0 && p.matriz <= 0 && modo === 'matriz' && !isDestaque) return false;
+        // Regra 1: Produtos SEM movimentação no período NÃO entram na reposição (somente entram se tiverem estoque > 0, forem destaque, busca ativa ou lançamentos sazonais/liturgias com estoque na matriz)
+        if (vendas <= 0 && estEfetivoCD <= 0 && modo === 'cd' && !isDestaque && !temBuscaAtiva && !ehSazonalOuLiturgiaComEstoque) return false;
+        if (vendas <= 0 && p.matriz <= 0 && modo === 'matriz' && !isDestaque && !temBuscaAtiva && !ehSazonalOuLiturgiaComEstoque) return false;
 
         // Regra 2: Descarte de ruído para Camisas e Ícones com vendas inexpressivas (<= 2 un em 60/90d)
         if ((fam.includes('CAMISA') || fam.includes('ICONE')) && vendas <= 2 && state.periodoDias >= 60 && !isDestaque) {
@@ -6339,6 +6348,429 @@ window.confirmarIntegracaoOmieConsignacao = confirmarIntegracaoOmieConsignacao;
 window.carregarHistoricoAcertosConsignacao = carregarHistoricoAcertosConsignacao;
 window.carregarAcertoSalvo = carregarAcertoSalvo;
 window.atualizarStepperConsignacao = atualizarStepperConsignacao;
+
+// =========================================================================
+// MÓDULO 3: GESTÃO DE ASSINATURAS PÃO DA VIDA (LITURGIA DIÁRIA)
+// =========================================================================
+window.dadosAssinaturas = null;
+window.grupoAtivoAssinaturas = 'paroquias_ce';
+window.paroquiaSelecionadaParaRemessa = null;
+
+async function carregarAssinaturasPDV(forcarDownload = false) {
+    const badgeSync = document.getElementById('ass-status-badge');
+    const btnSync = document.getElementById('btn-sync-assinaturas');
+    try {
+        if (btnSync) {
+            btnSync.disabled = true;
+            btnSync.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sincronizando Planilha...';
+        }
+        if (badgeSync) {
+            badgeSync.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="color: #38bdf8;"></i> Lendo planilha e calculando ciclo de 12 exemplares...';
+        }
+
+        const endpoint = forcarDownload ? '/api/assinaturas/sincronizar' : '/api/assinaturas/dados';
+        const method = forcarDownload ? 'POST' : 'GET';
+        const resp = await fetch(endpoint, { method });
+        const dados = await resp.json();
+
+        if (!dados.sucesso) {
+            throw new Error(dados.erro || 'Falha ao processar planilha de assinaturas.');
+        }
+
+        window.dadosAssinaturas = dados;
+
+        // Atualizar Métricas Consolidadas
+        const cons = dados.consolidado_geral || {};
+        document.getElementById('metric-ass-jan').innerText = (cons.jan27 || 0).toLocaleString('pt-BR');
+        document.getElementById('metric-ass-fev').innerText = (cons.fev27 || 0).toLocaleString('pt-BR');
+        document.getElementById('metric-ass-mar').innerText = (cons.mar27 || 0).toLocaleString('pt-BR');
+        document.getElementById('metric-ass-total').innerText = (cons.total_pecas || 0).toLocaleString('pt-BR') + ' un';
+        document.getElementById('metric-ass-peso').innerText = (cons.total_peso_kg || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + ' kg';
+        document.getElementById('metric-ass-clientes').innerText = (cons.total_clientes_elegiveis || 0).toLocaleString('pt-BR');
+
+        // Atualizar Badges de Contagem dos Grupos
+        const grps = dados.grupos || {};
+        for (const [gid, g] of Object.entries(grps)) {
+            const b = document.getElementById(`badge-${gid}`);
+            if (b) {
+                b.innerText = g.total_clientes || 0;
+            }
+        }
+
+        const tsSync = document.getElementById('ass-ultima-sync');
+        if (tsSync) tsSync.innerText = dados.ultima_atualizacao || new Date().toLocaleTimeString();
+
+        if (badgeSync) {
+            badgeSync.innerHTML = '<i class="fa-solid fa-file-excel" style="color: #10b981;"></i> Google Sheets Conectado | Atualizado: <strong>' + (dados.ultima_atualizacao || 'Agora') + '</strong>';
+        }
+
+        selecionarGrupoAssinaturas(window.grupoAtivoAssinaturas || 'paroquias_ce');
+
+    } catch (e) {
+        console.error('[ASSINATURAS] Erro ao carregar dados:', e);
+        if (badgeSync) {
+            badgeSync.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color: #ef4444;"></i> Erro ao carregar: ' + e.message;
+        }
+        alert('Erro ao carregar assinaturas: ' + e.message);
+    } finally {
+        if (btnSync) {
+            btnSync.disabled = false;
+            btnSync.innerHTML = '<i class="fa-solid fa-rotate"></i> Sincronizar Google Sheets ao Vivo 🔄';
+        }
+    }
+}
+
+async function sincronizarAssinaturasGoogleSheets() {
+    await carregarAssinaturasPDV(true);
+}
+
+function selecionarGrupoAssinaturas(grupoId) {
+    window.grupoAtivoAssinaturas = grupoId;
+
+    // Atualizar Abas Visuais
+    document.querySelectorAll('.tab-grupo-btn').forEach(btn => {
+        if (btn.dataset.grupo === grupoId) {
+            btn.classList.add('active');
+            btn.style.background = 'rgba(2, 132, 199, 0.25)';
+            btn.style.borderColor = '#38bdf8';
+            btn.style.color = '#38bdf8';
+        } else {
+            btn.classList.remove('active');
+            btn.style.background = '#1e293b';
+            btn.style.borderColor = '#334155';
+            btn.style.color = '#94a3b8';
+        }
+    });
+
+    if (!window.dadosAssinaturas || !window.dadosAssinaturas.grupos) return;
+    const grupo = window.dadosAssinaturas.grupos[grupoId];
+    if (!grupo) return;
+
+    // Título e Descrição com Frete Fixo de Fortaleza destacado
+    let freteInfoBadge = '';
+    if (grupo.custo_total_frete) {
+        freteInfoBadge = ` | <span style="color:#10b981; font-weight:bold;">Frete Fixo Roberto: R$ ${grupo.custo_total_frete.toFixed(2)} (${grupo.total_clientes} entregas x R$ 4,50)</span>`;
+    }
+    document.getElementById('grupo-titulo').innerHTML = grupo.titulo + ` <span style="font-size:0.85rem; font-weight:normal; color:#cbd5e1;">(${grupo.total_clientes} clientes | ${grupo.total_pecas} exemplares | ${grupo.total_peso_kg} kg${freteInfoBadge})</span>`;
+    document.getElementById('grupo-descricao').innerText = grupo.descricao;
+
+    // Botão de Gerar Baixa (visível somente nos grupos de clientes finais)
+    const btnBaixa = document.getElementById('btn-gerar-baixa-grupo');
+    if (grupoId.startsWith('finais_')) {
+        btnBaixa.style.display = 'inline-flex';
+        btnBaixa.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Gerar Baixa no Omie (${grupo.total_pecas} un) 🚀`;
+    } else {
+        btnBaixa.style.display = 'none';
+    }
+
+    // Limpar campo de filtro e renderizar tabela
+    const inpFiltro = document.getElementById('input-filtro-assinaturas');
+    if (inpFiltro) inpFiltro.value = '';
+
+    renderizarTabelaAssinaturas(grupo.clientes || []);
+}
+
+function renderizarTabelaAssinaturas(clientes) {
+    const tbody = document.getElementById('tbody-assinaturas-pdv');
+    const contagem = document.getElementById('ass-contagem-filtrados');
+    if (!tbody) return;
+
+    if (!clientes || clientes.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="14" style="text-align: center; color: var(--text-muted); padding: 30px;">Nenhum cliente elegível encontrado para este grupo com o filtro atual.</td></tr>';
+        if (contagem) contagem.innerText = 'Exibindo 0 clientes';
+        return;
+    }
+
+    if (contagem) contagem.innerText = `Exibindo ${clientes.length} cliente${clientes.length > 1 ? 's' : ''}`;
+
+    let html = '';
+    clientes.forEach(c => {
+        const checkJan = c.jan27 ? `<span style="color:#10b981; font-weight:bold;"><i class="fa-solid fa-check"></i> ${c.qtd_jan27}</span>` : '<span style="color:#64748b;">-</span>';
+        const checkFev = c.fev27 ? `<span style="color:#10b981; font-weight:bold;"><i class="fa-solid fa-check"></i> ${c.qtd_fev27}</span>` : '<span style="color:#64748b;">-</span>';
+        const checkMar = c.mar27 ? `<span style="color:#10b981; font-weight:bold;"><i class="fa-solid fa-check"></i> ${c.qtd_mar27}</span>` : '<span style="color:#64748b;">-</span>';
+
+        // Ação / Logística
+        let acaoCol = '';
+        if (c.quantidade_assinaturas >= 20) {
+            // Paróquia / Grande volume
+            const freteLabel = c.frete_previsto ? `R$ ${c.frete_previsto.toFixed(2)}` : (c.frete_obs || 'A calcular');
+            acaoCol = `
+                <button class="btn btn-primary" onclick="abrirModalRemessaParoquia(${c.linha_planilha})" style="padding: 4px 10px; font-size: 0.75rem; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border:none;" title="Emitir remessa padrão no Omie para esta paróquia">
+                    <i class="fa-solid fa-paper-plane"></i> Emitir Omie
+                </button>
+                <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 3px;">Frete: ${freteLabel}</div>
+            `;
+        } else {
+            // Cliente Final
+            const infoLog = c.entregador ? `🛵 Roberto (R$ ${(c.custo_entrega || 0).toFixed(2)})` : (c.tipo_envio || 'Correios');
+            acaoCol = `<span style="font-size: 0.75rem; color: #cbd5e1; background: rgba(255,255,255,0.06); padding: 3px 8px; border-radius: 4px; display: inline-block;">${infoLog}</span>`;
+        }
+
+        const badgeRen = c.is_renovacao ? '<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; font-size: 0.65rem; margin-left: 5px;">Renovação</span>' : '';
+        const badgeObs = c.observacao_especial ? `<span class="badge" style="background: rgba(234, 179, 8, 0.2); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.4); font-size: 0.65rem; margin-left: 5px;" title="${c.observacao_especial}">⚠️ Enviar 1 und Dez/26 junto</span>` : '';
+        const totExemplaresHtml = c.qtd_dez26_extra ? `<span title="3 exemplares de 2027 + 1 de Dezembro/2026">${c.total_exemplares_envio} <small style="color:#facc15; font-size:0.7rem;">(+1 Dez)</small></span>` : c.total_exemplares;
+
+        html += `
+            <tr style="border-bottom: 1px solid #1e293b;">
+                <td style="color:#64748b; font-size:0.75rem;">${c.linha_planilha}</td>
+                <td style="font-size:0.75rem; color:#94a3b8;">${c.codigo_cliente || '-'}</td>
+                <td>
+                    <div style="font-weight: 600; color: #f8fafc;">${c.cliente} ${badgeRen} ${badgeObs}</div>
+                    <div style="font-size: 0.72rem; color: #64748b;">Início/Base: ${c.data_registro_base}</div>
+                </td>
+                <td style="font-size:0.75rem; color:#94a3b8; font-family: monospace;">${c.cpf_cnpj || '-'}</td>
+                <td style="font-size:0.8rem; color:#cbd5e1;">${c.rua}, ${c.numero} ${c.complemento ? '(' + c.complemento + ')' : ''} - ${c.bairro}</td>
+                <td style="font-size:0.8rem; color:#cbd5e1;">${c.cidade} / <strong>${c.uf}</strong></td>
+                <td style="font-size:0.8rem; font-family: monospace; color:#38bdf8;">${c.cep}</td>
+                <td style="text-align: center; font-weight: bold; color: #f8fafc;">${c.quantidade_assinaturas}</td>
+                <td style="text-align: center;">${checkJan}</td>
+                <td style="text-align: center;">${checkFev}</td>
+                <td style="text-align: center;">${checkMar}</td>
+                <td style="text-align: center; font-weight: 700; color: #10b981;">${totExemplaresHtml}</td>
+                <td style="text-align: center; font-size: 0.78rem; color: #94a3b8;">${c.peso_kg.toFixed(2)} kg</td>
+                <td style="text-align: center;">${acaoCol}</td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+}
+
+function filtrarTabelaAssinaturas() {
+    if (!window.dadosAssinaturas || !window.dadosAssinaturas.grupos) return;
+    const grupo = window.dadosAssinaturas.grupos[window.grupoAtivoAssinaturas];
+    if (!grupo) return;
+
+    const termo = (document.getElementById('input-filtro-assinaturas').value || '').trim().toLowerCase();
+    if (!termo) {
+        renderizarTabelaAssinaturas(grupo.clientes || []);
+        return;
+    }
+
+    const filtrados = (grupo.clientes || []).filter(c => {
+        return (c.cliente && c.cliente.toLowerCase().includes(termo)) ||
+               (c.cpf_cnpj && c.cpf_cnpj.toLowerCase().includes(termo)) ||
+               (c.cidade && c.cidade.toLowerCase().includes(termo)) ||
+               (c.uf && c.uf.toLowerCase().includes(termo)) ||
+               (c.cep && c.cep.toLowerCase().includes(termo)) ||
+               (c.rua && c.rua.toLowerCase().includes(termo)) ||
+               (String(c.codigo_cliente).includes(termo)) ||
+               (String(c.linha_planilha).includes(termo));
+    });
+
+    renderizarTabelaAssinaturas(filtrados);
+}
+
+function exportarEtiquetasGrupoAtivo() {
+    const gid = window.grupoAtivoAssinaturas || 'paroquias_ce';
+    window.location.href = `/api/assinaturas/exportar_etiquetas?grupo=${gid}`;
+}
+
+function baixarPdfRelatorio(grupoId) {
+    const gid = grupoId || 'todos';
+    window.open(`/api/assinaturas/relatorio_pdf?grupo=${gid}`, '_blank');
+}
+
+function baixarPdfRelatorioAtivo() {
+    const gid = window.grupoAtivoAssinaturas || 'finais_fortaleza';
+    baixarPdfRelatorio(gid);
+}
+
+function exportarArquivoCorreios(grupoId, formato) {
+    const gid = grupoId || 'todos_correios';
+    const fmt = formato || 'csv';
+    window.location.href = `/api/assinaturas/exportar_correios?grupo=${gid}&formato=${fmt}`;
+}
+
+function exportarArquivoCorreiosAtivo(formato) {
+    const gid = window.grupoAtivoAssinaturas || 'finais_modico_brasil';
+    exportarArquivoCorreios(gid, formato);
+}
+
+// ==========================================
+// MODAL BAIXA DE ESTOQUE (CLIENTES FINAIS)
+// ==========================================
+function abrirModalConfirmarBaixa() {
+    const gid = window.grupoAtivoAssinaturas;
+    if (!window.dadosAssinaturas || !window.dadosAssinaturas.grupos) return;
+    const grupo = window.dadosAssinaturas.grupos[gid];
+    if (!grupo) return;
+
+    document.getElementById('modal-baixa-grupo-nome').innerText = grupo.titulo;
+    
+    const obsMap = {
+        'finais_fortaleza': 'Baixa de Liturgias enviadas a clientes finais Fortaleza',
+        'finais_modico_brasil': 'Baixa de Liturgias enviadas a clientes finais Brasil - Impresso Módico',
+        'finais_pac_norte': 'Baixa de Liturgias enviadas a clientes finais Brasil - PAC Norte'
+    };
+    document.getElementById('modal-baixa-obs-texto').innerText = 'Observação: "' + (obsMap[gid] || `Baixa de Liturgias enviadas a ${grupo.titulo}`) + '"';
+
+    document.getElementById('modal-baixa-qtd-jan').innerText = (grupo.jan27 || 0) + ' un';
+    document.getElementById('modal-baixa-qtd-fev').innerText = (grupo.fev27 || 0) + ' un';
+    document.getElementById('modal-baixa-qtd-mar').innerText = (grupo.mar27 || 0) + ' un';
+    document.getElementById('modal-baixa-qtd-total').innerText = (grupo.total_pecas || 0) + ' un (' + (grupo.total_peso_kg || 0) + ' kg)';
+
+    const stDiv = document.getElementById('modal-baixa-status');
+    stDiv.style.display = 'none';
+
+    const btn = document.getElementById('btn-confirmar-disparo-baixa');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> Confirmar & Transmitir ao Omie';
+
+    document.getElementById('modal-confirmar-baixa-assinaturas').classList.add('active');
+}
+
+function fecharModalBaixaAssinaturas() {
+    document.getElementById('modal-confirmar-baixa-assinaturas').classList.remove('active');
+}
+
+async function executarDisparoBaixaOmie() {
+    const gid = window.grupoAtivoAssinaturas;
+    const btn = document.getElementById('btn-confirmar-disparo-baixa');
+    const stDiv = document.getElementById('modal-baixa-status');
+
+    try {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Transmitindo Remessa de Baixa ao Omie ERP...';
+        stDiv.style.display = 'block';
+        stDiv.style.background = 'rgba(56, 189, 248, 0.15)';
+        stDiv.style.color = '#38bdf8';
+        stDiv.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Comunicando com a API Omie (IncluirRemessa)...';
+
+        const resp = await fetch('/api/assinaturas/gerar_remessa_baixa', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ grupo_id: gid })
+        });
+        const res = await resp.json();
+
+        if (res.sucesso) {
+            stDiv.style.background = 'rgba(16, 185, 129, 0.2)';
+            stDiv.style.color = '#10b981';
+            stDiv.innerHTML = `
+                <div style="font-weight: bold; font-size: 1rem;"><i class="fa-solid fa-circle-check"></i> Remessa de Baixa nº ${res.numero_remessa} gerada com sucesso!</div>
+                <div style="margin-top: 4px; font-size: 0.85rem;">Código Omie: ${res.codigo_remessa} | Total de Peças Baixadas: ${res.total_pecas} un</div>
+                <div style="margin-top: 4px; color: #94a3b8; font-size: 0.8rem;">Obs: ${res.observacao}</div>
+            `;
+            btn.innerHTML = '<i class="fa-solid fa-check-double"></i> Remessa Transmitida com Sucesso!';
+        } else {
+            throw new Error(res.erro || 'Falha ao incluir remessa no Omie.');
+        }
+    } catch (e) {
+        stDiv.style.background = 'rgba(239, 68, 68, 0.2)';
+        stDiv.style.color = '#ef4444';
+        stDiv.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <strong>Erro no Omie:</strong> ${e.message}`;
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-rotate-left"></i> Tentar Novamente';
+    }
+}
+
+// ==========================================
+// MODAL REMESSA DE PARÓQUIA INDIVIDUAL
+// ==========================================
+function abrirModalRemessaParoquia(linhaPlanilha) {
+    if (!window.dadosAssinaturas || !window.dadosAssinaturas.grupos) return;
+    const gid = window.grupoAtivoAssinaturas;
+    const grupo = window.dadosAssinaturas.grupos[gid];
+    if (!grupo) return;
+
+    const cliente = (grupo.clientes || []).find(c => c.linha_planilha === linhaPlanilha);
+    if (!cliente) return;
+
+    window.paroquiaSelecionadaParaRemessa = cliente;
+
+    document.getElementById('modal-paroquia-nome').innerText = cliente.cliente;
+    document.getElementById('modal-paroquia-local').innerText = `${cliente.cidade} / ${cliente.uf} | CEP: ${cliente.cep} | CPF/CNPJ: ${cliente.cpf_cnpj || 'Não inf.'}`;
+    document.getElementById('modal-paroquia-cfop').value = cliente.cfop || (cliente.uf === 'CE' ? '5949' : '6949');
+    document.getElementById('modal-paroquia-transp').value = cliente.transportadora || 'Roberto Souza de Oliveira';
+
+    const inpFrete = document.getElementById('modal-paroquia-frete');
+    inpFrete.value = cliente.frete_previsto ? cliente.frete_previsto.toFixed(2) : '';
+    document.getElementById('modal-paroquia-frete-obs').innerText = cliente.frete_obs || 'Frete calculado conforme tabela do Roberto Souza ou a negociar.';
+
+    document.getElementById('modal-paroquia-qtd-jan').innerText = cliente.qtd_jan27 + ' un';
+    document.getElementById('modal-paroquia-qtd-fev').innerText = cliente.qtd_fev27 + ' un';
+    document.getElementById('modal-paroquia-qtd-mar').innerText = cliente.qtd_mar27 + ' un';
+
+    const stDiv = document.getElementById('modal-paroquia-status');
+    stDiv.style.display = 'none';
+
+    const btn = document.getElementById('btn-confirmar-disparo-paroquia');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Emitir Remessa no Omie';
+
+    document.getElementById('modal-remessa-paroquia').classList.add('active');
+}
+
+function fecharModalParoquia() {
+    document.getElementById('modal-remessa-paroquia').classList.remove('active');
+    window.paroquiaSelecionadaParaRemessa = null;
+}
+
+async function executarDisparoParoquiaOmie() {
+    const cliente = window.paroquiaSelecionadaParaRemessa;
+    if (!cliente) return;
+
+    const btn = document.getElementById('btn-confirmar-disparo-paroquia');
+    const stDiv = document.getElementById('modal-paroquia-status');
+    const freteVal = document.getElementById('modal-paroquia-frete').value;
+
+    try {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Emitindo Remessa no Omie...';
+        stDiv.style.display = 'block';
+        stDiv.style.background = 'rgba(56, 189, 248, 0.15)';
+        stDiv.style.color = '#38bdf8';
+        stDiv.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Cadastrando remessa na API Omie...';
+
+        const resp = await fetch('/api/assinaturas/gerar_remessa_paroquia', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                cliente: cliente,
+                valor_frete: freteVal ? parseFloat(freteVal) : 0
+            })
+        });
+        const res = await resp.json();
+
+        if (res.sucesso) {
+            stDiv.style.background = 'rgba(16, 185, 129, 0.2)';
+            stDiv.style.color = '#10b981';
+            stDiv.innerHTML = `
+                <div style="font-weight: bold; font-size: 1rem;"><i class="fa-solid fa-circle-check"></i> Remessa de Paróquia nº ${res.numero_remessa} emitida com sucesso!</div>
+                <div style="margin-top: 4px; font-size: 0.85rem;">Código Omie: ${res.codigo_remessa} | Cliente Omie ID: ${res.codigo_cliente_omie}</div>
+                <div style="margin-top: 4px; color: #94a3b8; font-size: 0.8rem;">CFOP: ${res.cfop} | Peças: ${res.total_pecas} un | Frete: R$ ${parseFloat(freteVal || 0).toFixed(2)}</div>
+            `;
+            btn.innerHTML = '<i class="fa-solid fa-check-double"></i> Remessa Emitida!';
+        } else {
+            throw new Error(res.erro || 'Falha ao incluir remessa no Omie.');
+        }
+    } catch (e) {
+        stDiv.style.background = 'rgba(239, 68, 68, 0.2)';
+        stDiv.style.color = '#ef4444';
+        stDiv.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <strong>Erro Omie:</strong> ${e.message}`;
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-rotate-left"></i> Tentar Novamente';
+    }
+}
+
+// Expor funções globalmente
+window.carregarAssinaturasPDV = carregarAssinaturasPDV;
+window.sincronizarAssinaturasGoogleSheets = sincronizarAssinaturasGoogleSheets;
+window.selecionarGrupoAssinaturas = selecionarGrupoAssinaturas;
+window.filtrarTabelaAssinaturas = filtrarTabelaAssinaturas;
+window.exportarEtiquetasGrupoAtivo = exportarEtiquetasGrupoAtivo;
+window.abrirModalConfirmarBaixa = abrirModalConfirmarBaixa;
+window.fecharModalBaixaAssinaturas = fecharModalBaixaAssinaturas;
+window.executarDisparoBaixaOmie = executarDisparoBaixaOmie;
+window.abrirModalRemessaParoquia = abrirModalRemessaParoquia;
+window.fecharModalParoquia = fecharModalParoquia;
+window.executarDisparoParoquiaOmie = executarDisparoParoquiaOmie;
+window.baixarPdfRelatorio = baixarPdfRelatorio;
+window.baixarPdfRelatorioAtivo = baixarPdfRelatorioAtivo;
+window.exportarArquivoCorreios = exportarArquivoCorreios;
+window.exportarArquivoCorreiosAtivo = exportarArquivoCorreiosAtivo;
+
 
 
 

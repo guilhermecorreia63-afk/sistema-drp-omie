@@ -40,14 +40,15 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
     data_hoje = datetime.now().strftime("%d/%m/%Y")
     agora_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    sync_matriz = tipo_sync in ["TUDO", "ESTOQUE_MATRIZ", "AMBOS_ESTOQUES"]
-    sync_cd = tipo_sync in ["TUDO", "ESTOQUE_CD", "AMBOS_ESTOQUES"]
+    eh_sync_leve = tipo_sync in ["ESTOQUE_LEVE", "ESTOQUE_MATRIZ_LEVE", "AMBOS_ESTOQUES_LEVE"]
+    sync_matriz = tipo_sync in ["TUDO", "ESTOQUE_MATRIZ", "AMBOS_ESTOQUES", "ESTOQUE_LEVE", "ESTOQUE_MATRIZ_LEVE", "AMBOS_ESTOQUES_LEVE"]
+    sync_cd = tipo_sync in ["TUDO", "ESTOQUE_CD", "AMBOS_ESTOQUES", "AMBOS_ESTOQUES_LEVE"]
 
     client_matriz = OmieClient("MATRIZ") if sync_matriz else None
     client_cd = OmieClient("CD") if sync_cd else None
 
-    # 1. Puxar produtos ativos do catálogo da Omie ERP (Matriz)
-    if client_matriz:
+    # 1. Puxar produtos ativos do catálogo da Omie ERP (Matriz) - Ignora se for sync leve de estoque
+    if client_matriz and not eh_sync_leve:
         try:
             prods_matriz = client_matriz.listar_paginado("geral/produtos/", "ListarProdutos", "produto_servico_cadastro", param_base={"inativo": "N"}, max_paginas=100)
             print(f"[SYNC] Matriz retornou {len(prods_matriz)} produtos ativos do Omie ERP.")
@@ -203,10 +204,10 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
         except Exception as e:
             print(f"[SYNC] Erro ao consultar estoque CD_SP em lote: {e}")
 
-    # 3. Consultar Requisições de Compra ativas no Omie ERP (PesquisarReq)
+    # 3. Consultar Requisições de Compra ativas no Omie ERP (PesquisarReq) - Ignora se for sync leve
     prods_em_compra_map = {} # sku_str ou id_prod -> {"qtd": int, "data_previsao": str, "numero_pedido": str}
 
-    if client_matriz:
+    if client_matriz and not eh_sync_leve:
         print("[SYNC] Consultando Requisições de Compra ativas no Omie (PesquisarReq)...")
         try:
             res_reqs = client_matriz.executar("produtos/requisicaocompra/", "PesquisarReq", [{"pagina": 1, "registros_por_pagina": 100}])
@@ -331,27 +332,28 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
                 except Exception:
                     pass
 
-    # 4. Mesclar Vendas usando ControleDRP antes de gerar JSON
-    try:
-        from controle_drp import ControleDRP
-        drp = ControleDRP()
-        vendas_data = drp.carregar_dados_turso()
-        vendas_by_sku = {v["sku"]: v for v in vendas_data}
-        for sku, p in produtos_by_sku.items():
-            if sku in vendas_by_sku:
-                v = vendas_by_sku[sku]
-                p["vendas_sul_sudeste_30d"] = v.get("vendas_sul_sudeste_30d", 0)
-                p["vendas_sul_sudeste_60d"] = v.get("vendas_sul_sudeste_60d", 0)
-                p["vendas_sul_sudeste_90d"] = v.get("vendas_sul_sudeste_90d", 0)
-                p["vendas_sul_sudeste_180d"] = v.get("vendas_sul_sudeste_180d", 0)
-                p["vendas_sul_sudeste_365d"] = v.get("vendas_sul_sudeste_365d", 0)
-                p["vendas_geral_30d"] = v.get("vendas_geral_30d", 0)
-                p["vendas_geral_60d"] = v.get("vendas_geral_60d", 0)
-                p["vendas_geral_90d"] = v.get("vendas_geral_90d", 0)
-                p["vendas_geral_180d"] = v.get("vendas_geral_180d", 0)
-                p["vendas_geral_365d"] = v.get("vendas_geral_365d", 0)
-    except Exception as e:
-        print(f"[SYNC] Erro ao mesclar vendas do ControleDRP: {e}")
+    # 4. Mesclar Vendas usando ControleDRP antes de gerar JSON (Pula se for sync leve de estoque)
+    if not eh_sync_leve:
+        try:
+            from controle_drp import ControleDRP
+            drp = ControleDRP()
+            vendas_data = drp.carregar_dados_turso()
+            vendas_by_sku = {v["sku"]: v for v in vendas_data}
+            for sku, p in produtos_by_sku.items():
+                if sku in vendas_by_sku:
+                    v = vendas_by_sku[sku]
+                    p["vendas_sul_sudeste_30d"] = v.get("vendas_sul_sudeste_30d", 0)
+                    p["vendas_sul_sudeste_60d"] = v.get("vendas_sul_sudeste_60d", 0)
+                    p["vendas_sul_sudeste_90d"] = v.get("vendas_sul_sudeste_90d", 0)
+                    p["vendas_sul_sudeste_180d"] = v.get("vendas_sul_sudeste_180d", 0)
+                    p["vendas_sul_sudeste_365d"] = v.get("vendas_sul_sudeste_365d", 0)
+                    p["vendas_geral_30d"] = v.get("vendas_geral_30d", 0)
+                    p["vendas_geral_60d"] = v.get("vendas_geral_60d", 0)
+                    p["vendas_geral_90d"] = v.get("vendas_geral_90d", 0)
+                    p["vendas_geral_180d"] = v.get("vendas_geral_180d", 0)
+                    p["vendas_geral_365d"] = v.get("vendas_geral_365d", 0)
+        except Exception as e:
+            print(f"[SYNC] Erro ao mesclar vendas do ControleDRP: {e}")
 
     lista_final = list(produtos_by_sku.values())
 

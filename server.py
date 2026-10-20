@@ -82,6 +82,14 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_produtos_turso_json()
         elif url_path in ['/api/sync_requisicoes', '/api/sync/requisicoes']:
             self.handle_api_sync_requisicoes()
+        elif url_path == '/api/assinaturas/dados':
+            self.handle_api_assinaturas_dados()
+        elif url_path == '/api/assinaturas/exportar_etiquetas':
+            self.handle_api_assinaturas_exportar_etiquetas()
+        elif url_path == '/api/assinaturas/exportar_correios':
+            self.handle_api_assinaturas_exportar_correios()
+        elif url_path == '/api/assinaturas/relatorio_pdf':
+            self.handle_api_assinaturas_relatorio_pdf()
         else:
             super().do_GET()
 
@@ -145,6 +153,12 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_consignacao_salvar_acerto()
         elif url_path == '/api/consignacao/integrar_omie':
             self.handle_api_consignacao_integrar_omie()
+        elif url_path == '/api/assinaturas/sincronizar':
+            self.handle_api_assinaturas_sincronizar()
+        elif url_path == '/api/assinaturas/gerar_remessa_baixa':
+            self.handle_api_assinaturas_gerar_remessa_baixa()
+        elif url_path == '/api/assinaturas/gerar_remessa_paroquia':
+            self.handle_api_assinaturas_gerar_remessa_paroquia()
         else:
             self.send_error(404, f"Endpoint não encontrado: {self.path}")
 
@@ -2342,26 +2356,193 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             print(f"[API SERVER] Erro em consignacao_integrar_omie: {e}")
             self._send_json({"success": False, "message": str(e)}, status=500)
 
+    # =========================================================================
+    # MÓDULO 3: ASSINATURAS PÃO DA VIDA (LITURGIA DIÁRIA)
+    # =========================================================================
+    def handle_api_assinaturas_dados(self):
+        try:
+            from services import assinaturas_service
+            dados = assinaturas_service.processar_assinaturas_pdv(forcar_download=False)
+            self._send_json(dados)
+        except Exception as e:
+            print(f"[API ASSINATURAS] Erro ao carregar dados: {e}")
+            self._send_json({"sucesso": False, "erro": str(e)}, status=500)
+
+    def handle_api_assinaturas_sincronizar(self):
+        try:
+            from services import assinaturas_service
+            res_sync = assinaturas_service.sincronizar_planilha()
+            dados = assinaturas_service.processar_assinaturas_pdv(forcar_download=False)
+            dados["mensagem_sync"] = res_sync.get("mensagem") or res_sync.get("aviso")
+            self._send_json(dados)
+        except Exception as e:
+            print(f"[API ASSINATURAS] Erro ao sincronizar: {e}")
+            self._send_json({"sucesso": False, "erro": str(e)}, status=500)
+
+    def handle_api_assinaturas_exportar_etiquetas(self):
+        try:
+            parsed = urlparse(self.path)
+            qs = parse_qs(parsed.query)
+            grupo = qs.get("grupo", ["paroquias_ce"])[0]
+            from services import assinaturas_service
+            excel_bytes = assinaturas_service.gerar_excel_etiquetas(grupo)
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            self.send_header('Content-Disposition', f'attachment; filename="etiquetas_{grupo}.xlsx"')
+            self.send_header('Content-Length', str(len(excel_bytes)))
+            self.end_headers()
+            self.wfile.write(excel_bytes)
+        except Exception as e:
+            print(f"[API ASSINATURAS] Erro ao exportar etiquetas: {e}")
+            self._send_json({"sucesso": False, "erro": str(e)}, status=500)
+
+    def handle_api_assinaturas_exportar_correios(self):
+        try:
+            parsed = urlparse(self.path)
+            qs = parse_qs(parsed.query)
+            grupo = qs.get("grupo", ["finais_modico_brasil"])[0]
+            formato = qs.get("formato", ["csv"])[0].lower()
+            from services import assinaturas_service
+            arquivo_bytes = assinaturas_service.gerar_arquivo_correios(grupo, formato=formato)
+            self.send_response(200)
+            if formato == "xlsx":
+                self.send_header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                self.send_header('Content-Disposition', f'attachment; filename="correios_{grupo}.xlsx"')
+            else:
+                self.send_header('Content-Type', 'text/csv; charset=utf-8')
+                self.send_header('Content-Disposition', f'attachment; filename="correios_{grupo}.csv"')
+            self.send_header('Content-Length', str(len(arquivo_bytes)))
+            self.end_headers()
+            self.wfile.write(arquivo_bytes)
+        except Exception as e:
+            print(f"[API ASSINATURAS] Erro ao exportar Correios: {e}")
+            self._send_json({"sucesso": False, "erro": str(e)}, status=500)
+
+    def handle_api_assinaturas_relatorio_pdf(self):
+        try:
+            parsed = urlparse(self.path)
+            qs = parse_qs(parsed.query)
+            grupo = qs.get("grupo", ["finais_fortaleza"])[0]
+            from services import assinaturas_service
+            pdf_bytes = assinaturas_service.gerar_pdf_relatorio_grupo(grupo)
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/pdf')
+            self.send_header('Content-Disposition', f'inline; filename="relatorio_assinaturas_{grupo}.pdf"')
+            self.send_header('Content-Length', str(len(pdf_bytes)))
+            self.end_headers()
+            self.wfile.write(pdf_bytes)
+        except Exception as e:
+            print(f"[API ASSINATURAS] Erro ao gerar PDF: {e}")
+            self._send_json({"sucesso": False, "erro": str(e)}, status=500)
+
+    def handle_api_assinaturas_gerar_remessa_baixa(self):
+        try:
+            body = self._read_body()
+            grupo_id = body.get("grupo_id")
+            if not grupo_id:
+                self._send_json({"sucesso": False, "erro": "Parâmetro 'grupo_id' é obrigatório."}, status=400)
+                return
+            from services import assinaturas_service
+            res = assinaturas_service.gerar_remessa_baixa_omie(grupo_id)
+            self._send_json(res)
+        except Exception as e:
+            print(f"[API ASSINATURAS] Erro ao gerar remessa baixa: {e}")
+            self._send_json({"sucesso": False, "erro": str(e)}, status=500)
+
+    def handle_api_assinaturas_gerar_remessa_paroquia(self):
+        try:
+            body = self._read_body()
+            cliente_dados = body.get("cliente")
+            valor_frete = body.get("valor_frete")
+            transportadora_id = body.get("transportadora_id")
+            if not cliente_dados:
+                self._send_json({"sucesso": False, "erro": "Parâmetro 'cliente' é obrigatório."}, status=400)
+                return
+            from services import assinaturas_service
+            res = assinaturas_service.gerar_remessa_paroquia_omie(cliente_dados, valor_frete, transportadora_id)
+            self._send_json(res)
+        except Exception as e:
+            print(f"[API ASSINATURAS] Erro ao gerar remessa paróquia: {e}")
+            self._send_json({"sucesso": False, "erro": str(e)}, status=500)
+
+
 
 import threading
+import time
 
-def _iniciar_timer_sync_automatico_1h():
-    def _loop_sync():
-        import time
+def _iniciar_agendador_seguro():
+    """
+    Agendador Automático e Seguro do DRP:
+    1. 05:00 da manhã: Sincronização matinal de estoque (Matriz + CD_SP) antes do início do expediente.
+    2. 18:30 da noite: Sincronização prévia de estoque (Matriz + CD_SP) seguida imediatamente pelo disparo do e-mail de alertas diários com dados frescos.
+    3. A cada 1 hora durante o dia (entre 07:00 e 18:00): Sincronização LEVE de posição de estoque (rápida, direta, sem sobrecarregar a API Omie).
+    """
+    def _loop_agendador():
+        ultimo_dia_05h = ""
+        ultimo_dia_1830 = ""
+        ultimo_sync_horario = time.time()  # Inicializa contagem horária a partir de agora
+
+        print("[AGENDADOR SEGURO] Agendador iniciado com sucesso! Horários: 05:00 (Matinal), 18:30 (Noturno c/ E-mail) e Atualização Leve de Estoque a cada 1 hora.", flush=True)
+
         while True:
-            time.sleep(3600)  # Aguarda 1 hora entre sincronizações automáticas
-            try:
-                agora_txt = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                print(f"[DRP BACKGROUND SYNC 1H] Sincronizando estoque dos produtos ativos em background ({agora_txt})...", flush=True)
-                import sync_service
-                ok, msg, count = sync_service.sincronizar_dados_seletivo("ESTOQUE_MATRIZ")
-                print(f"[DRP BACKGROUND SYNC 1H] Atualização concluída com sucesso! ({count} produtos ativos).", flush=True)
-            except Exception as e:
-                print(f"[DRP BACKGROUND SYNC 1H] Erro ao sincronizar estoque em background: {e}", flush=True)
+            time.sleep(30)  # Checa a cada 30 segundos
+            agora = datetime.now()
+            dia_str = agora.strftime("%Y-%m-%d")
+            hora = agora.hour
+            minuto = agora.minute
 
-    t = threading.Thread(target=_loop_sync, daemon=True)
+            # A. Sincronização matinal das 05:00 hrs (antes do expediente)
+            if hora == 5 and minuto <= 10 and ultimo_dia_05h != dia_str:
+                ultimo_dia_05h = dia_str
+                try:
+                    print(f"[AGENDADOR SEGURO] 05:00 - Executando sincronização matinal completa de estoque (Matriz + CD_SP)...", flush=True)
+                    import sync_service
+                    sync_service.sincronizar_dados_seletivo("AMBOS_ESTOQUES")
+                    if db:
+                        db.carregar_produtos_cache(force_refresh=True)
+                    print(f"[AGENDADOR SEGURO] 05:00 - Estoques atualizados com sucesso para o início do expediente!", flush=True)
+                except Exception as e:
+                    print(f"[AGENDADOR SEGURO] Erro na sincronização das 05:00: {e}", flush=True)
+
+            # B. Sincronização noturna das 18:30 hrs + Disparo do E-mail Diário de Alertas
+            elif hora == 18 and minuto >= 30 and minuto <= 45 and ultimo_dia_1830 != dia_str:
+                ultimo_dia_1830 = dia_str
+                try:
+                    print(f"[AGENDADOR SEGURO] 18:30 - Sincronizando estoque prévio para envio do e-mail diário...", flush=True)
+                    import sync_service
+                    sync_service.sincronizar_dados_seletivo("AMBOS_ESTOQUES")
+                    if db:
+                        db.carregar_produtos_cache(force_refresh=True)
+                    print(f"[AGENDADOR SEGURO] 18:30 - Estoque sincronizado. Disparando relatório por e-mail...", flush=True)
+                    
+                    import alertas_email
+                    if alertas_email:
+                        import importlib
+                        importlib.reload(alertas_email)
+                        ok_mail, msg_mail = alertas_email.enviar_email_alerta()
+                        print(f"[AGENDADOR SEGURO] 18:30 - E-mail diário enviado: {ok_mail} ({msg_mail})", flush=True)
+                except Exception as e:
+                    print(f"[AGENDADOR SEGURO] Erro no fluxo das 18:30: {e}", flush=True)
+
+            # C. Sincronização LEVE de posição de estoque a cada 1 hora durante o dia (entre 07:00 e 18:00)
+            elif 7 <= hora <= 18 and (time.time() - ultimo_sync_horario) >= 3600:
+                # Não roda entre 18:20 e 18:45 para não colidir com a rotina oficial das 18:30
+                if hora == 18 and minuto >= 20:
+                    continue
+                ultimo_sync_horario = time.time()
+                try:
+                    agora_txt = agora.strftime("%Y-%m-%d %H:%M:%S")
+                    print(f"[AGENDADOR SEGURO] {agora_txt} - Executando sincronização LEVE de posição de estoque (horária)...", flush=True)
+                    import sync_service
+                    sync_service.sincronizar_dados_seletivo("ESTOQUE_LEVE")
+                    if db:
+                        db.carregar_produtos_cache(force_refresh=True)
+                    print(f"[AGENDADOR SEGURO] Sincronização leve de estoque concluída com sucesso!", flush=True)
+                except Exception as e:
+                    print(f"[AGENDADOR SEGURO] Erro na sincronização leve horária: {e}", flush=True)
+
+    t = threading.Thread(target=_loop_agendador, daemon=True)
     t.start()
-    print("[DRP SERVER] Agendador de sincronização automática de estoque a cada 1 hora iniciado em segundo plano.", flush=True)
 
 from http.server import ThreadingHTTPServer
 
@@ -2395,8 +2576,8 @@ def main():
     print(f"[DRP SERVER] Endpoint Sync:  http://localhost:{port}/api/sync", flush=True)
     print("===========================================================", flush=True)
     
-    # _iniciar_timer_sync_automatico_1h()  # Desativado a pedido do usuário para evitar estouro de limite de requisições da API Omie
-    print("[DRP SERVER] Sincronização automática de 1h desativada para preservar os limites de requisição da API Omie. Utilize o botão de sincronização manual quando necessário.", flush=True)
+    # Inicia o Agendador Automático e Seguro
+    _iniciar_agendador_seguro()
 
     try:
         httpd.serve_forever()
