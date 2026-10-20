@@ -79,6 +79,14 @@
                     <i class="fa-solid fa-boxes-packing" style="color: #f59e0b;"></i>
                     <span>📦 Gestão de Combos & Kits</span>
                 </button>
+
+                <div style="padding: 14px 14px 4px; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.8px; color: #a855f7; text-transform: uppercase;">
+                    MÓDULO 3: ASSINATURAS
+                </div>
+                <button class="nav-tab" data-tab="tab-assinaturas" style="background: rgba(168, 85, 247, 0.1); border-left: 3px solid #a855f7;">
+                    <i class="fa-solid fa-book-bible" style="color: #a855f7;"></i>
+                    <span style="font-weight: 700; color: #a855f7;">📖 Assinaturas Pão da Vida</span>
+                </button>
             </nav>
 
             <div class="filter-section">
@@ -142,6 +150,12 @@
                 <div class="form-group">
                     <button id="btn-blacklist-modal" class="btn btn-secondary w-100">
                         <i class="fa-solid fa-user-slash"></i> Ver Blacklist (<span id="count-blacklist">0</span>)
+                    </button>
+                </div>
+
+                <div class="form-group">
+                    <button id="btn-destaques-modal" class="btn btn-secondary w-100" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-color: rgba(59, 130, 246, 0.3);">
+                        <i class="fa-solid fa-star"></i> Forçar / Lançamentos CD (<span id="count-destaques">0</span>) ⭐
                     </button>
                 </div>
             </div>
@@ -293,6 +307,27 @@
                                         </div>
                                     </div>
                                     <i class="fa-solid fa-arrow-right" style="color: #eab308;"></i>
+                                </button>
+                            </div>
+
+                            <!-- SEÇÃO 3: MÓDULO 3 ASSINATURAS PÃO DA VIDA -->
+                            <div class="hub-section-title" style="margin-top: 28px; color: #c084fc;">
+                                <i class="fa-solid fa-book-bible" style="color: #c084fc;"></i>
+                                ASSINATURAS PÃO DA VIDA - LITURGIA DIÁRIA (MÓDULO 3)
+                            </div>
+                            
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                <button class="hub-action-btn btn-featured" onclick="navegarParaAba('tab-assinaturas')" style="padding: 18px 22px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(126, 34, 206, 0.35)); border-color: rgba(168, 85, 247, 0.4);">
+                                    <div class="hub-btn-content">
+                                        <i class="fa-solid fa-book-open-reader" style="font-size: 1.4rem; color: #e9d5ff;"></i>
+                                        <div>
+                                            <div style="font-size: 1.05rem; font-weight: 700; color: #ffffff;">Gestão de Envios de Assinaturas (Jan, Fev, Mar 2027)</div>
+                                            <div style="font-size: 0.8rem; color: #e9d5ff; font-weight: 400;">Controle do ciclo de 12 exemplares, consolidação por mês, paróquias CE/Brasil, etiquetas Correios e remessas de baixa Omie</div>
+                                        </div>
+                                    </div>
+                                    <span class="badge" style="background: rgba(168, 85, 247, 0.35); color: #f3e8ff; font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(168, 85, 247, 0.5);">
+                                        Lote 2027 Chegado ⚡
+                                    </span>
                                 </button>
                             </div>
 
@@ -1343,6 +1378,160 @@
                     </div>
                 </div>
             </section>
+
+            <!-- ABA 3: ASSINATURAS PÃO DA VIDA (MÓDULO 3) -->
+            <section id="tab-assinaturas" class="tab-content">
+                <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="navegarParaAba('tab-hub')" style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-arrow-left"></i> Voltar ao Início / Hub
+                    </button>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span id="ass-status-badge" style="font-size: 0.8rem; color: #94a3b8; background: rgba(15, 23, 42, 0.7); padding: 6px 12px; border-radius: 6px; border: 1px solid #334155;">
+                            <i class="fa-solid fa-file-excel" style="color: #10b981;"></i> Planilha Google Sheets ativa | Atualizado: <strong id="ass-ultima-sync">--:--:--</strong>
+                        </span>
+                        <button id="btn-sync-assinaturas" class="btn btn-primary" onclick="sincronizarAssinaturasGoogleSheets()" style="background: linear-gradient(135deg, #a855f7, #7e22ce); border: none; font-weight: bold;">
+                            <i class="fa-solid fa-rotate"></i> Sincronizar Google Sheets ao Vivo 🔄
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Banner Lote Trimestral Chegado -->
+                <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95)); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 12px; padding: 18px 24px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                            <span style="font-size: 1.4rem;">📖</span>
+                            <h2 style="font-size: 1.25rem; font-weight: 700; color: #f8fafc; margin: 0;">Lote Trimestral Chegado — Liturgias 2027</h2>
+                            <span class="badge" style="background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); font-size: 0.75rem; padding: 4px 8px; border-radius: 6px;">Peso: 0,100 kg/un</span>
+                        </div>
+                        <p style="margin: 0; font-size: 0.85rem; color: #cbd5e1;">
+                            Produtos cadastrados no Omie: <strong style="color: #38bdf8;">PRD00561</strong> (Jan/27), <strong style="color: #38bdf8;">PRD00562</strong> (Fev/27), <strong style="color: #38bdf8;">PRD00563</strong> (Mar/27).
+                            Regra contratual: até <strong>12 exemplares</strong> por ciclo anual. Roberto Souza: <strong>R$ 4,50 fixo/entrega</strong> em Fortaleza.
+                        </p>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <button class="btn btn-secondary" onclick="baixarPdfRelatorio('todos')" style="background: rgba(99, 102, 241, 0.15); border: 1px solid #6366f1; color: #a5b4fc; font-weight: 600; padding: 8px 14px;">
+                            <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> PDF Geral (Todos os Grupos)
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportarArquivoCorreios('todos_correios', 'csv')" style="background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; color: #fcd34d; font-weight: 600; padding: 8px 14px;">
+                            <i class="fa-solid fa-truck" style="color: #f59e0b;"></i> Correios Brasil (.CSV)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Cards de Totais Consolidados -->
+                <div class="metrics-grid" style="margin-bottom: 24px;">
+                    <div class="metric-card" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9)); border-left: 4px solid #38bdf8;">
+                        <div class="metric-icon" style="color: #38bdf8;"><i class="fa-regular fa-calendar-check"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-val" id="metric-ass-jan" style="color: #38bdf8;">0</span>
+                            <span class="metric-lbl">Janeiro 2027 (PRD00561)</span>
+                        </div>
+                    </div>
+                    <div class="metric-card" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9)); border-left: 4px solid #818cf8;">
+                        <div class="metric-icon" style="color: #818cf8;"><i class="fa-regular fa-calendar-check"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-val" id="metric-ass-fev" style="color: #818cf8;">0</span>
+                            <span class="metric-lbl">Fevereiro 2027 (PRD00562)</span>
+                        </div>
+                    </div>
+                    <div class="metric-card" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9)); border-left: 4px solid #a855f7;">
+                        <div class="metric-icon" style="color: #a855f7;"><i class="fa-regular fa-calendar-check"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-val" id="metric-ass-mar" style="color: #a855f7;">0</span>
+                            <span class="metric-lbl">Março 2027 (PRD00563)</span>
+                        </div>
+                    </div>
+                    <div class="metric-card" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9)); border-left: 4px solid #10b981;">
+                        <div class="metric-icon" style="color: #10b981;"><i class="fa-solid fa-boxes-stacked"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-val" id="metric-ass-total" style="color: #10b981;">0</span>
+                            <span class="metric-lbl">Total Geral: <strong id="metric-ass-peso" style="color:#ffffff;">0 kg</strong> (<span id="metric-ass-clientes">0</span> clientes)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Abas dos 5 Grupos Operacionais -->
+                <div style="display: flex; gap: 8px; border-bottom: 2px solid #334155; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px;">
+                    <button class="btn btn-secondary tab-grupo-btn active" data-grupo="paroquias_ce" onclick="selecionarGrupoAssinaturas('paroquias_ce')" style="border-radius: 8px 8px 0 0; padding: 10px 18px; font-weight: 600;">
+                        🏛️ Paróquias CE (≥ 20) <span class="badge" id="badge-paroquias_ce" style="background:#3b82f6; margin-left:6px;">0</span>
+                    </button>
+                    <button class="btn btn-secondary tab-grupo-btn" data-grupo="paroquias_fora" onclick="selecionarGrupoAssinaturas('paroquias_fora')" style="border-radius: 8px 8px 0 0; padding: 10px 18px; font-weight: 600;">
+                        📦 Paróquias Brasil (≥ 20) <span class="badge" id="badge-paroquias_fora" style="background:#6366f1; margin-left:6px;">0</span>
+                    </button>
+                    <button class="btn btn-secondary tab-grupo-btn" data-grupo="finais_fortaleza" onclick="selecionarGrupoAssinaturas('finais_fortaleza')" style="border-radius: 8px 8px 0 0; padding: 10px 18px; font-weight: 600;">
+                        🛵 Clientes Fortaleza (&lt; 20) <span class="badge" id="badge-finais_fortaleza" style="background:#10b981; margin-left:6px;">0</span>
+                    </button>
+                    <button class="btn btn-secondary tab-grupo-btn" data-grupo="finais_modico_brasil" onclick="selecionarGrupoAssinaturas('finais_modico_brasil')" style="border-radius: 8px 8px 0 0; padding: 10px 18px; font-weight: 600;">
+                        📬 Clientes Impresso Módico <span class="badge" id="badge-finais_modico_brasil" style="background:#f59e0b; margin-left:6px;">0</span>
+                    </button>
+                    <button class="btn btn-secondary tab-grupo-btn" data-grupo="finais_pac_norte" onclick="selecionarGrupoAssinaturas('finais_pac_norte')" style="border-radius: 8px 8px 0 0; padding: 10px 18px; font-weight: 600;">
+                        ✈️ Clientes PAC Norte <span class="badge" id="badge-finais_pac_norte" style="background:#ec4899; margin-left:6px;">0</span>
+                    </button>
+                </div>
+
+                <!-- Painel Informativo e Barra de Ações do Grupo -->
+                <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px;">
+                        <div style="max-width: 600px;">
+                            <h3 id="grupo-titulo" style="margin: 0 0 6px 0; font-size: 1.15rem; color: #f8fafc;">Carregando grupo...</h3>
+                            <p id="grupo-descricao" style="margin: 0; font-size: 0.85rem; color: #94a3b8; line-height: 1.4;">--</p>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <button class="btn btn-secondary" onclick="baixarPdfRelatorioAtivo()" style="background: #1e293b; border-color: #ef4444; color: #f87171; font-weight: 600; padding: 8px 14px;" title="Baixar relatório de conferência em PDF com totais do mês e detalhe por cliente">
+                                <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> PDF Conferência 🖨️
+                            </button>
+                            <button class="btn btn-secondary" onclick="exportarArquivoCorreiosAtivo('csv')" style="background: #1e293b; border-color: #f59e0b; color: #fbbf24; font-weight: 600; padding: 8px 14px;" title="Exportar no modelo oficial dos Correios (28 colunas) em formato .CSV">
+                                <i class="fa-solid fa-file-csv" style="color: #f59e0b;"></i> Correios (.CSV) 🚚
+                            </button>
+                            <button class="btn btn-secondary" onclick="exportarArquivoCorreiosAtivo('xlsx')" style="background: #1e293b; border-color: #10b981; color: #34d399; font-weight: 600; padding: 8px 14px;" title="Exportar no modelo oficial dos Correios em planilha Excel .XLSX">
+                                <i class="fa-solid fa-file-excel" style="color: #10b981;"></i> Correios (.XLSX) 📊
+                            </button>
+                            <button class="btn btn-secondary" id="btn-exportar-etiquetas" onclick="exportarEtiquetasGrupoAtivo()" style="background: #1e293b; border-color: #475569; color: #94a3b8; font-weight: 600; padding: 8px 14px;" title="Exportar planilha de etiquetas completas de envio">
+                                <i class="fa-solid fa-table" style="color: #94a3b8;"></i> Planilha Completa
+                            </button>
+                            <button class="btn btn-primary" id="btn-gerar-baixa-grupo" onclick="abrirModalConfirmarBaixa()" style="background: linear-gradient(135deg, #10b981, #059669); border: none; font-weight: bold; display: none; padding: 8px 16px;">
+                                <i class="fa-solid fa-paper-plane"></i> Gerar Baixa no Omie 🚀
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filtro Instantâneo -->
+                    <div style="margin-top: 14px; display: flex; gap: 10px; align-items: center;">
+                        <div style="flex: 1; position: relative;">
+                            <input type="text" id="input-filtro-assinaturas" placeholder="🔍 Filtrar por nome do cliente, CPF/CNPJ, cidade, CEP ou código..." class="form-control" onkeyup="filtrarTabelaAssinaturas()" style="padding-left: 36px; background: #0f172a; border-color: #334155; color: #f8fafc;">
+                            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 12px; color: #64748b;"></i>
+                        </div>
+                        <span id="ass-contagem-filtrados" style="font-size: 0.85rem; color: #94a3b8; white-space: nowrap;">Exibindo 0 clientes</span>
+                    </div>
+                </div>
+
+                <!-- Tabela de Clientes do Grupo com Rolagem Interna e Cabeçalho Fixo -->
+                <div class="table-wrapper" style="box-shadow: 0 4px 15px rgba(0,0,0,0.25); border-radius: 8px; max-height: calc(100vh - 360px); min-height: 400px; overflow-y: auto; overflow-x: auto; position: relative; border: 1px solid #334155;">
+                    <table class="drp-table" id="tabela-assinaturas-pdv" style="width: 100%; border-collapse: separate; border-spacing: 0;">
+                        <thead style="position: sticky; top: 0; z-index: 10; background: #0f172a; box-shadow: 0 2px 6px rgba(0,0,0,0.5);">
+                            <tr>
+                                <th width="40" style="background: #0f172a;">Linha</th>
+                                <th width="70" style="background: #0f172a;">Cód.</th>
+                                <th style="background: #0f172a;">Destinatário / Cliente</th>
+                                <th style="background: #0f172a;">CPF / CNPJ</th>
+                                <th style="background: #0f172a;">Endereço Completo</th>
+                                <th style="background: #0f172a;">Cidade / UF</th>
+                                <th style="background: #0f172a;">CEP</th>
+                                <th width="70" style="text-align: center; background: #0f172a;">Assin.</th>
+                                <th width="65" style="text-align: center; background: #0f172a;">Jan/27</th>
+                                <th width="65" style="text-align: center; background: #0f172a;">Fev/27</th>
+                                <th width="65" style="text-align: center; background: #0f172a;">Mar/27</th>
+                                <th width="70" style="text-align: center; background: #0f172a;">Exemplares</th>
+                                <th width="70" style="text-align: center; background: #0f172a;">Peso</th>
+                                <th width="140" style="text-align: center; background: #0f172a;">Logística / Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-assinaturas-pdv">
+                            <tr><td colspan="14" style="text-align: center; color: var(--text-muted); padding: 30px;">Carregando assinantes...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
         </main>
     </div>
 
@@ -1516,6 +1705,34 @@
             <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
                 <button class="btn btn-primary" id="btn-export-blacklist-txt"><i class="fa-solid fa-file-export"></i> Baixar Lista de Itens (.txt)</button>
                 <button class="btn btn-secondary" id="btn-cancel-blacklist">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Destaques / Lançamentos Forçados CD_SP -->
+    <div id="modal-destaques" class="modal-backdrop">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-star" style="color: #60a5fa;"></i> Produtos Forçados / Lançamentos CD_SP</h3>
+                <button class="modal-close" id="btn-close-destaques">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+                    Itens adicionados aqui <strong>sempre aparecerão na aba 1 (Reposição CD_SP)</strong> mesmo quando tiverem 0 vendas e 0 estoque no CD, permitindo planejar remessas de novos lançamentos (ex: Natal, Liturgias, etc.).
+                </p>
+                <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+                    <input type="text" id="destaques-new-sku" placeholder="Digite o SKU ou Código (ex: PRD00876)..." class="form-control" style="flex: 1;">
+                    <button id="btn-add-destaque" class="btn btn-primary" style="white-space: nowrap;"><i class="fa-solid fa-plus"></i> Incluir Item</button>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="destaques-search" placeholder="Filtrar nesta lista..." class="form-control">
+                </div>
+                <div id="destaques-items-list" class="blacklist-items-container" style="max-height: 320px; overflow-y: auto;">
+                    <!-- Preenchido dinamicamente via JS -->
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; align-items: center;">
+                <button class="btn btn-secondary" id="btn-cancel-destaques">Fechar</button>
             </div>
         </div>
     </div>
@@ -1867,8 +2084,144 @@
         </div>
     </div>
 
-    <script src="app.js?v=20261016_consignacao_v3"></script>
+    <!-- Modal Confirmar Baixa de Estoque no Omie (Clientes Finais) -->
+    <div id="modal-confirmar-baixa-assinaturas" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 580px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-paper-plane" style="color: #10b981;"></i> Gerar Remessa de Baixa no Omie</h3>
+                <button class="modal-close" onclick="fecharModalBaixaAssinaturas()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px;">
+                    <div style="font-weight: 700; color: #10b981; font-size: 0.95rem;" id="modal-baixa-grupo-nome">Grupo Selecionado</div>
+                    <div style="font-size: 0.82rem; color: #cbd5e1; margin-top: 4px;" id="modal-baixa-obs-texto">Observação da Remessa</div>
+                </div>
+
+                <p style="font-size: 0.88rem; color: #94a3b8; margin-bottom: 12px;">
+                    Será criada uma Remessa de Baixa de Estoque para <strong>Edições Shalom (Cód: 1854959029)</strong> com os seguintes itens consolidados:
+                </p>
+
+                <div class="table-wrapper" style="margin-bottom: 16px;">
+                    <table class="drp-table">
+                        <thead>
+                            <tr>
+                                <th>Produto Omie</th>
+                                <th>Mês Referência</th>
+                                <th style="text-align: right;">Quantidade</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>PRD00561</strong> - LITURGIA DIARIA JANEIRO - 2027</td>
+                                <td>Janeiro 2027</td>
+                                <td style="text-align: right; font-weight: bold; color: #38bdf8;" id="modal-baixa-qtd-jan">0 un</td>
+                            </tr>
+                            <tr>
+                                <td><strong>PRD00562</strong> - LITURGIA DIARIA FEVEREIRO - 2027</td>
+                                <td>Fevereiro 2027</td>
+                                <td style="text-align: right; font-weight: bold; color: #818cf8;" id="modal-baixa-qtd-fev">0 un</td>
+                            </tr>
+                            <tr>
+                                <td><strong>PRD00563</strong> - LITURGIA DIARIA MARÇO - 2027</td>
+                                <td>Março 2027</td>
+                                <td style="text-align: right; font-weight: bold; color: #a855f7;" id="modal-baixa-qtd-mar">0 un</td>
+                            </tr>
+                            <tr style="background: rgba(255,255,255,0.05);">
+                                <td colspan="2"><strong>TOTAL GERAL DE PEÇAS A BAIXAR</strong></td>
+                                <td style="text-align: right; font-weight: 800; color: #10b981; font-size: 1.05rem;" id="modal-baixa-qtd-total">0 un</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="modal-baixa-status" style="display: none; padding: 12px; border-radius: 8px; margin-top: 10px; font-size: 0.85rem;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="fecharModalBaixaAssinaturas()">Cancelar</button>
+                <button class="btn btn-primary" id="btn-confirmar-disparo-baixa" onclick="executarDisparoBaixaOmie()" style="background: linear-gradient(135deg, #10b981, #059669); border: none; font-weight: bold;">
+                    <i class="fa-solid fa-check"></i> Confirmar & Transmitir ao Omie
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Confirmar Remessa de Paróquia no Omie -->
+    <div id="modal-remessa-paroquia" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 580px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-church" style="color: #38bdf8;"></i> Emitir Remessa Padrão de Paróquia</h3>
+                <button class="modal-close" onclick="fecharModalParoquia()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px;">
+                    <div style="font-weight: 700; color: #38bdf8; font-size: 1rem;" id="modal-paroquia-nome">Paróquia</div>
+                    <div style="font-size: 0.82rem; color: #cbd5e1; margin-top: 4px;" id="modal-paroquia-local">Cidade / UF | CEP</div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                    <div class="form-group">
+                        <label><b>CFOP Fiscal:</b></label>
+                        <input type="text" id="modal-paroquia-cfop" class="form-control" readonly style="background: #1e293b; color: #38bdf8; font-weight: bold;">
+                    </div>
+                    <div class="form-group">
+                        <label><b>Categoria Omie:</b></label>
+                        <input type="text" value="1.01.01 (Receitas Comercial)" class="form-control" readonly style="background: #1e293b; color: #94a3b8;">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label><b>Transportadora:</b></label>
+                    <input type="text" id="modal-paroquia-transp" class="form-control" readonly style="background: #1e293b; color: #f8fafc;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label><b>Valor do Frete (R$):</b></label>
+                    <input type="number" id="modal-paroquia-frete" class="form-control" step="0.50" min="0" placeholder="Digite o valor ou mantenha o sugerido" style="font-size: 1rem; font-weight: bold; color: #10b981;">
+                    <small style="color: #94a3b8;" id="modal-paroquia-frete-obs">Calculado pela tabela do Roberto ou a negociar.</small>
+                </div>
+
+                <div class="table-wrapper" style="margin-bottom: 16px;">
+                    <table class="drp-table">
+                        <thead>
+                            <tr>
+                                <th>Produto</th>
+                                <th>Mês</th>
+                                <th style="text-align: right;">Quantidade</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>PRD00561 - Liturgia Jan/27</td>
+                                <td>Janeiro 2027</td>
+                                <td style="text-align: right; font-weight: bold;" id="modal-paroquia-qtd-jan">0</td>
+                            </tr>
+                            <tr>
+                                <td>PRD00562 - Liturgia Fev/27</td>
+                                <td>Fevereiro 2027</td>
+                                <td style="text-align: right; font-weight: bold;" id="modal-paroquia-qtd-fev">0</td>
+                            </tr>
+                            <tr>
+                                <td>PRD00563 - Liturgia Mar/27</td>
+                                <td>Março 2027</td>
+                                <td style="text-align: right; font-weight: bold;" id="modal-paroquia-qtd-mar">0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="modal-paroquia-status" style="display: none; padding: 12px; border-radius: 8px; margin-top: 10px; font-size: 0.85rem;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="fecharModalParoquia()">Cancelar</button>
+                <button class="btn btn-primary" id="btn-confirmar-disparo-paroquia" onclick="executarDisparoParoquiaOmie()" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); border: none; font-weight: bold;">
+                    <i class="fa-solid fa-paper-plane"></i> Emitir Remessa no Omie
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=20261019_modulo3_pdv"></script>
 </body>
 
-
 </html>
+

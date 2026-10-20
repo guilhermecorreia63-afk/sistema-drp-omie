@@ -49,6 +49,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_cron_sync()
         elif url_path == '/api/blacklist':
             self.handle_api_blacklist_get()
+        elif url_path == '/api/destaques':
+            self.handle_api_destaques_get()
         elif url_path in ['/api/remessas/status_transito', '/api/remessas/status']:
             self.handle_api_remessas_status_transito_get()
         elif url_path == '/api/remessas/listar':
@@ -117,6 +119,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_pedido_compra_remover()
         elif url_path == '/api/blacklist' or url_path == '/api/blacklist/salvar':
             self.handle_api_blacklist_save()
+        elif url_path == '/api/destaques' or url_path == '/api/destaques/salvar':
+            self.handle_api_destaques_save()
         elif url_path in ['/api/remessas/status_transito', '/api/remessas/salvar_status_transito', '/api/remessas/salvar_status', '/api/remessas/status/salvar']:
             self.handle_api_remessas_status_transito_save()
         elif url_path == '/api/requisicao-compra':
@@ -716,6 +720,49 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             "message": f"Blacklist salva com sucesso ({len(skus_set)} SKUs).",
             "blacklist": sorted(list(skus_set))
         }
+        self.wfile.write(json.dumps(response_payload, ensure_ascii=False).encode('utf-8'))
+
+    def handle_api_destaques_get(self):
+        json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'produtos_destaque_drp.json')
+        skus = []
+        if os.path.exists(json_path):
+            try:
+                with open(json_path, 'r', encoding='utf-8') as f:
+                    skus = json.load(f)
+            except Exception:
+                skus = []
+        response_payload = {
+            "success": True,
+            "destaques": skus
+        }
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.end_headers()
+        self.wfile.write(json.dumps(response_payload, ensure_ascii=False).encode('utf-8'))
+
+    def handle_api_destaques_save(self):
+        content_length = int(self.headers.get('Content-Length', 0))
+        post_data = self.rfile.read(content_length) if content_length > 0 else b'{}'
+        try:
+            body = json.loads(post_data.decode('utf-8'))
+        except Exception:
+            body = {}
+        skus_list = body.get('destaques', body.get('skus', []))
+        skus_clean = sorted(list(set(str(s).strip() for s in skus_list if s)))
+        json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'produtos_destaque_drp.json')
+        try:
+            with open(json_path, 'w', encoding='utf-8') as f:
+                json.dump(skus_clean, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"[API SERVER] Erro ao salvar produtos_destaque_drp.json: {e}")
+        response_payload = {
+            "success": True,
+            "message": f"Lista de lançamentos/destaques salva com sucesso ({len(skus_clean)} SKUs).",
+            "destaques": skus_clean
+        }
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.end_headers()
         self.wfile.write(json.dumps(response_payload, ensure_ascii=False).encode('utf-8'))
 
     def handle_api_remessas_status_transito_get(self):

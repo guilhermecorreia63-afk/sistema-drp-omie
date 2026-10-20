@@ -370,6 +370,18 @@ function setupEventListeners() {
     addListener('btn-cancel-blacklist', 'click', fecharModalBlacklist);
     addListener('btn-export-blacklist-txt', 'click', exportarBlacklistTXT);
 
+    addListener('btn-destaques-modal', 'click', abrirModalDestaques);
+    addListener('btn-close-destaques', 'click', fecharModalDestaques);
+    addListener('btn-cancel-destaques', 'click', fecharModalDestaques);
+    addListener('btn-add-destaque', 'click', adicionarItemDestaque);
+    addListener('destaques-search', 'input', renderModalDestaques);
+    const inputAddDest = document.getElementById('destaques-new-sku');
+    if (inputAddDest) {
+        inputAddDest.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') adicionarItemDestaque();
+        });
+    }
+
     addListener('btn-velas-ferias-modal', 'click', abrirModalVelasFerias);
     addListener('btn-close-velas-ferias', 'click', fecharModalVelasFerias);
     addListener('btn-close-velas-ferias-footer', 'click', fecharModalVelasFerias);
@@ -736,13 +748,9 @@ function getProdutosFiltrados(modo = 'cd') {
         const skuNorm = String(p.sku || '').trim();
         const skuPad = skuNorm.padStart(6, '0');
         const isDestaque = state.destaqueDRP && (state.destaqueDRP.has(skuNorm) || state.destaqueDRP.has(skuPad));
-        const temBuscaAtiva = Boolean(state.termoBusca || state.colFilterProdCD || state.colFilterProdMatriz);
-        const nomeUpper = String(p.nome || '').toUpperCase();
-        const ehSazonalOuLiturgiaComEstoque = (fam.includes('SAZONA') || fam.includes('LITURGIA') || nomeUpper.includes('NATAL') || nomeUpper.includes('LITURGIA')) && (p.matriz > 0 || estEfetivoCD > 0);
-
-        // Regra 1: Produtos SEM movimentação no período NÃO entram na reposição (somente entram se tiverem estoque > 0, forem destaque, busca ativa ou lançamentos sazonais/liturgias com estoque na matriz)
-        if (vendas <= 0 && estEfetivoCD <= 0 && modo === 'cd' && !isDestaque && !temBuscaAtiva && !ehSazonalOuLiturgiaComEstoque) return false;
-        if (vendas <= 0 && p.matriz <= 0 && modo === 'matriz' && !isDestaque && !temBuscaAtiva && !ehSazonalOuLiturgiaComEstoque) return false;
+        // Regra 1: Produtos SEM movimentação no período NÃO entram na reposição (somente entram se tiverem estoque > 0 ou forem forçados/destaque pelo usuário)
+        if (vendas <= 0 && estEfetivoCD <= 0 && modo === 'cd' && !isDestaque) return false;
+        if (vendas <= 0 && p.matriz <= 0 && modo === 'matriz' && !isDestaque) return false;
 
         // Regra 2: Descarte de ruído para Camisas e Ícones com vendas inexpressivas (<= 2 un em 60/90d)
         if ((fam.includes('CAMISA') || fam.includes('ICONE')) && vendas <= 2 && state.periodoDias >= 60 && !isDestaque) {
@@ -879,6 +887,8 @@ function definirStatus(estoque, estoqueAlvo, emProducao, vendas, statusEspecial 
 function render() {
     const elBl = document.getElementById('count-blacklist');
     if (elBl) elBl.innerText = state.blacklist.size;
+    const elDest = document.getElementById('count-destaques');
+    if (elDest) elDest.innerText = state.destaqueDRP ? state.destaqueDRP.size : 0;
     const elCD = document.getElementById('count-selected-blacklist');
     if (elCD) elCD.innerText = state.skusChecadosCD.size;
     const elMat = document.getElementById('count-selected-blacklist-matriz');
@@ -1397,6 +1407,103 @@ function exportarBlacklistTXT() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+}
+
+// Modal Destaques / Lançamentos Forçados CD_SP
+function abrirModalDestaques() {
+    const modal = document.getElementById('modal-destaques');
+    if (modal) modal.classList.add('active');
+    try { renderModalDestaques(); } catch (e) { console.error(e); }
+}
+
+function fecharModalDestaques() {
+    const modal = document.getElementById('modal-destaques');
+    if (modal) modal.classList.remove('active');
+    render();
+}
+
+function renderModalDestaques() {
+    const container = document.getElementById('destaques-items-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const busca = (document.getElementById('destaques-search')?.value || '').toLowerCase();
+    const skusDestaques = state.destaqueDRP ? Array.from(state.destaqueDRP) : [];
+
+    const elCont = document.getElementById('count-destaques');
+    if (elCont) elCont.innerText = skusDestaques.length;
+
+    if (skusDestaques.length === 0) {
+        container.innerHTML = '<p class="text-muted" style="text-align:center; padding: 20px;">Nenhum produto forçado no momento.</p>';
+        return;
+    }
+
+    skusDestaques.forEach(sku => {
+        const skuNorm = String(sku).trim();
+        const skuPad = skuNorm.padStart(6, '0');
+        const p = state.produtos.find(prod => String(prod.sku).trim() === skuNorm || String(prod.sku).trim() === skuPad) || { sku: skuNorm, nome: 'Produto Desconhecido' };
+        
+        if (busca && !skuNorm.toLowerCase().includes(busca) && !(p.nome || '').toLowerCase().includes(busca)) {
+            return;
+        }
+
+        const row = document.createElement('div');
+        row.className = 'blacklist-row';
+        row.innerHTML = `
+            <div>
+                <strong>${p.sku}</strong> - <span>${p.nome}</span>
+            </div>
+            <button class="btn btn-sm btn-danger btn-remove-destaque" data-sku="${p.sku}">
+                <i class="fa-solid fa-trash"></i> Remover
+            </button>
+        `;
+
+        row.querySelector('.btn-remove-destaque').addEventListener('click', async () => {
+            state.destaqueDRP.delete(skuNorm);
+            state.destaqueDRP.delete(skuPad);
+            await salvarDestaquesServidor();
+            renderModalDestaques();
+            render();
+        });
+
+        container.appendChild(row);
+    });
+}
+
+async function adicionarItemDestaque() {
+    const input = document.getElementById('destaques-new-sku');
+    if (!input) return;
+    const val = input.value.trim().toUpperCase();
+    if (!val) {
+        alert('Por favor, informe o SKU ou Código do produto.');
+        return;
+    }
+
+    const valPad = val.padStart(6, '0');
+    const p = state.produtos.find(prod => String(prod.sku).trim().toUpperCase() === val || String(prod.sku).trim().toUpperCase() === valPad || String(prod.codigo || '').trim().toUpperCase() === val);
+    
+    const skuFinal = p ? String(p.sku).trim() : val;
+    if (!state.destaqueDRP) state.destaqueDRP = new Set();
+    state.destaqueDRP.add(skuFinal);
+    input.value = '';
+
+    await salvarDestaquesServidor();
+    renderModalDestaques();
+    render();
+    alert(`Produto ${skuFinal} (${p ? p.nome : 'Adicionado'}) agora sempre aparecerá na Reposição CD_SP!`);
+}
+
+async function salvarDestaquesServidor() {
+    const lista = state.destaqueDRP ? Array.from(state.destaqueDRP) : [];
+    try {
+        await fetch('/api/destaques', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ destaques: lista })
+        });
+    } catch (e) {
+        console.warn('Erro ao salvar destaques no servidor:', e);
+    }
 }
 
 
