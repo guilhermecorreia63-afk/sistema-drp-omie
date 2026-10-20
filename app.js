@@ -5533,11 +5533,71 @@ let stateConsignacao = {
     remessasDisponiveis: [],
     remessasSelecionadas: [],
     itensUnificados: [],
+    condicaoComercial: 'A_VISTA_AUTO',
+    atingeVolume5000: false,
     descontoPadraoPct: 30.0,
     acertoId: null,
     codigoAcerto: null,
     statusAcerto: 'EM_CONFERENCIA'
 };
+
+function calcularDescontoPoliticaComercialClient(it, condicao = 'A_VISTA_AUTO', atingeVolume5000 = false) {
+    const s = String(it.sku || '').trim().toUpperCase();
+    const d = String(it.descricao || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+    let f = String(it.familia || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+
+    // 1. Exceções Rígidas
+    if (s === '008693' || s === '8693') return condicao.includes('PRAZO') ? 30.0 : 35.0;
+    if (s === 'PRD00228' || s === 'PRD00609') return 0.0;
+    if (d.includes('ASSEMBLEIA GERAL') && d.includes('2024')) return 0.0;
+    if (d.includes('MANUAL') && d.includes('RECICLAGEM') && d.includes('2026')) return 0.0;
+    if (d.includes('REMESSA CD') || d.includes('TRANSFERENCIA')) return 0.0;
+
+    // Inferência caso não tenha família cadastrada
+    if (!f || f === 'NONE') {
+        if (d.includes('CAMISA') || d.includes('BABY LOOK')) f = 'CAMISAS';
+        else if (d.includes('TERCO') || d.includes('ROSARIO')) f = 'TERCO';
+        else if (d.includes('CADERNETA') || d.includes('BLOCO')) f = 'PAPELARIA';
+        else if (d.includes('BIBLIA')) f = 'BIBLIAS';
+        else f = 'EDICOES';
+    }
+
+    // 2. Grupo Especial (50% por Volume)
+    const grupo50 = f.includes('EDICAO') || f.includes('EDICO') || ['ESTUDO BIBLICO', 'INFANTIL', 'ORDO AMORIS', 'PHILIPPOS', 'ESPIRITUALIDADE - EDICOES'].includes(f);
+    if (grupo50) {
+        if (condicao.includes('PRAZO')) return 35.0;
+        if (condicao === 'A_VISTA_NORMAL') return 40.0;
+        return atingeVolume5000 ? 50.0 : 40.0;
+    }
+
+    // 3. Agendas
+    if (f === 'AGENDAS') return condicao.includes('PRAZO') ? 30.0 : 35.0;
+
+    // 4. Liturgia
+    if (f === 'LITURGIA') return 35.0;
+
+    // 5. Bíblias / Documentos / Escuta / Terceiros / Sazonais
+    if (f.includes('BIBLIA') || f.includes('DOCUMENTOS') || ['ESCUTA', 'ESPIRITUALIDADE - TERCEIROS', 'TE SEGUIREI', 'SAZONAIS'].includes(f)) {
+        return 30.0;
+    }
+
+    // 6. Papelaria
+    if (f === 'PAPELARIA') return condicao.includes('PRAZO') ? 20.0 : 25.0;
+
+    // 7. Pano, Rosário, Terço, Imagem, Ícone, Acessórios, Boné, Camisas
+    if (['PANO', 'ROSARIO', 'TERCO', 'IMAGEM', 'ICONE', 'ACESSORIOS', 'BONE', 'CAMISAS'].includes(f)) {
+        return 20.0;
+    }
+
+    // 8. Vela, Toalhas
+    if (['VELA', 'TOALHAS'].includes(f)) return condicao.includes('PRAZO') ? 10.0 : 15.0;
+
+    // 9. Manual
+    if (f === 'MANUAL') return condicao.includes('PRAZO') ? 0.0 : 10.0;
+
+    // 10. Outros
+    return 0.0;
+}
 
 function inicializarModuloConsignacao() {
     const inputBusca = document.getElementById('input-busca-cliente-consignacao');
@@ -5562,6 +5622,31 @@ function inicializarModuloConsignacao() {
             if (e.key === 'Enter') {
                 const termo = (inputBusca.value || '').trim();
                 if (termo) buscarClientesConsignacao(termo);
+            }
+        });
+    }
+
+    const selCond = document.getElementById('select-condicao-comercial-consignacao');
+    const wrapFixo = document.getElementById('wrapper-desconto-fixo');
+    const inputFixo = document.getElementById('input-desconto-consignacao-global');
+
+    if (selCond && !selCond._init) {
+        selCond._init = true;
+        selCond.addEventListener('change', () => {
+            stateConsignacao.condicaoComercial = selCond.value;
+            if (wrapFixo) wrapFixo.style.display = (selCond.value === 'FIXO') ? 'flex' : 'none';
+            stateConsignacao.itensUnificados.forEach(it => delete it._descontoManual);
+            recalcularTotaisConsignacao();
+            renderizarTabelaConsignacao();
+        });
+    }
+
+    if (inputFixo && !inputFixo._init) {
+        inputFixo._init = true;
+        inputFixo.addEventListener('input', () => {
+            if (stateConsignacao.condicaoComercial === 'FIXO') {
+                recalcularTotaisConsignacao();
+                renderizarTabelaConsignacao();
             }
         });
     }
@@ -5838,6 +5923,7 @@ function renderizarTabelaConsignacao(itensParaExibir = null) {
             <td><strong>${it.sku}</strong></td>
             <td>
                 <div style="font-weight: 600; color: #f8fafc;">${it.descricao}</div>
+                <div style="font-size: 0.72rem; color: #94a3b8;"><i class="fa-solid fa-tag"></i> ${it.familia || 'DIVERSOS'}</div>
             </td>
             <td style="text-align: center; font-weight: 700; color: #38bdf8;">${it.qtd_enviada}</td>
             <td style="text-align: center; background: rgba(56, 189, 248, 0.05);">
@@ -5848,7 +5934,9 @@ function renderizarTabelaConsignacao(itensParaExibir = null) {
                 <strong style="color: ${it.qtd_vendida > 0 ? '#10b981' : '#64748b'}; font-size: 1rem;">${it.qtd_vendida}</strong>
             </td>
             <td style="text-align: right; color: var(--text-muted);">R$ ${it.preco_unitario.toFixed(2).replace('.', ',')}</td>
-            <td style="text-align: center; color: #38bdf8;">${it.desconto_pct}%</td>
+            <td style="text-align: center; color: #38bdf8;">
+                <input type="number" class="form-control" value="${it.desconto_pct}" min="0" max="100" style="width: 52px; display: inline-block; padding: 2px 4px; text-align: center; font-weight: 600; font-size: 0.8rem;" onchange="alterarDescontoItemManual('${it.sku}', this.value)">%
+            </td>
             <td style="text-align: right;">
                 <strong style="color: ${totalLiq > 0 ? '#10b981' : '#64748b'};">R$ ${totalLiq.toFixed(2).replace('.', ',')}</strong>
             </td>
@@ -5857,6 +5945,16 @@ function renderizarTabelaConsignacao(itensParaExibir = null) {
 
         tbody.appendChild(tr);
     });
+}
+
+function alterarDescontoItemManual(sku, val) {
+    const it = stateConsignacao.itensUnificados.find(x => x.sku === sku);
+    if (!it) return;
+    it.desconto_pct = parseFloat(val) || 0.0;
+    it._descontoManual = true;
+    recalcularTotaisConsignacao();
+    renderizarTabelaConsignacao();
+    salvarRascunhoConsignacaoLocal();
 }
 
 function alterarRetornoManual(sku, valStr) {
@@ -5948,6 +6046,32 @@ function tocarBeepFeedback(sucesso = true) {
 }
 
 function recalcularTotaisConsignacao() {
+    const cond = stateConsignacao.condicaoComercial || 'A_VISTA_AUTO';
+
+    // Se estiver em modo automático por política, simula corte de volume R$ 5.000 para liberar 50%
+    if (cond === 'FIXO') {
+        const descFixo = parseFloat(document.getElementById('input-desconto-consignacao-global')?.value || 30.0);
+        stateConsignacao.itensUnificados.forEach(it => {
+            if (!it._descontoManual) it.desconto_pct = descFixo;
+        });
+    } else {
+        let simLiq = 0.0;
+        stateConsignacao.itensUnificados.forEach(it => {
+            if (it.qtd_vendida > 0) {
+                const descSim = calcularDescontoPoliticaComercialClient(it, cond, true);
+                simLiq += (it.qtd_vendida * it.preco_unitario * (1 - descSim / 100));
+            }
+        });
+        const atingeVolume = (simLiq > 5000.0);
+        stateConsignacao.atingeVolume5000 = atingeVolume;
+
+        stateConsignacao.itensUnificados.forEach(it => {
+            if (!it._descontoManual) {
+                it.desconto_pct = calcularDescontoPoliticaComercialClient(it, cond, atingeVolume);
+            }
+        });
+    }
+
     let totEnv = 0;
     let totRet = 0;
     let totVend = 0;
@@ -5969,11 +6093,24 @@ function recalcularTotaisConsignacao() {
     const elRet = document.getElementById('metric-consig-retorno');
     const elVend = document.getElementById('metric-consig-vendido');
     const elTotLiq = document.getElementById('metric-consig-total-liq');
+    const elTotLiqLbl = document.getElementById('lbl-metric-desc-consignacao');
 
     if (elEnv) elEnv.innerText = totEnv;
     if (elRet) elRet.innerText = totRet;
     if (elVend) elVend.innerText = totVend;
     if (elTotLiq) elTotLiq.innerText = `R$ ${totLiq.toFixed(2).replace('.', ',')}`;
+
+    if (elTotLiqLbl) {
+        if (cond === 'FIXO') {
+            elTotLiqLbl.innerText = `Líquido (Desconto Fixo)`;
+        } else if (stateConsignacao.atingeVolume5000) {
+            elTotLiqLbl.innerText = `Líquido c/ Volume 50% (> R$ 5.000)`;
+        } else if (cond === 'A_PRAZO') {
+            elTotLiqLbl.innerText = `Líquido A Prazo (Política Comercial)`;
+        } else {
+            elTotLiqLbl.innerText = `Líquido À Vista (Política Comercial)`;
+        }
+    }
 
     stateConsignacao.totalEnviado = totEnv;
     stateConsignacao.totalRetorno = totRet;

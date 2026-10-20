@@ -267,15 +267,28 @@ class ConsignacaoService:
                 sku = str(p.get('cCodItInt') or p.get('cCodigo') or '').strip()
                 desc = p.get('cDescricao') or ''
                 qtd = int(p.get('nQtde') or 0)
-                val_unit = float(p.get('nValUnit') or 0.0)
-
-                # Se faltar descrição ou sku, complementar com cache Turso
+                fam = ""
                 if ncod in cache['by_id']:
                     prod_info = cache['by_id'][ncod]
                     sku = str(prod_info.get('codigo') or prod_info.get('sku') or sku).strip()
                     desc = prod_info.get('nome') or prod_info.get('descricao') or desc
+                    fam = prod_info.get('familia') or ""
                     if val_unit <= 0:
                         val_unit = float(prod_info.get('valor_unitario') or 0.0)
+                elif sku in cache.get('by_sku', {}):
+                    prod_info = cache['by_sku'][sku]
+                    fam = prod_info.get('familia') or ""
+                    if not desc:
+                        desc = prod_info.get('nome') or prod_info.get('descricao') or desc
+                    if val_unit <= 0:
+                        val_unit = float(prod_info.get('valor_unitario') or 0.0)
+
+                # Desconto sugerido pela Política Comercial Oficial de Famílias
+                try:
+                    from services.politica_comercial import obter_desconto_item
+                    desc_calc = obter_desconto_item(sku, desc, fam, condicao='A_VISTA_AUTO', simular_50=False)
+                except Exception:
+                    desc_calc = desconto_padrao_pct
 
                 chave = sku if sku else f"PROD_{ncod}"
 
@@ -284,11 +297,12 @@ class ConsignacaoService:
                         "sku": sku,
                         "codigo_produto": ncod,
                         "descricao": desc,
+                        "familia": fam,
                         "qtd_enviada": 0,
                         "qtd_retorno": 0,
                         "qtd_vendida": 0,
                         "preco_unitario": val_unit,
-                        "desconto_pct": desconto_padrao_pct,
+                        "desconto_pct": desc_calc,
                         "remessas_origem": {}
                     }
 

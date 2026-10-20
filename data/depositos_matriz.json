@@ -35,9 +35,9 @@
     "deposito_2": 0
   },
   "000566": {
-    "fracionado": 0,
-    "deposito_1": 0,
-    "deposito_2": 6768
+    "fracionado": 7,
+    "deposito_1": 256,
+    "deposito_2": 6732
   },
   "PRD00051": {
     "fracionado": 0,
@@ -120,8 +120,8 @@
     "deposito_2": 928
   },
   "001534": {
-    "fracionado": 18,
-    "deposito_1": 1484,
+    "fracionado": 46,
+    "deposito_1": 1456,
     "deposito_2": 0
   },
   "004332": {
@@ -130,8 +130,8 @@
     "deposito_2": 0
   },
   "PRD00641": {
-    "fracionado": 25,
-    "deposito_1": 750,
+    "fracionado": 35,
+    "deposito_1": 740,
     "deposito_2": 0
   },
   "PRD00770": {
@@ -165,8 +165,13 @@
     "deposito_2": 0
   },
   "PRD00856": {
-    "fracionado": 24,
-    "deposito_1": 1265,
+    "fracionado": 90,
+    "deposito_1": 1213,
+    "deposito_2": 0
+  },
+  "000505": {
+    "fracionado": 4449,
+    "deposito_1": 1250,
     "deposito_2": 0
   }
 }

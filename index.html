@@ -1212,10 +1212,17 @@
                                 <h4 style="color: #38bdf8; margin-bottom: 2px;" id="lbl-cliente-selecionado-nome">Cliente Selecionado</h4>
                                 <span style="font-size: 0.8rem; color: var(--text-muted);" id="lbl-cliente-selecionado-doc">CNPJ: -</span>
                             </div>
-                            <div style="display: flex; gap: 10px; align-items: center;">
-                                <label style="font-size: 0.85rem; color: #cbd5e1;">Desconto Comercial Padrão:</label>
-                                <input type="number" id="input-desconto-consignacao-global" class="form-control inline" value="30" min="0" max="100" style="width: 70px; text-align: center; font-weight: 700;">
-                                <span style="font-weight: 700; color: #38bdf8;">%</span>
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                <label style="font-size: 0.85rem; color: #cbd5e1;"><i class="fa-solid fa-tags" style="color: #38bdf8;"></i> Política de Descontos Comercial:</label>
+                                <select id="select-condicao-comercial-consignacao" class="form-control inline" style="padding: 5px 10px; font-weight: 600; background: #0f172a; color: #f8fafc; border: 1px solid #334155; border-radius: 6px; cursor: pointer;">
+                                    <option value="A_VISTA_AUTO" selected>À Vista (Volume Auto: 50% Edições se &gt; R$ 5.000 / 40% se menor)</option>
+                                    <option value="A_PRAZO">A Prazo (35% Edições / 30% Bíblias / 20% Camisas / 25% Papelaria)</option>
+                                    <option value="FIXO">Desconto Fixo Manual (%)</option>
+                                </select>
+                                <div id="wrapper-desconto-fixo" style="display: none; align-items: center; gap: 4px;">
+                                    <input type="number" id="input-desconto-consignacao-global" class="form-control inline" value="30" min="0" max="100" style="width: 60px; text-align: center; font-weight: 700;">
+                                    <span style="font-weight: 700; color: #38bdf8;">%</span>
+                                </div>
                             </div>
                         </div>
 
@@ -1281,7 +1288,7 @@
                             <div class="metric-icon"><i class="fa-solid fa-receipt" style="color: #a855f7;"></i></div>
                             <div class="metric-data">
                                 <span class="metric-val" id="metric-consig-total-liq" style="color: #c084fc; font-size: 1.4rem;">R$ 0,00</span>
-                                <span class="metric-lbl">Faturamento Líquido (30% Desc.)</span>
+                                <span class="metric-lbl" id="lbl-metric-desc-consignacao">Faturamento Líquido (Política Comercial)</span>
                             </div>
                         </div>
                     </div>
