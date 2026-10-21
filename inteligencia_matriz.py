@@ -28,6 +28,16 @@ TAMANHOS_ICONES = ["A3", "A4", "A5", "A6", "A7"]
 CAMINHO_LOTES_MANUAIS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'lotes_minimos_custom.json')
 
 def carregar_lotes_manuais() -> Dict[str, int]:
+    # 1. Tenta carregar do Turso Cloud DB (Vercel / Produção)
+    if db and hasattr(db, 'obter_lotes_manuais_db'):
+        try:
+            lotes_db = db.obter_lotes_manuais_db()
+            if lotes_db:
+                return lotes_db
+        except Exception:
+            pass
+
+    # 2. Fallback para arquivo JSON local
     if os.path.exists(CAMINHO_LOTES_MANUAIS):
         try:
             with open(CAMINHO_LOTES_MANUAIS, 'r', encoding='utf-8') as f:
@@ -37,16 +47,31 @@ def carregar_lotes_manuais() -> Dict[str, int]:
     return {}
 
 def salvar_lote_manual(sku: str, lote: int) -> bool:
-    lotes = carregar_lotes_manuais()
-    lotes[sku.strip()] = max(0, int(lote))
+    sku_clean = sku.strip().upper()
+    lote_val = max(0, int(lote))
+    sucesso_db = False
+
+    # 1. Salva no Turso Cloud DB (Persistência no Vercel)
+    if db and hasattr(db, 'salvar_lote_manual_db'):
+        try:
+            sucesso_db = db.salvar_lote_manual_db(sku_clean, lote_val)
+        except Exception as e_db:
+            print(f"[INTELIGENCIA] Erro ao salvar lote no Turso: {e_db}")
+
+    # 2. Tenta salvar em arquivo JSON local (se o sistema de arquivos permitir)
     try:
+        lotes = carregar_lotes_manuais()
+        lotes[sku_clean] = lote_val
         os.makedirs(os.path.dirname(CAMINHO_LOTES_MANUAIS), exist_ok=True)
         with open(CAMINHO_LOTES_MANUAIS, 'w', encoding='utf-8') as f:
             json.dump(lotes, f, ensure_ascii=False, indent=2)
         return True
     except Exception as e:
+        # Se salvou no DB, considera sucesso mesmo com disco read-only no Vercel
+        if sucesso_db:
+            return True
         print(f"[INTELIGENCIA] Erro ao salvar lote manual: {e}")
-        return False
+        return sucesso_db
 
 def extrair_base_e_tamanho(nome_prod: str) -> tuple[str, str]:
     nome_up = (nome_prod or "").upper().strip()

@@ -2044,7 +2044,7 @@ function renderTabelaRemessas(remessas, statusMap = {}) {
         const dadosAdic = (r.infAdic ? (r.infAdic.cDadosAdic || '') : '').toUpperCase();
         const nCli = (c.nCodCli || r.nCodCli || '').toString();
         
-        return nCli === '2216843393' || obs.includes('GUARULHOS') || obs.includes('MACEDO') || obs.includes('0092-30') || obs.includes('009230') || dadosAdic.includes('GUARULHOS') || dadosAdic.includes('MACEDO') || dadosAdic.includes('0092-30') || true;
+        return nCli === '2216843393' || obs.includes('GUARULHOS') || obs.includes('MACEDO') || obs.includes('0092-30') || obs.includes('009230') || dadosAdic.includes('GUARULHOS') || dadosAdic.includes('MACEDO') || dadosAdic.includes('0092-30');
     });
 
     // Ordenar do MAIS ATUAL para o MAIS ANTIGO
@@ -2066,7 +2066,7 @@ function renderTabelaRemessas(remessas, statusMap = {}) {
         const codRem = c.nCodRem || r.codigo_remessa || r.remessa_id;
         const numRem = c.cNumeroRemessa || r.numero_remessa || codRem;
         const remessaId = String(numRem || codRem || '');
-        const obsFormatada = 'COMUNIDADE CATOLICA SHALOM GUARULHOS MACEDO';
+        const obsFormatada = r.cliente_nome || r.razao_social || 'COMUNIDADE CATOLICA SHALOM GUARULHOS MACEDO';
         
         const isFaturada = (c.faturada || r.faturada || 'N').toString().toUpperCase() === 'S';
         const isCancelada = (c.cCancelado || r.cancelada || 'N').toString().toUpperCase() === 'S';
@@ -2303,25 +2303,98 @@ function abrirGradeCamisas(modeloBase) {
         return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
     });
 
+    // 1. Calcular média de reposição necessária dos tamanhos com demanda
+    let somaQtdDemanda = 0;
+    let countDemanda = 0;
+    const calculosGrade = {};
+
     variacoes.forEach(p => {
-        const emProd = state.producao.has(p.sku);
         const vendas = p[`vendas_geral_${state.periodoDias}d`] || 0;
         const lt = getLeadTimeFamilia(p.familia, 'matriz');
         const estAlvo = calcularEstoqueAlvo(vendas, state.periodoDias, state.abastecimentoDias, lt);
         const estMatrizDisp = getMatrizDisponivel(p);
-        const status = definirStatus(estMatrizDisp, estAlvo, emProd, vendas, p.status_especial);
+        const nec = Math.max(0, Math.ceil(estAlvo - estMatrizDisp));
+        calculosGrade[p.sku] = { nec, estAlvo, estMatrizDisp, vendas };
+        if (nec > 0) {
+            somaQtdDemanda += nec;
+            countDemanda++;
+        }
+    });
+
+    const mediaEquilibrioGrade = countDemanda > 0 ? Math.max(5, Math.round(somaQtdDemanda / countDemanda)) : 10;
+
+    function recalcularTotaisGrade() {
+        let totalPecas = 0;
+        let totalValor = 0.0;
+
+        variacoes.forEach(p => {
+            const inputQtd = tbody.querySelector(`.input-qtd-grade[data-sku="${p.sku}"]`);
+            const inputCusto = tbody.querySelector(`.input-custo-grade[data-sku="${p.sku}"]`);
+            const spanSub = tbody.querySelector(`.subtotal-grade[data-sku="${p.sku}"]`);
+
+            const q = inputQtd ? parseInt(inputQtd.value) || 0 : 0;
+            const c = inputCusto ? parseFloat(inputCusto.value) || 0.0 : 0.0;
+            const sub = q * c;
+
+            if (spanSub) spanSub.innerText = `R$ ${sub.toFixed(2)}`;
+            totalPecas += q;
+            totalValor += sub;
+        });
+
+        const spanPecasTop = document.getElementById('grade-total-pecas');
+        const spanValorTop = document.getElementById('grade-total-valor');
+        const spanPecasFoot = document.getElementById('grade-footer-pecas');
+        const spanValorFoot = document.getElementById('grade-footer-valor');
+
+        if (spanPecasTop) spanPecasTop.innerText = totalPecas;
+        if (spanValorTop) spanValorTop.innerText = `R$ ${totalValor.toFixed(2)}`;
+        if (spanPecasFoot) spanPecasFoot.innerText = `${totalPecas} un`;
+        if (spanValorFoot) spanValorFoot.innerText = `R$ ${totalValor.toFixed(2)}`;
+    }
+
+    variacoes.forEach(p => {
+        const emProd = state.producao.has(p.sku);
+        const calc = calculosGrade[p.sku] || {};
+        const estMatrizDisp = calc.estMatrizDisp || 0;
+        const estAlvo = calc.estAlvo || 0.0;
+        const status = definirStatus(estMatrizDisp, estAlvo, emProd, calc.vendas || 0, p.status_especial);
+
+        // Se o tamanho não teve venda recente (ex: GG), mas o estoque está baixo/zerado, sugere equilíbrio!
+        let qtdSugerida = calc.nec || 0;
+        let ehEquilibrio = false;
+        if (qtdSugerida === 0 && estMatrizDisp <= 2) {
+            qtdSugerida = mediaEquilibrioGrade;
+            ehEquilibrio = true;
+        }
+
+        const custoPadrao = p.cmc > 0 ? p.cmc : (p.custo > 0 ? p.custo : 27.00);
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td><strong>${p.sku}</strong></td>
-            <td><span class="tag-fam" style="font-size:0.85rem; font-weight:bold;">${p.tamanho || 'UN'}</span></td>
+            <td><span class="tag-fam" style="font-size:0.85rem; font-weight:bold; background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); color: #60a5fa; padding: 2px 8px; border-radius: 4px;">${p.tamanho || 'UN'}</span></td>
             <td><strong>${estMatrizDisp}</strong> un ${p.matriz_reservado > 0 ? `<small style="font-size:0.7rem; color:var(--text-muted);">(Fís: ${p.matriz})</small>` : ''}</td>
             <td>${estAlvo.toFixed(1)} un</td>
-            <td><span class="badge ${status.class}">${status.label}</span></td>
             <td>
-                <input type="checkbox" class="chk-prod-grade" data-sku="${p.sku}" ${emProd ? 'checked' : ''}>
+                <span class="badge ${status.class}">${status.label}</span>
+                ${ehEquilibrio ? '<br><small style="color:#fbbf24; font-size:0.68rem; font-weight:600;"><i class="fa-solid fa-scale-balanced"></i> Equilíbrio Grade</small>' : ''}
+            </td>
+            <td>
+                <input type="number" class="form-control input-qtd-grade" data-sku="${p.sku}" value="${qtdSugerida}" min="0" style="width: 80px; padding: 4px 8px; font-size: 0.85rem; font-weight: bold; background: #0f172a; border: 1px solid #38bdf8; color: #fff; text-align: center;">
+            </td>
+            <td>
+                <input type="number" step="0.5" class="form-control input-custo-grade" data-sku="${p.sku}" value="${custoPadrao.toFixed(2)}" min="0" style="width: 80px; padding: 4px 6px; font-size: 0.85rem; background: #0f172a; border: 1px solid #475569; color: #34d399; text-align: center;">
+            </td>
+            <td>
+                <strong class="subtotal-grade" data-sku="${p.sku}" style="color: #34d399; font-size: 0.88rem;">R$ ${(qtdSugerida * custoPadrao).toFixed(2)}</strong>
+            </td>
+            <td style="text-align: center;">
+                <input type="checkbox" class="chk-prod-grade" data-sku="${p.sku}" ${emProd ? 'checked' : ''} style="cursor: pointer; transform: scale(1.15);">
             </td>
         `;
+
+        tr.querySelector('.input-qtd-grade').addEventListener('input', recalcularTotaisGrade);
+        tr.querySelector('.input-custo-grade').addEventListener('input', recalcularTotaisGrade);
 
         tr.querySelector('.chk-prod-grade').addEventListener('change', async (e) => {
             const sku = e.target.dataset.sku;
@@ -2349,7 +2422,78 @@ function abrirGradeCamisas(modeloBase) {
         tbody.appendChild(tr);
     });
 
+    recalcularTotaisGrade();
+
+    // Configurar botão de Enviar Grade ao Comitê de Decisão
+    const btnComite = document.getElementById('btn-enviar-grade-comite');
+    if (btnComite) {
+        btnComite.onclick = async () => {
+            let adicionados = 0;
+            for (const p of variacoes) {
+                const inputQtd = tbody.querySelector(`.input-qtd-grade[data-sku="${p.sku}"]`);
+                const inputCusto = tbody.querySelector(`.input-custo-grade[data-sku="${p.sku}"]`);
+                const qtd = inputQtd ? parseInt(inputQtd.value) || 0 : 0;
+                const custo = inputCusto ? parseFloat(inputCusto.value) || 27.0 : 27.0;
+
+                if (qtd > 0) {
+                    await adicionarItemAoComiteDireto(p.sku, qtd, custo);
+                    adicionados++;
+                }
+            }
+            fecharModalGradeCamisas();
+            alert(`🎉 ${adicionados} tamanhos do modelo "${modeloBase}" foram enviados para a Pauta do Comitê de Decisão com suas quantidades personalizadas!`);
+            if (typeof carregarPautaCoordenacao === 'function') {
+                carregarPautaCoordenacao(true);
+            }
+        };
+    }
+
     document.getElementById('modal-grade-camisas').classList.add('active');
+}
+
+async function adicionarItemAoComiteDireto(sku, qtd, custo) {
+    const skuClean = String(sku).trim().toUpperCase();
+    let item = stateComite.itens.find(i => String(i.sku).trim().toUpperCase() === skuClean);
+    const pProd = state.produtos.find(p => String(p.sku).trim().toUpperCase() === skuClean);
+
+    if (!item) {
+        item = {
+            sku: skuClean,
+            nome: pProd ? pProd.nome : skuClean,
+            marca: pProd ? pProd.marca : 'SHALOM',
+            familia: pProd ? pProd.familia : 'CAMISAS',
+            matriz_fisico: pProd ? getMatrizDisponivel(pProd) : 0,
+            vendas_30d: pProd ? (pProd[`vendas_geral_${state.periodoDias}d`] || 0) : 0,
+            classe_abc: pProd ? pProd.classe_abc : 'C',
+            decisao: 'APROVADO',
+            observacao: 'Grade completa balanceada via Modal Camisas',
+            qtd_sugerida: qtd,
+            cmc: custo,
+            valor_unitario: pProd ? (pProd.preco || pProd.valor_unitario || 59.90) : 59.90
+        };
+        stateComite.itens.unshift(item);
+    } else {
+        item.qtd_sugerida = qtd;
+        item.decisao = 'APROVADO';
+        item.cmc = custo;
+    }
+
+    salvarPautaLocal();
+
+    try {
+        await fetch('/api/coordenacao/adicionar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                sku: skuClean,
+                decisao: 'APROVADO',
+                observacao: 'Grade completa balanceada via Modal Camisas',
+                qtd_sugerida: qtd
+            })
+        });
+    } catch (e) {
+        console.warn('Erro ao sincronizar item da grade no comitê remoto:', e);
+    }
 }
 
 function fecharModalGradeCamisas() {
@@ -2812,12 +2956,12 @@ function abrirModalRequisicaoCompra(itensExclusivos = null) {
         dtSugestao: new Date(Date.now() + 15 * 86400000).toLocaleDateString('pt-BR'),
         obsReqCompra: `Requisição de Compra gerada pelo DRP Omie (${produtosCompra.length} itens)`,
         ItensReqCompra: produtosCompra.map(p => {
-            let nec = velasFeriasSelecionadas[p.sku] || 0;
+            let nec = p.quantidade_sugerida || velasFeriasSelecionadas[p.sku] || 0;
             if (nec <= 0) {
                 const vendas = p[`vendas_geral_${state.periodoDias}d`] || 0;
                 const lt = getLeadTimeFamilia(p.familia, 'matriz');
                 const estAlvo = calcularEstoqueAlvo(vendas, state.periodoDias, state.abastecimentoDias, lt);
-                nec = Math.max(1, Math.ceil(estAlvo - p.matriz));
+                nec = Math.max(1, Math.ceil(estAlvo - (p.matriz || 0)));
             }
             return {
                 codProd: p.id_produto || p.sku,
@@ -2831,11 +2975,11 @@ function abrirModalRequisicaoCompra(itensExclusivos = null) {
     document.getElementById('json-requisicao-compra').innerText = JSON.stringify(payloadOmie, null, 2);
 
     produtosCompra.forEach(p => {
-        let nec = velasFeriasSelecionadas[p.sku] || 0;
+        let nec = p.quantidade_sugerida || velasFeriasSelecionadas[p.sku] || 0;
         const vendas = p[`vendas_geral_${state.periodoDias}d`] || 0;
         const lt = getLeadTimeFamilia(p.familia, 'matriz');
         const estAlvo = calcularEstoqueAlvo(vendas, state.periodoDias, state.abastecimentoDias, lt);
-        const estMatrizDisp = getMatrizDisponivel(p);
+        const estMatrizDisp = typeof getMatrizDisponivel === 'function' ? getMatrizDisponivel(p) : (p.matriz || 0);
         if (nec <= 0) {
             nec = Math.max(1, Math.ceil(estAlvo - estMatrizDisp));
         }
@@ -4704,6 +4848,7 @@ let stateComite = {
             return {};
         }
     })(),
+    selecionados: new Set(),
     itemSelecionado: null,
     filtroMarca: 'TODAS',
     filtroStatus: 'TODOS',
@@ -4735,6 +4880,84 @@ function salvarPautaLocal() {
 
     const countEl = document.getElementById('count-itens-pauta');
     if (countEl) countEl.innerText = total;
+
+    atualizarResumoSelecaoPauta();
+}
+
+function atualizarResumoSelecaoPauta() {
+    if (!stateComite.selecionados) stateComite.selecionados = new Set();
+    
+    // Filtra apenas os que ainda existem na pauta
+    const skusPauta = new Set(stateComite.itens.map(i => i.sku));
+    for (const sku of stateComite.selecionados) {
+        if (!skusPauta.has(sku)) stateComite.selecionados.delete(sku);
+    }
+
+    let totalPecas = 0;
+    let totalValor = 0.0;
+    const count = stateComite.selecionados.size;
+
+    stateComite.selecionados.forEach(sku => {
+        const item = stateComite.itens.find(i => i.sku === sku);
+        if (item) {
+            const qtd = Number(item.qtd_sugerida) > 0 ? Number(item.qtd_sugerida) : (Number(item.lote_minimo) > 0 ? Number(item.lote_minimo) : 1);
+            const custo = Number(item.cmc) > 0 ? Number(item.cmc) : (Number(item.valor_unitario) > 0 ? Number(item.valor_unitario) : (item.familia?.toUpperCase()?.includes('CAMISA') ? 27.00 : 20.00));
+            totalPecas += qtd;
+            totalValor += (qtd * custo);
+        }
+    });
+
+    const elTxt = document.getElementById('txt-resumo-selecao-pauta');
+    const elVal = document.getElementById('val-resumo-selecao-pauta');
+    const elBtnCount = document.getElementById('btn-count-req-pauta');
+
+    if (elTxt) elTxt.innerText = `${count} selecionado${count !== 1 ? 's' : ''} (${totalPecas} un)`;
+    if (elVal) elVal.innerText = `R$ ${totalValor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (elBtnCount) elBtnCount.innerText = count;
+
+    // Atualiza checkbox master "Selecionar Todos"
+    const chkMaster = document.getElementById('chk-selecionar-todos-pauta');
+    if (chkMaster && stateComite.itens.length > 0) {
+        chkMaster.checked = count > 0 && count === stateComite.itens.length;
+        chkMaster.indeterminate = count > 0 && count < stateComite.itens.length;
+    }
+}
+
+function alternarSelecaoTodosPauta(marcado) {
+    if (!stateComite.selecionados) stateComite.selecionados = new Set();
+    
+    let listaFiltrada = stateComite.itens.filter(item => {
+        if (stateComite.filtroMarca !== 'TODAS' && (item.marca || 'SHALOM') !== stateComite.filtroMarca) return false;
+        if (stateComite.filtroStatus !== 'TODOS' && (item.decisao || 'PENDENTE') !== stateComite.filtroStatus) return false;
+        if (stateComite.busca) {
+            const termo = stateComite.busca;
+            const matchSku = (item.sku || '').toLowerCase().includes(termo);
+            const matchNome = (item.nome || '').toLowerCase().includes(termo);
+            if (!matchSku && !matchNome) return false;
+        }
+        return true;
+    });
+
+    listaFiltrada.forEach(i => {
+        if (marcado) {
+            stateComite.selecionados.add(i.sku);
+        } else {
+            stateComite.selecionados.delete(i.sku);
+        }
+    });
+
+    renderListaPauta();
+    atualizarResumoSelecaoPauta();
+}
+
+function toggleSelecaoItemPauta(sku, marcado) {
+    if (!stateComite.selecionados) stateComite.selecionados = new Set();
+    if (marcado) {
+        stateComite.selecionados.add(sku);
+    } else {
+        stateComite.selecionados.delete(sku);
+    }
+    atualizarResumoSelecaoPauta();
 }
 
 // Obter dados completos de um produto a partir de state.produtos e stateInteligenciaMatriz
@@ -4977,13 +5200,18 @@ function renderListaPauta() {
     lista.forEach(item => {
         const card = document.createElement('div');
         const isAtivo = stateComite.itemSelecionado && stateComite.itemSelecionado.sku === item.sku;
+        const isSelecionado = stateComite.selecionados && stateComite.selecionados.has(item.sku);
         
+        const qtd = Number(item.qtd_sugerida) > 0 ? Number(item.qtd_sugerida) : (Number(item.lote_minimo) > 0 ? Number(item.lote_minimo) : 1);
+        const custo = Number(item.cmc) > 0 ? Number(item.cmc) : (Number(item.valor_unitario) > 0 ? Number(item.valor_unitario) : (item.familia?.toUpperCase()?.includes('CAMISA') ? 27.00 : 20.00));
+        const subtotal = qtd * custo;
+
         // Cores de status de decisão
         let decisaoBadge = '<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);">🟡 Pendente</span>';
-        let borderColor = 'rgba(255, 255, 255, 0.08)';
+        let borderColor = isSelecionado ? 'rgba(56, 189, 248, 0.5)' : 'rgba(255, 255, 255, 0.08)';
         if (item.decisao === 'APROVADO') {
             decisaoBadge = `<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4);">🟢 Aprovado (${item.qtd_sugerida || 0} un)</span>`;
-            borderColor = 'rgba(16, 185, 129, 0.4)';
+            borderColor = isSelecionado ? '#38bdf8' : 'rgba(16, 185, 129, 0.4)';
         } else if (item.decisao === 'BLACKLIST') {
             decisaoBadge = '<span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);">🔴 Descontinuar</span>';
             borderColor = 'rgba(239, 68, 68, 0.4)';
@@ -4995,7 +5223,7 @@ function renderListaPauta() {
 
         card.className = 'card-pauta-item';
         card.style.cssText = `
-            background: ${isAtivo ? 'rgba(192, 132, 252, 0.12)' : 'rgba(30, 41, 59, 0.7)'};
+            background: ${isAtivo ? 'rgba(192, 132, 252, 0.12)' : (isSelecionado ? 'rgba(14, 165, 233, 0.12)' : 'rgba(30, 41, 59, 0.7)')};
             border: 1px solid ${borderColor};
             padding: 10px 12px;
             border-radius: 6px;
@@ -5004,7 +5232,10 @@ function renderListaPauta() {
         `;
 
         card.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+            <div style="display: flex; gap: 8px; align-items: flex-start;">
+                <div style="padding-top: 2px;" onclick="event.stopPropagation();">
+                    <input type="checkbox" class="chk-item-pauta" data-sku="${item.sku}" ${isSelecionado ? 'checked' : ''} style="cursor: pointer; transform: scale(1.15); accent-color: #38bdf8;">
+                </div>
                 <div style="flex: 1; min-width: 0;">
                     <div style="display: flex; gap: 6px; align-items: center; margin-bottom: 3px;">
                         <strong style="color: #60a5fa; font-size: 0.85rem;">${item.sku}</strong>
@@ -5018,6 +5249,13 @@ function renderListaPauta() {
                         <span>Vendas 30d: <strong style="color:#f8fafc;">${item.vendas_30d || 0}</strong></span>
                         <span>ABC: <strong style="color:#fbbf24;">${item.classe_abc || 'C'}</strong></span>
                     </div>
+                    <!-- Bloco Valor Individual x Quantidade = Subtotal -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.6); padding: 4px 8px; border-radius: 4px; margin-top: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                        <span style="font-size: 0.75rem; color: #94a3b8;">
+                            <strong style="color: #f8fafc;">${qtd}</strong> un &times; R$ ${custo.toFixed(2)}
+                        </span>
+                        <strong style="color: #34d399; font-size: 0.82rem;">R$ ${subtotal.toFixed(2)}</strong>
+                    </div>
                 </div>
                 <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
                     <button class="btn btn-sm btn-icon btn-remover-pauta" data-sku="${item.sku}" title="Remover da Pauta" style="color: #94a3b8; font-size: 0.75rem; padding: 2px 5px;">
@@ -5029,9 +5267,18 @@ function renderListaPauta() {
         `;
 
         card.onclick = (e) => {
-            if (e.target.closest('.btn-remover-pauta')) return;
+            if (e.target.closest('.btn-remover-pauta') || e.target.closest('.chk-item-pauta')) return;
             selecionarProdutoPauta(item.sku);
         };
+
+        const chk = card.querySelector('.chk-item-pauta');
+        if (chk) {
+            chk.onchange = (e) => {
+                toggleSelecaoItemPauta(item.sku, e.target.checked);
+                card.style.background = e.target.checked ? 'rgba(14, 165, 233, 0.12)' : (isAtivo ? 'rgba(192, 132, 252, 0.12)' : 'rgba(30, 41, 59, 0.7)');
+                card.style.borderColor = e.target.checked ? '#38bdf8' : (isAtivo ? '#c084fc' : 'rgba(255, 255, 255, 0.08)');
+            };
+        }
 
         const btnRem = card.querySelector('.btn-remover-pauta');
         if (btnRem) {
@@ -5231,15 +5478,29 @@ function renderRaioXComite(item) {
                 <i class="fa-solid fa-gavel"></i> Decisão da Coordenação & Parecer Executivo
             </h4>
             
-            <div style="display: grid; grid-template-columns: 140px 1fr; gap: 12px; margin-bottom: 12px;">
+            <div style="display: grid; grid-template-columns: 140px 140px 1fr; gap: 12px; margin-bottom: 12px;">
                 <div>
                     <label style="font-size: 0.8rem; font-weight: 600; color: #f8fafc; display: block; margin-bottom: 4px;">Qtd a Produzir / Comprar:</label>
-                    <input type="number" id="decisao-qtd-${item.sku}" class="form-control" value="${item.qtd_sugerida > 0 ? item.qtd_sugerida : (item.lote_minimo > 0 ? item.lote_minimo : 50)}" min="0" step="10">
+                    <input type="number" id="decisao-qtd-${item.sku}" class="form-control" value="${item.qtd_sugerida > 0 ? item.qtd_sugerida : (item.lote_minimo > 0 ? item.lote_minimo : 50)}" min="0" step="10" oninput="atualizarSubtotalRaioX('${item.sku}')">
                 </div>
                 <div>
-                    <label style="font-size: 0.8rem; font-weight: 600; color: #f8fafc; display: block; margin-bottom: 4px;">Justificativa / Parecer Editorial da Coordenação:</label>
-                    <input type="text" id="decisao-obs-${item.sku}" class="form-control" value="${item.observacao || ''}" placeholder="Ex: Aguardando nova capa, cotação de papel, reavaliar em 30d...">
+                    <label style="font-size: 0.8rem; font-weight: 600; color: #f8fafc; display: block; margin-bottom: 4px;">Custo Unitário Est. (R$):</label>
+                    <input type="number" step="0.5" id="decisao-custo-${item.sku}" class="form-control" value="${(item.cmc > 0 ? item.cmc : (item.valor_unitario > 0 ? item.valor_unitario : (item.familia?.toUpperCase()?.includes('CAMISA') ? 27.00 : 20.00))).toFixed(2)}" min="0" oninput="atualizarSubtotalRaioX('${item.sku}')">
                 </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 600; color: #f8fafc; display: block; margin-bottom: 4px;">Justificativa / Parecer Editorial:</label>
+                    <input type="text" id="decisao-obs-${item.sku}" class="form-control" value="${item.observacao || ''}" placeholder="Ex: Aguardando nova capa, cotação de tecido, reavaliar em 30d...">
+                </div>
+            </div>
+
+            <!-- Subtotal em Destaque do Item -->
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(52, 211, 153, 0.3); padding: 8px 14px; border-radius: 6px; margin-bottom: 14px;">
+                <span style="font-size: 0.85rem; color: #94a3b8;">
+                    <i class="fa-solid fa-calculator" style="color: #38bdf8;"></i> Total Estimado Deste Item:
+                </span>
+                <strong id="decisao-subtotal-val-${item.sku}" style="color: #34d399; font-size: 1.15rem; font-weight: 800;">
+                    R$ ${((item.qtd_sugerida > 0 ? item.qtd_sugerida : (item.lote_minimo > 0 ? item.lote_minimo : 50)) * (item.cmc > 0 ? item.cmc : (item.valor_unitario > 0 ? item.valor_unitario : (item.familia?.toUpperCase()?.includes('CAMISA') ? 27.00 : 20.00)))).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </strong>
             </div>
 
             <!-- Botões de Ação Imediata -->
@@ -5265,6 +5526,29 @@ function renderRaioXComite(item) {
     `;
 }
 
+function atualizarSubtotalRaioX(sku) {
+    const qtdEl = document.getElementById(`decisao-qtd-${sku}`);
+    const custoEl = document.getElementById(`decisao-custo-${sku}`);
+    const subValEl = document.getElementById(`decisao-subtotal-val-${sku}`);
+
+    const qtd = qtdEl ? parseInt(qtdEl.value) || 0 : 0;
+    const custo = custoEl ? parseFloat(custoEl.value) || 0.0 : 0.0;
+    const subtotal = qtd * custo;
+
+    if (subValEl) {
+        subValEl.innerText = `R$ ${subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    const item = stateComite.itens.find(i => String(i.sku).trim().toUpperCase() === String(sku).trim().toUpperCase());
+    if (item) {
+        item.qtd_sugerida = qtd;
+        item.cmc = custo;
+    }
+
+    renderListaPauta();
+    atualizarResumoSelecaoPauta();
+}
+
 // 3. Salvar Lote Mínimo a partir da Tela do Comitê
 async function salvarLotePeloComite(sku) {
     const input = document.getElementById(`input-lote-comite-${sku}`);
@@ -5278,21 +5562,34 @@ async function salvarLotePeloComite(sku) {
         });
         const res = await resp.json();
         if (res.success) {
-            alert(`Lote mínimo do SKU ${sku} atualizado para ${novoLote} un!`);
-            carregarPautaCoordenacao();
+            const it = stateComite.itens.find(i => String(i.sku).trim().toUpperCase() === String(sku).trim().toUpperCase());
+            if (it) {
+                it.lote_minimo = novoLote;
+                if (!it.qtd_sugerida || it.qtd_sugerida === 0) {
+                    it.qtd_sugerida = novoLote;
+                    const qtdInput = document.getElementById(`decisao-qtd-${sku}`);
+                    if (qtdInput) qtdInput.value = novoLote;
+                    atualizarSubtotalRaioX(sku);
+                }
+            }
+            salvarPautaLocal();
+            renderListaPauta();
+            alert(`✅ Lote mínimo do SKU ${sku} atualizado para ${novoLote} un salvo com sucesso no banco de dados!`);
         } else {
-            alert('Erro: ' + res.message);
+            alert('❌ Erro: ' + res.message);
         }
     } catch (e) {
-        alert('Erro ao salvar lote.');
+        alert('❌ Erro ao salvar lote no servidor.');
     }
 }
 
 // 4. Salvar Decisão no Comitê
 async function registrarDecisaoComite(sku, decisao) {
     const qtdEl = document.getElementById(`decisao-qtd-${sku}`);
+    const custoEl = document.getElementById(`decisao-custo-${sku}`);
     const obsEl = document.getElementById(`decisao-obs-${sku}`);
     const qtd = qtdEl ? parseInt(qtdEl.value) || 0 : 0;
+    const custo = custoEl ? parseFloat(custoEl.value) || 0.0 : 0.0;
     const obs = obsEl ? obsEl.value.trim() : '';
 
     if (decisao === 'BLACKLIST') {
@@ -5307,6 +5604,7 @@ async function registrarDecisaoComite(sku, decisao) {
         item.decisao = decisao;
         item.observacao = obs;
         item.qtd_sugerida = qtd;
+        if (custo > 0) item.cmc = custo;
     }
 
     if (decisao === 'BLACKLIST') {
@@ -5323,9 +5621,16 @@ async function registrarDecisaoComite(sku, decisao) {
     }
 
     if (decisao === 'APROVADO') {
-        if (confirm(`✅ Produção de ${qtd} un APROVADA!\nDeseja abrir a tela de Requisição de Compra no Omie agora para gerar a ordem?`)) {
+        const valSub = qtd * (custo || item?.cmc || 27.0);
+        if (confirm(`✅ Produção de ${qtd} un APROVADA (R$ ${valSub.toFixed(2)})!\nDeseja abrir a tela de Requisição de Compra no Omie agora para gerar a ordem?`)) {
             state.skusChecadosMatriz.add(sku);
-            abrirModalRequisicaoCompra();
+            abrirModalRequisicaoCompra([{
+                ...state.produtos.find(p => p.sku === sku),
+                sku: sku,
+                nome: item.nome,
+                quantidade_sugerida: qtd,
+                valor_unitario: custo || item.cmc || 27.0
+            }]);
         }
     } else {
         alert(`✅ Decisão registrada com sucesso: ${decisao}`);
@@ -5380,6 +5685,55 @@ async function removerItemPauta(sku) {
 // 6. Adicionar Item Avulso de Sugestão de Fornecedor
 async function adicionarItemAvulsoPauta(sku) {
     await adicionarSkusPauta([sku]);
+}
+
+// 6.1 Puxar SKU Manualmente para a Pauta do Comitê
+async function adicionarSkuAvulsoPauta() {
+    const input = document.getElementById('input-add-sku-pauta');
+    if (!input) return;
+    const skuRaw = input.value.trim();
+    if (!skuRaw) {
+        alert('Por favor, informe um SKU para puxar para o Comitê.');
+        return;
+    }
+    input.value = '';
+    const cleanSku = String(skuRaw).trim().toUpperCase();
+    await adicionarSkusPauta([cleanSku]);
+    selecionarProdutoPauta(cleanSku);
+}
+
+// 6.2 Gerar Requisição de Compra no Omie dos Itens Selecionados na Pauta
+function gerarRequisicaoSelecionadosPauta() {
+    if (!stateComite.selecionados || stateComite.selecionados.size === 0) {
+        alert('⚠️ Selecione ao menos um produto na Pauta usando os checkboxes para criar a Requisição de Compra.');
+        return;
+    }
+
+    const itensParaRequisicao = [];
+    stateComite.selecionados.forEach(sku => {
+        const itemPauta = stateComite.itens.find(i => i.sku === sku);
+        const pProd = state.produtos.find(p => p.sku === sku);
+
+        const qtdAprovada = itemPauta?.qtd_sugerida > 0 ? itemPauta.qtd_sugerida : (itemPauta?.lote_minimo > 0 ? itemPauta.lote_minimo : 1);
+        const custoUnit = itemPauta?.cmc > 0 ? itemPauta.cmc : (pProd?.cmc > 0 ? pProd.cmc : (itemPauta?.valor_unitario || 27.00));
+
+        const itemObj = pProd ? { ...pProd } : {
+            sku: sku,
+            nome: itemPauta?.nome || sku,
+            familia: itemPauta?.familia || 'OUTROS',
+            marca: itemPauta?.marca || 'SHALOM',
+            matriz: itemPauta?.matriz_fisico || 0,
+            matriz_reservado: 0
+        };
+
+        itemObj.quantidade_sugerida = qtdAprovada;
+        itemObj.valor_unitario = custoUnit;
+        itensParaRequisicao.push(itemObj);
+
+        state.skusChecadosMatriz.add(sku);
+    });
+
+    abrirModalRequisicaoCompra(itensParaRequisicao);
 }
 
 // 7. Editar Meta Financeira de Fornecedor

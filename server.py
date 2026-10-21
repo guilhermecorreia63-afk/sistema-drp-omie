@@ -1752,6 +1752,15 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                     remessas_locais = json.load(f)
             except Exception:
                 remessas_locais = []
+        # Filtrar estritamente apenas remessas de Guarulhos
+        def _is_guarulhos(r):
+            c = r.get("cabec") or {}
+            obs = (r.get("obs") or {}).get("cObs", "").upper()
+            info = (r.get("infAdic") or {}).get("cDadosAdic", "").upper()
+            cli = str(c.get("nCodCli", "")).strip()
+            return cli == "2216843393" or "GUARULHOS" in obs or "MACEDO" in obs or "0092-30" in obs or "009230" in obs or "GUARULHOS" in info or "MACEDO" in info or "0092-30" in info
+
+        remessas_locais = [r for r in remessas_locais if _is_guarulhos(r)]
 
         # Enriquecer itens com SKU e Nome do catálogo de produtos caso venham vazios da Omie
         def _enrich_remessas(lista_remessas):

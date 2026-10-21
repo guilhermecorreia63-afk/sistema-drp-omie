@@ -1058,6 +1058,9 @@
                             </p>
                         </div>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button id="btn-requisicao-selecionados-pauta" class="btn btn-primary" onclick="gerarRequisicaoSelecionadosPauta()" style="background: linear-gradient(135deg, #a855f7, #6366f1); border:none; font-weight:600;">
+                                <i class="fa-solid fa-cart-shopping"></i> Requisitar Selecionados (<span id="btn-count-req-pauta">0</span>) 🛍️
+                            </button>
                             <button id="btn-gerar-ata-comite" class="btn btn-secondary" onclick="gerarAtaComitePdf()" style="background: rgba(192, 132, 252, 0.15); border: 1px solid rgba(192, 132, 252, 0.4); color: #c084fc; font-weight: 600;">
                                 <i class="fa-solid fa-file-pdf"></i> Gerar Ata Executiva (PDF) 📄
                             </button>
@@ -1111,7 +1114,7 @@
                             </div>
 
                             <!-- Filtros da Fila -->
-                            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
+                            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;">
                                 <input type="text" id="busca-pauta-comite" class="form-control" placeholder="🔍 Filtrar pauta..." onkeyup="filtrarListaPauta()">
                                 <div style="display: flex; gap: 6px;">
                                     <select id="filtro-marca-pauta" class="form-control" style="font-size: 0.8rem;" onchange="filtrarListaPauta()">
@@ -1126,8 +1129,20 @@
                                 </div>
                             </div>
 
+                            <!-- Barra de Seleção e Totalizador Rápido -->
+                            <div id="barra-selecao-pauta" style="display: flex; justify-content: space-between; align-items: center; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(168, 85, 247, 0.3); padding: 8px 10px; border-radius: 6px; margin-bottom: 8px;">
+                                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 600; color: #f8fafc; cursor: pointer; margin: 0;">
+                                    <input type="checkbox" id="chk-selecionar-todos-pauta" onchange="alternarSelecaoTodosPauta(this.checked)">
+                                    <span>Selecionar Todos</span>
+                                </label>
+                                <div style="font-size: 0.78rem; text-align: right;">
+                                    <span id="txt-resumo-selecao-pauta" style="color: #38bdf8; font-weight: bold;">0 selecionados</span> • 
+                                    <strong id="val-resumo-selecao-pauta" style="color: #34d399; font-size: 0.85rem;">R$ 0,00</strong>
+                                </div>
+                            </div>
+
                             <!-- Lista Rolável de Cards -->
-                            <div id="lista-cards-pauta" style="max-height: 650px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px;">
+                            <div id="lista-cards-pauta" style="max-height: 600px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px;">
                                 <div style="text-align: center; color: var(--text-muted); padding: 30px;">
                                     Nenhum item na pauta da coordenação.<br>
                                     <small>Selecione itens na Aba 2 (Matriz) e clique em <em>"Enviar p/ Comitê"</em>.</small>
@@ -1842,8 +1857,15 @@
                 <button class="modal-close" id="btn-close-grade-camisas">&times;</button>
             </div>
             <div class="modal-body">
-                <h4 id="grade-modelo-nome" style="color: var(--primary); margin-bottom: 12px;">Modelo: -</h4>
-                <p>Analise a disponibilidade de estoque da grade. Rupturas isoladas em um tamanho (ex: G) não indicam falta total do modelo. Solicite a requisição da grade completa:</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 12px;">
+                    <h4 id="grade-modelo-nome" style="color: var(--primary); margin: 0;">Modelo: -</h4>
+                    <div id="grade-resumo-banner" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); padding: 4px 12px; border-radius: 6px; font-size: 0.88rem; color: #34d399; font-weight: 600;">
+                        Total da Grade: <span id="grade-total-pecas">0</span> peças | <span id="grade-total-valor">R$ 0,00</span>
+                    </div>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+                    Analise e ajuste as quantidades por tamanho para evitar buracos na grade (ex: GG). Você pode editar as quantidades e valores antes de emitir ou enviar ao Comitê:
+                </p>
                 <div class="table-wrapper">
                     <table class="drp-table">
                         <thead>
@@ -1851,8 +1873,11 @@
                                 <th>SKU</th>
                                 <th>Tamanho</th>
                                 <th>Estoque Matriz</th>
-                                <th>Estoque Alvo (+20%)</th>
-                                <th>Status Matriz</th>
+                                <th>Estoque Alvo</th>
+                                <th>Status</th>
+                                <th style="width: 110px;">Qtd Requisitar</th>
+                                <th style="width: 100px;">Custo Unit.</th>
+                                <th>Subtotal</th>
                                 <th>Em Produção 🟣</th>
                             </tr>
                         </thead>
@@ -1862,9 +1887,19 @@
                     </table>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-primary" id="btn-gerar-requisicao-grade-camisas"><i class="fa-solid fa-cart-shopping"></i> Gerar Requisição da Grade Completa Omie 🛍️</button>
-                <button class="btn btn-secondary" id="btn-save-grade-camisas">Fechar & Salvar</button>
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div style="font-weight: 600; color: #f8fafc; font-size: 0.9rem;">
+                    Resumo: <span id="grade-footer-pecas" style="color:#38bdf8;">0 un</span> • <span id="grade-footer-valor" style="color:#34d399;">R$ 0,00</span>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-secondary" id="btn-enviar-grade-comite" style="background: rgba(192, 132, 252, 0.15); border: 1px solid rgba(192, 132, 252, 0.4); color: #c084fc; font-weight: 600;">
+                        <i class="fa-solid fa-users-gear"></i> Enviar p/ Comitê 🤝
+                    </button>
+                    <button class="btn btn-primary" id="btn-gerar-requisicao-grade-camisas">
+                        <i class="fa-solid fa-cart-shopping"></i> Gerar Requisição no Omie 🛍️
+                    </button>
+                    <button class="btn btn-secondary" id="btn-save-grade-camisas">Fechar & Salvar</button>
+                </div>
             </div>
         </div>
     </div>

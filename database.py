@@ -195,6 +195,11 @@ def inicializar_banco():
             deposito_2 INTEGER DEFAULT 0,
             ultima_atualizacao TEXT
         )""",
+        """CREATE TABLE IF NOT EXISTS drp_lotes_minimos (
+            sku TEXT PRIMARY KEY,
+            lote INTEGER DEFAULT 0,
+            ultima_atualizacao TEXT
+        )""",
         """CREATE TABLE IF NOT EXISTS drp_historico_transferencias (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             sku TEXT,
@@ -823,6 +828,38 @@ def salvar_meta_fornecedor(fornecedor: str, valor: float) -> bool:
     except Exception as e:
         print(f"[DB] Erro ao salvar meta no Turso: {e}")
         return False
+
+def obter_lotes_manuais_db() -> dict:
+    """Carrega todos os lotes mínimos customizados do Turso DB."""
+    try:
+        df = executar_query("SELECT sku, lote FROM drp_lotes_minimos")
+        if df is not None and not df.empty:
+            return {str(r['sku']).strip().upper(): int(r['lote']) for _, r in df.iterrows() if r.get('sku')}
+    except Exception as e:
+        print(f"[DB] Erro ao carregar lotes do Turso: {e}")
+    return {}
+
+def salvar_lote_manual_db(sku: str, lote: int) -> bool:
+    """Salva ou atualiza um lote mínimo customizado no Turso DB."""
+    try:
+        sku_clean = str(sku).strip().upper()
+        query = """
+            INSERT INTO drp_lotes_minimos (sku, lote, ultima_atualizacao)
+            VALUES (:sku, :lote, :ultima_atualizacao)
+            ON CONFLICT(sku) DO UPDATE SET
+                lote = excluded.lote,
+                ultima_atualizacao = excluded.ultima_atualizacao
+        """
+        executar_query(query, {
+            "sku": sku_clean,
+            "lote": int(lote),
+            "ultima_atualizacao": datetime.now().isoformat()
+        }, is_select=False)
+        return True
+    except Exception as e:
+        print(f"[DB] Erro ao salvar lote {sku} no Turso: {e}")
+        return False
+
 
 if __name__ == "__main__":
     inicializar_banco()
