@@ -29,6 +29,7 @@ except ImportError:
     from services.omie_client import OmieClient
 
 logger = logging.getLogger("DevolucaoRemessa")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
 CATEGORIA_COMPRAS_REVENDA = "2.01.01" # Compras de Mercadorias para Revenda
 CFOP_DEVOLUCAO = "1.917"              # Entrada de devolução de mercadoria remetida para venda fora do estabelecimento / consignação
@@ -81,6 +82,18 @@ def executar_devolucao_seletiva_remessa(
 
     logger.info(f"[DEVOLUCAO] Nota {num_nota} gerada para cliente {nCodCli} com {len(itens_nota)} itens.")
 
+    # 3.1 Mapear itens_manter para nCodProd garantindo compatibilidade com SKU e ID numérico
+    map_cod_prod_qtd = {}
+    for chave, qtd in itens_manter.items():
+        if str(chave).isdigit():
+            map_cod_prod_qtd[int(chave)] = qtd
+        else:
+            res_p = client.executar("geral/produtos/", "ConsultarProduto", [{"codigo_produto_integracao": str(chave).strip()}])
+            if res_p and "codigo_produto" in res_p:
+                map_cod_prod_qtd[int(res_p["codigo_produto"])] = qtd
+            else:
+                logger.warning(f"[DEVOLUCAO] Não foi possível localizar nCodProd para chave '{chave}'")
+
     # 4. Montar a lista de alterações/exclusões de produtos
     produtos_alteracao = []
     itens_encontrados = set()
@@ -88,20 +101,14 @@ def executar_devolucao_seletiva_remessa(
     for item in itens_nota:
         cod_it = item.get("nCodIt")
         cod_prod = item.get("nCodProd")
-        cod_item_str = str(item.get("cCodItem", "")).strip().upper()
-        desc_item = item.get("cDescItem", "")
+        desc_item = item.get("cDescItem", "") or f"Produto {cod_prod}"
 
         # Verifica se o item deve ser mantido
-        qtd_alvo = None
-        for chave_sku, qtd in itens_manter.items():
-            if chave_sku.strip().upper() == cod_item_str or str(qtd_alvo) == str(cod_prod):
-                qtd_alvo = qtd
-                itens_encontrados.add(chave_sku)
-                break
+        qtd_alvo = map_cod_prod_qtd.get(int(cod_prod)) if cod_prod else None
 
         if qtd_alvo is not None and qtd_alvo > 0:
             # Manter item e ajustar quantidade e CFOP
-            logger.info(f" -> MANTER item {cod_item_str} ({desc_item}): ajustando para {qtd_alvo} un, CFOP {CFOP_DEVOLUCAO}")
+            logger.info(f" -> MANTER item nCodProd={cod_prod} ({desc_item}): ajustando para {qtd_alvo} un, CFOP {CFOP_DEVOLUCAO}")
             produtos_alteracao.append({
                 "nCodIt": cod_it,
                 "cAcaoItem": "A",
@@ -111,9 +118,10 @@ def executar_devolucao_seletiva_remessa(
                     "cNaoMovEstoque": "N"  # Movimentar estoque ativado
                 }
             })
+            itens_encontrados.add(cod_prod)
         else:
             # Excluir item da nota de entrada
-            logger.info(f" -> EXCLUIR item {cod_item_str} ({desc_item}) da Nota de Entrada")
+            logger.info(f" -> EXCLUIR item nCodProd={cod_prod} ({desc_item}) da Nota de Entrada")
             produtos_alteracao.append({
                 "nCodIt": cod_it,
                 "cAcaoItem": "E"

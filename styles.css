@@ -1318,13 +1318,91 @@ body {
     box-shadow: 0 0 12px rgba(2, 132, 199, 0.5);
 }
 
-.step-item.completed {
-    color: #10b981;
-}
-
 .step-item.completed .step-circle {
     background: #059669;
     color: #ffffff;
 }
+
+/* Sub-navegação Consignação (Acertos vs Eventos Mobile) */
+.btn-consig-nav {
+    flex: 1;
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-consig-nav:hover {
+    color: #f8fafc;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-consig-nav.active {
+    background: #1e293b;
+    color: #38bdf8;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.btn-evt-mult {
+    min-width: 38px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: #94a3b8;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-evt-mult:hover {
+    border-color: #38bdf8;
+    color: #ffffff;
+}
+
+.btn-evt-mult.active {
+    background: #38bdf8 !important;
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    border-color: #38bdf8 !important;
+}
+
+/* Otimização Mobile para Stand / Bipagem de Eventos */
+@media (max-width: 768px) {
+    .consig-subnav {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    #subaba-consig-eventos .card {
+        padding: 14px !important;
+    }
+
+    #subaba-consig-eventos .bipagem-box {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #subaba-consig-eventos .bipagem-input-wrapper input {
+        font-size: 1.05rem !important;
+        height: 50px !important;
+    }
+
+    #subaba-consig-eventos .metrics-grid {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+}
+
 
 

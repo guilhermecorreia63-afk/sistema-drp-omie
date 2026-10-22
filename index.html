@@ -1169,8 +1169,20 @@
 
             <!-- ABA CONSIGNAÇÃO: CONTROLE DE CONSIGNAÇÃO (IDA E VOLTA) -->
             <section id="tab-consignacao" class="tab-content">
-                <!-- Stepper de Fluxo -->
-                <div class="consignacao-stepper">
+                <!-- Sub-Navegação do Módulo Consignação (Acertos vs Eventos Mobile) -->
+                <div class="consig-subnav" style="display: flex; gap: 8px; margin-bottom: 20px; background: #0b1120; padding: 6px; border-radius: 10px; border: 1px solid #1e293b; max-width: 650px;">
+                    <button id="btn-consig-tab-acertos" class="btn-consig-nav active" onclick="trocarSubAbaConsignacao('acertos')" style="flex: 1; padding: 10px 16px; border-radius: 8px; border: none; background: #1e293b; color: #38bdf8; font-size: 0.88rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <i class="fa-solid fa-arrow-right-arrow-left"></i> Acertos & Devoluções
+                    </button>
+                    <button id="btn-consig-tab-eventos" class="btn-consig-nav" onclick="trocarSubAbaConsignacao('eventos')" style="flex: 1; padding: 10px 16px; border-radius: 8px; border: none; background: transparent; color: #94a3b8; font-size: 0.88rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <i class="fa-solid fa-mobile-screen-button" style="color: #38bdf8;"></i> Remessas Eventos (Mobile / Stand)
+                    </button>
+                </div>
+
+                <!-- SUB-ABA 1: ACERTOS & DEVOLUÇÕES (PARÓQUIAS / LIVRARIAS) -->
+                <div id="subaba-consig-acertos">
+                    <!-- Stepper de Fluxo -->
+                    <div class="consignacao-stepper">
                     <div class="step-item active" id="step-1-indicador">
                         <div class="step-circle">1</div>
                         <span>Cliente & Remessas</span>
@@ -1439,6 +1451,149 @@
                         </table>
                     </div>
                 </div>
+                <!-- FIM SUB-ABA 1 -->
+
+                <!-- SUB-ABA 2: REMESSAS DE EVENTOS (MOBILE / STAND) -->
+                <div id="subaba-consig-eventos" style="display: none;">
+                    <div class="card" style="background: #0d1524; border: 1px solid #1e2c45; padding: 22px; border-radius: var(--radius-lg); margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+                            <div>
+                                <h3 style="font-size: 1.2rem; color: #ffffff; margin: 0 0 4px 0; display: flex; align-items: center; gap: 10px;">
+                                    <i class="fa-solid fa-tent" style="color: #38bdf8;"></i> Remessa para Stand & Eventos
+                                </h3>
+                                <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">
+                                    Bipagem rápida para montar ou adicionar produtos na remessa de eventos em aberto.
+                                </p>
+                            </div>
+                            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                                <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 0.8rem; padding: 6px 12px; border: 1px solid rgba(56, 189, 248, 0.3);">
+                                    <i class="fa-solid fa-user-check"></i> Cliente: EVENTOS (2266589781)
+                                </span>
+                                <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; font-size: 0.8rem; padding: 6px 12px; border: 1px solid rgba(16, 185, 129, 0.3);">
+                                    <i class="fa-solid fa-file-invoice"></i> CFOP 5.917 (Sem Contrato)
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Seleção de Remessa / Novo Evento -->
+                        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 14px 18px; margin-bottom: 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; align-items: center;">
+                            <div>
+                                <label style="font-size: 0.82rem; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 6px;">
+                                    <i class="fa-solid fa-folder-tree" style="color: #38bdf8;"></i> Remessa Alvo:
+                                </label>
+                                <select id="select-remessa-evento-alvo" class="form-control" style="background: #0f172a; color: #f8fafc; font-weight: 600;" onchange="selecionarRemessaEventoAlvo()">
+                                    <option value="0">➕ Criar Nova Remessa em Aberto</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.82rem; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 6px;">
+                                    <i class="fa-solid fa-tag" style="color: #38bdf8;"></i> Identificação / Nome do Evento:
+                                </label>
+                                <input type="text" id="input-nome-evento" class="form-control" placeholder="Ex: Acampamento de Férias 2026 / Stand Halleluya" value="Evento Geral 2026">
+                            </div>
+                            <div style="display: flex; align-items: flex-end;">
+                                <button class="btn btn-secondary" onclick="carregarRemessasEventos()" style="height: 42px; width: 100%;" title="Recarregar remessas abertas de eventos">
+                                    <i class="fa-solid fa-rotate"></i> Atualizar Remessas
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Bipagem Rápida Mobile / Stand -->
+                        <div class="bipagem-box" style="margin-bottom: 16px;">
+                            <div class="bipagem-input-wrapper">
+                                <i class="fa-solid fa-barcode" style="color: #38bdf8;"></i>
+                                <input type="text" id="input-evento-bip" class="input-bipagem" placeholder="Bipe o código de barras ou digite SKU / Nome do livro..." autocomplete="off">
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <span style="font-size: 0.82rem; color: #94a3b8; font-weight: 600;">Multiplicador:</span>
+                                <div class="btn-group" style="display: flex; gap: 4px;">
+                                    <button type="button" class="btn btn-sm btn-secondary btn-evt-mult active" onclick="setMultiplicadorEvento(1)">1x</button>
+                                    <button type="button" class="btn btn-sm btn-secondary btn-evt-mult" onclick="setMultiplicadorEvento(2)">2x</button>
+                                    <button type="button" class="btn btn-sm btn-secondary btn-evt-mult" onclick="setMultiplicadorEvento(5)">5x</button>
+                                    <button type="button" class="btn btn-sm btn-secondary btn-evt-mult" onclick="setMultiplicadorEvento(10)">10x</button>
+                                </div>
+                                <input type="number" id="input-evento-mult" class="form-control" value="1" min="1" style="width: 60px; text-align: center; font-weight: 700;">
+                            </div>
+                        </div>
+
+                        <!-- Dropdown de Busca Instantânea por Nome -->
+                        <div id="lista-sugestoes-evento" style="display: none; background: #0f172a; border: 1px solid #38bdf8; border-radius: 8px; max-height: 220px; overflow-y: auto; margin-top: -10px; margin-bottom: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 50; position: relative;">
+                            <!-- Preenchido via JS conforme digita -->
+                        </div>
+
+                        <!-- Métricas Rápidas do Carrinho de Evento -->
+                        <div class="metrics-grid" style="margin-bottom: 18px;">
+                            <div class="metric-card" style="border-left: 4px solid #38bdf8;">
+                                <div class="metric-icon"><i class="fa-solid fa-list-check" style="color: #38bdf8;"></i></div>
+                                <div class="metric-data">
+                                    <span class="metric-val" id="evt-metric-titulos">0</span>
+                                    <span class="metric-lbl">Títulos Distintos</span>
+                                </div>
+                            </div>
+                            <div class="metric-card" style="border-left: 4px solid #10b981;">
+                                <div class="metric-icon"><i class="fa-solid fa-boxes-stacked" style="color: #10b981;"></i></div>
+                                <div class="metric-data">
+                                    <span class="metric-val" id="evt-metric-pecas" style="color: #10b981;">0 un</span>
+                                    <span class="metric-lbl">Total de Peças</span>
+                                </div>
+                            </div>
+                            <div class="metric-card" style="border-left: 4px solid #a855f7;">
+                                <div class="metric-icon"><i class="fa-solid fa-receipt" style="color: #a855f7;"></i></div>
+                                <div class="metric-data">
+                                    <span class="metric-val" id="evt-metric-valor" style="color: #c084fc;">R$ 0,00</span>
+                                    <span class="metric-lbl">Valor Total (Tabela)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lista / Tabela Touch-Friendly de Itens da Remessa de Evento -->
+                        <div class="table-container" style="margin-bottom: 20px;">
+                            <div class="table-header" style="display: flex; justify-content: space-between; align-items: center;">
+                                <h4 style="font-size: 1rem; color: #ffffff; margin: 0;">Itens Adicionados na Remessa de Evento</h4>
+                                <button class="btn btn-sm btn-secondary" onclick="limparItensEvento()" style="color: #f87171;" title="Limpar todos os itens">
+                                    <i class="fa-solid fa-trash-can"></i> Limpar Lista
+                                </button>
+                            </div>
+                            <div class="table-wrapper" style="max-height: 480px; overflow-y: auto;">
+                                <table class="drp-table" id="tabela-evento-itens">
+                                    <thead>
+                                        <tr>
+                                            <th width="80">Item</th>
+                                            <th width="90">SKU</th>
+                                            <th>Descrição do Produto</th>
+                                            <th width="140" style="text-align: center;">Quantidade</th>
+                                            <th width="100" style="text-align: right;">Preço Unit.</th>
+                                            <th width="110" style="text-align: right;">Subtotal</th>
+                                            <th width="60" style="text-align: center;">Ação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody-evento-itens">
+                                        <tr>
+                                            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                                                <i class="fa-solid fa-barcode" style="font-size: 2rem; color: #334155; display: block; margin-bottom: 8px;"></i>
+                                                Nenhum produto bipado ainda.<br>
+                                                <small>Use a câmera, leitor de código de barras ou digite o SKU/nome acima.</small>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Botão de Ação e Feedback Omie -->
+                        <div style="background: #080e1a; border: 1px solid #1e293b; border-radius: 8px; padding: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+                            <div id="status-envio-evento" style="display: none; padding: 10px 16px; border-radius: 6px; font-size: 0.88rem; flex: 1;">
+                                <!-- Feedback de envio via JS -->
+                            </div>
+                            <div style="display: flex; gap: 10px; margin-left: auto;">
+                                <button id="btn-transmitir-remessa-evento" class="btn btn-primary" onclick="transmitirRemessaEventoOmie()" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); border: none; font-size: 1rem; font-weight: 700; padding: 12px 28px; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.35);">
+                                    <i class="fa-solid fa-paper-plane"></i> Transmitir Remessa ao Omie ERP 🚀
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- FIM SUB-ABA 2 -->
             </section>
 
             <!-- ABA 3: ASSINATURAS PÃO DA VIDA (MÓDULO 3) -->

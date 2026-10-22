@@ -6167,12 +6167,18 @@ async function selecionarClienteConsignacao(cliente) {
         remessas.forEach(r => {
             const card = document.createElement('div');
             card.style.cssText = 'background: #0f1c33; border: 1px solid #1e3a63; padding: 12px 14px; border-radius: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer;';
+            const badgeFat = (r.faturada === 'S')
+                ? '<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 0.72rem; padding: 2px 6px;"><i class="fa-solid fa-file-invoice"></i> Faturada</span>'
+                : '<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; font-size: 0.72rem; padding: 2px 6px;"><i class="fa-solid fa-hand"></i> Manual / Não Faturada</span>';
             card.innerHTML = `
                 <input type="checkbox" id="chk-rem-${r.nCodRem}" value="${r.nCodRem}" class="chk-remessa-consignacao" style="width: 18px; height: 18px; cursor: pointer;" checked>
                 <div style="flex: 1;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
                         <strong style="color: #ffffff; font-size: 0.95rem;">Remessa #${r.numero_remessa}</strong>
-                        <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 0.75rem;">${r.etapa || 'Concluído'}</span>
+                        <div style="display: flex; gap: 6px;">
+                            ${badgeFat}
+                            <span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; font-size: 0.75rem;">${r.etapa || 'Concluído'}</span>
+                        </div>
                     </div>
                     <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 3px;">
                         Data: <strong>${r.data_previsao}</strong> | NF: <strong>${r.numero_nf || '-'}</strong>
@@ -6792,7 +6798,15 @@ async function confirmarIntegracaoOmieConsignacao() {
                 infoMsg += `• Pedido de Venda: #${data.pedido_venda.numero_pedido || ''} (${data.pedido_venda.descricao_status || 'OK'})\n`;
             }
             if (data.devolucoes && data.devolucoes.length > 0) {
-                infoMsg += `• Remessas com Devolução Registrada: ${data.devolucoes.map(d => '#' + d.numero_remessa).join(', ')}\n`;
+                const devsOficiais = data.devolucoes.filter(d => d.tipo !== 'MANUAL_NAO_FATURADA');
+                const devsManuais = data.devolucoes.filter(d => d.tipo === 'MANUAL_NAO_FATURADA');
+                if (devsOficiais.length > 0) {
+                    infoMsg += `• Remessas com Devolução Registrada (CFOP 1.917): ${devsOficiais.map(d => '#' + d.numero_remessa).join(', ')}\n`;
+                }
+                if (devsManuais.length > 0) {
+                    infoMsg += `\n⚠️ REMESSAS MANUAIS (NÃO FATURADAS):\n` +
+                               devsManuais.map(d => `• Remessa #${d.numero_remessa}: Exclua manualmente no Omie após validar com o vendedor para estornar os produtos ao estoque.\n`).join('');
+                }
             }
 
             const badge = document.getElementById('badge-status-acerto');
@@ -7021,6 +7035,471 @@ async function carregarAcertoSalvo(acertoId) {
     }
 }
 
+// =========================================================================
+// MÓDULO 2 - SUB-ABA 2: REMESSAS DE EVENTOS (CLIENTE EVENTOS / MOBILE)
+// =========================================================================
+
+const stateEvento = {
+    remessaAlvoId: 0,
+    remessasDisponiveis: [],
+    itens: [],
+    multiplicador: 1
+};
+
+function trocarSubAbaConsignacao(subAba) {
+    const btnAcertos = document.getElementById('btn-consig-tab-acertos');
+    const btnEventos = document.getElementById('btn-consig-tab-eventos');
+    const painelAcertos = document.getElementById('subaba-consig-acertos');
+    const painelEventos = document.getElementById('subaba-consig-eventos');
+
+    if (subAba === 'eventos') {
+        if (btnAcertos) {
+            btnAcertos.style.background = 'transparent';
+            btnAcertos.style.color = '#94a3b8';
+            btnAcertos.classList.remove('active');
+        }
+        if (btnEventos) {
+            btnEventos.style.background = '#1e293b';
+            btnEventos.style.color = '#38bdf8';
+            btnEventos.classList.add('active');
+        }
+        if (painelAcertos) painelAcertos.style.display = 'none';
+        if (painelEventos) painelEventos.style.display = 'block';
+
+        inicializarEventosMobile();
+    } else {
+        if (btnAcertos) {
+            btnAcertos.style.background = '#1e293b';
+            btnAcertos.style.color = '#38bdf8';
+            btnAcertos.classList.add('active');
+        }
+        if (btnEventos) {
+            btnEventos.style.background = 'transparent';
+            btnEventos.style.color = '#94a3b8';
+            btnEventos.classList.remove('active');
+        }
+        if (painelAcertos) painelAcertos.style.display = 'block';
+        if (painelEventos) painelEventos.style.display = 'none';
+    }
+}
+
+function inicializarEventosMobile() {
+    carregarRemessasEventos();
+    setupEventoBipagemInput();
+    recalcularTotaisEvento();
+}
+
+async function carregarRemessasEventos() {
+    const sel = document.getElementById('select-remessa-evento-alvo');
+    if (!sel) return;
+
+    try {
+        const resp = await fetch('/api/consignacao/eventos/remessas');
+        const data = await resp.json();
+        const remessas = data.remessas || [];
+        stateEvento.remessasDisponiveis = remessas;
+
+        sel.innerHTML = '<option value="0">➕ Criar Nova Remessa em Aberto</option>';
+        remessas.forEach(r => {
+            const opt = document.createElement('option');
+            opt.value = r.nCodRem;
+            const fatTxt = r.faturada === 'S' ? ' [Faturada]' : ' [Aberta]';
+            opt.textContent = `Remessa #${r.numero_remessa} (${r.data_previsao || ''}) - R$ ${(parseFloat(r.valor_total) || 0).toFixed(2)}${fatTxt}`;
+            sel.appendChild(opt);
+        });
+
+        if (stateEvento.remessaAlvoId > 0) {
+            sel.value = stateEvento.remessaAlvoId;
+        }
+    } catch (e) {
+        console.error('Erro ao listar remessas de eventos:', e);
+    }
+}
+
+async function selecionarRemessaEventoAlvo() {
+    const sel = document.getElementById('select-remessa-evento-alvo');
+    if (!sel) return;
+
+    const val = parseInt(sel.value) || 0;
+    stateEvento.remessaAlvoId = val;
+
+    if (val === 0) {
+        document.getElementById('input-nome-evento').value = 'Evento Geral 2026';
+    } else {
+        const rem = stateEvento.remessasDisponiveis.find(r => r.nCodRem === val);
+        if (rem) {
+            document.getElementById('input-nome-evento').value = `Remessa #${rem.numero_remessa}`;
+            // Carregar itens existentes da remessa
+            try {
+                const resp = await fetch(`/api/consignacao/unificar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ remessas: [val], desconto_padrao_pct: 0 })
+                });
+                const data = await resp.json();
+                if (data.success && data.data && data.data.itens) {
+                    stateEvento.itens = data.data.itens.map(it => ({
+                        sku: it.sku,
+                        codigo_produto: it.codigo_produto,
+                        descricao: it.descricao,
+                        quantidade: it.qtd_enviada,
+                        preco_unitario: it.preco_unitario
+                    }));
+                    renderizarTabelaEvento();
+                    recalcularTotaisEvento();
+                }
+            } catch (err) {
+                console.error('Erro ao carregar itens da remessa existente:', err);
+            }
+        }
+    }
+}
+
+function setMultiplicadorEvento(m) {
+    stateEvento.multiplicador = m;
+    const inp = document.getElementById('input-evento-mult');
+    if (inp) inp.value = m;
+
+    document.querySelectorAll('.btn-evt-mult').forEach(btn => {
+        if (btn.innerText === `${m}x`) {
+            btn.classList.add('active');
+            btn.style.background = '#38bdf8';
+            btn.style.color = '#0f172a';
+            btn.style.fontWeight = '700';
+        } else {
+            btn.classList.remove('active');
+            btn.style.background = '';
+            btn.style.color = '';
+            btn.style.fontWeight = '';
+        }
+    });
+}
+
+function setupEventoBipagemInput() {
+    const inp = document.getElementById('input-evento-bip');
+    const inpMult = document.getElementById('input-evento-mult');
+    const boxSugestoes = document.getElementById('lista-sugestoes-evento');
+
+    if (inpMult && !inpMult._init) {
+        inpMult._init = true;
+        inpMult.addEventListener('input', () => {
+            const val = parseInt(inpMult.value) || 1;
+            stateEvento.multiplicador = Math.max(1, val);
+        });
+    }
+
+    if (inp && !inp._init) {
+        inp._init = true;
+
+        inp.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const termo = inp.value.trim();
+                inp.value = '';
+                if (boxSugestoes) boxSugestoes.style.display = 'none';
+                if (termo) {
+                    processarEntradaEvento(termo);
+                }
+            }
+        });
+
+        inp.addEventListener('input', () => {
+            const termo = inp.value.trim().toLowerCase();
+            if (!boxSugestoes) return;
+
+            if (termo.length < 3) {
+                boxSugestoes.style.display = 'none';
+                boxSugestoes.innerHTML = '';
+                return;
+            }
+
+            // Buscar catálogo de produtos
+            const catalogo = state.produtos || [];
+            const matches = catalogo.filter(p => {
+                const sku = String(p.sku || '').toLowerCase();
+                const cod = String(p.codigo || '').toLowerCase();
+                const nome = String(p.nome || p.descricao || '').toLowerCase();
+                const ean = String(p.codigo_barras || p.ean || '').toLowerCase();
+                return sku.includes(termo) || cod.includes(termo) || nome.includes(termo) || ean.includes(termo);
+            }).slice(0, 10);
+
+            if (matches.length === 0) {
+                boxSugestoes.style.display = 'block';
+                boxSugestoes.innerHTML = `<div style="padding: 12px; color: var(--text-muted); text-align: center; font-size: 0.85rem;">Nenhum produto encontrado para "${termo}"</div>`;
+                return;
+            }
+
+            boxSugestoes.style.display = 'block';
+            boxSugestoes.innerHTML = matches.map(p => {
+                const sku = p.sku || p.codigo;
+                const nome = p.nome || p.descricao || 'Produto sem nome';
+                const preco = parseFloat(p.valor_unitario || p.preco_venda || 0).toFixed(2);
+                return `
+                    <div class="sugestao-item-evento" onclick="selecionarProdutoSugestaoEvento('${sku}')" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid #1e293b; cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='#1e293b'" onmouseout="this.style.background='transparent'">
+                        <div>
+                            <strong style="color: #38bdf8; font-size: 0.88rem;">${sku}</strong> — <span style="color: #f8fafc; font-size: 0.85rem;">${nome}</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span style="color: #34d399; font-weight: 700; font-size: 0.85rem;">R$ ${preco}</span>
+                            <button class="btn btn-sm btn-primary" style="padding: 3px 8px; font-size: 0.75rem;">+ Adicionar</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        });
+    }
+}
+
+function selecionarProdutoSugestaoEvento(sku) {
+    const boxSugestoes = document.getElementById('lista-sugestoes-evento');
+    const inp = document.getElementById('input-evento-bip');
+    if (boxSugestoes) boxSugestoes.style.display = 'none';
+    if (inp) inp.value = '';
+    processarEntradaEvento(sku);
+}
+
+function processarEntradaEvento(codigoOuTermo) {
+    const catalogo = state.produtos || [];
+    const termo = String(codigoOuTermo).trim().toUpperCase();
+
+    // Match exato por SKU, Código, EAN ou ID
+    const prod = catalogo.find(p => 
+        String(p.sku || '').toUpperCase() === termo ||
+        String(p.codigo || '').toUpperCase() === termo ||
+        String(p.codigo_barras || p.ean || '').toUpperCase() === termo ||
+        String(p.id_produto || '') === termo
+    );
+
+    if (!prod) {
+        // Tenta achar com contains
+        const softMatch = catalogo.find(p => 
+            String(p.sku || '').toUpperCase().includes(termo) ||
+            String(p.nome || p.descricao || '').toUpperCase().includes(termo)
+        );
+        if (softMatch) {
+            adicionarItemEvento(softMatch, stateEvento.multiplicador);
+            return;
+        }
+
+        alert(`Produto "${codigoOuTermo}" não encontrado no catálogo.`);
+        return;
+    }
+
+    adicionarItemEvento(prod, stateEvento.multiplicador);
+}
+
+function adicionarItemEvento(prod, qtd) {
+    const sku = String(prod.sku || prod.codigo || '').trim();
+    const ncod = parseInt(prod.id_produto || prod.codigo_produto || 0);
+    const desc = prod.nome || prod.descricao || 'Produto';
+    const preco = parseFloat(prod.valor_unitario || prod.preco_venda || 0.0);
+
+    const existe = stateEvento.itens.find(it => it.sku === sku);
+    if (existe) {
+        existe.quantidade += qtd;
+    } else {
+        stateEvento.itens.push({
+            sku: sku,
+            codigo_produto: ncod,
+            descricao: desc,
+            quantidade: qtd,
+            preco_unitario: preco
+        });
+    }
+
+    renderizarTabelaEvento();
+    recalcularTotaisEvento();
+}
+
+function alterarQtdItemEvento(sku, delta) {
+    const it = stateEvento.itens.find(x => x.sku === sku);
+    if (!it) return;
+
+    it.quantidade += delta;
+    if (it.quantidade <= 0) {
+        stateEvento.itens = stateEvento.itens.filter(x => x.sku !== sku);
+    }
+    renderizarTabelaEvento();
+    recalcularTotaisEvento();
+}
+
+function setQtdItemEventoManual(sku, val) {
+    const it = stateEvento.itens.find(x => x.sku === sku);
+    if (!it) return;
+    const q = parseInt(val) || 0;
+    if (q <= 0) {
+        stateEvento.itens = stateEvento.itens.filter(x => x.sku !== sku);
+    } else {
+        it.quantidade = q;
+    }
+    renderizarTabelaEvento();
+    recalcularTotaisEvento();
+}
+
+function removerItemEvento(sku) {
+    stateEvento.itens = stateEvento.itens.filter(x => x.sku !== sku);
+    renderizarTabelaEvento();
+    recalcularTotaisEvento();
+}
+
+function limparItensEvento() {
+    if (stateEvento.itens.length === 0) return;
+    if (!confirm('Deseja realmente limpar todos os itens da lista de evento?')) return;
+    stateEvento.itens = [];
+    renderizarTabelaEvento();
+    recalcularTotaisEvento();
+}
+
+function recalcularTotaisEvento() {
+    let totTitulos = stateEvento.itens.length;
+    let totPecas = 0;
+    let totValor = 0.0;
+
+    stateEvento.itens.forEach(it => {
+        totPecas += it.quantidade;
+        totValor += (it.quantidade * it.preco_unitario);
+    });
+
+    const elTit = document.getElementById('evt-metric-titulos');
+    const elPec = document.getElementById('evt-metric-pecas');
+    const elVal = document.getElementById('evt-metric-valor');
+    const btnTrans = document.getElementById('btn-transmitir-remessa-evento');
+
+    if (elTit) elTit.innerText = totTitulos;
+    if (elPec) elPec.innerText = `${totPecas} un`;
+    if (elVal) elVal.innerText = `R$ ${totValor.toFixed(2).replace('.', ',')}`;
+
+    if (btnTrans) {
+        btnTrans.disabled = (totPecas === 0);
+        btnTrans.style.opacity = (totPecas === 0) ? '0.5' : '1';
+    }
+}
+
+function renderizarTabelaEvento() {
+    const tbody = document.getElementById('tbody-evento-itens');
+    if (!tbody) return;
+
+    if (stateEvento.itens.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                    <i class="fa-solid fa-barcode" style="font-size: 2rem; color: #334155; display: block; margin-bottom: 8px;"></i>
+                    Nenhum produto bipado ainda.<br>
+                    <small>Use a câmera, leitor de código de barras ou digite o SKU/nome acima.</small>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = stateEvento.itens.map((it, idx) => {
+        const subtotal = (it.quantidade * it.preco_unitario).toFixed(2).replace('.', ',');
+        const precoFmt = it.preco_unitario.toFixed(2).replace('.', ',');
+        return `
+            <tr>
+                <td style="color: var(--text-muted); font-size: 0.85rem;">#${idx + 1}</td>
+                <td><strong style="color: #38bdf8;">${it.sku}</strong></td>
+                <td>
+                    <div style="font-weight: 600; color: #f8fafc;">${it.descricao}</div>
+                </td>
+                <td style="text-align: center;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        <button class="btn btn-sm btn-secondary" onclick="alterarQtdItemEvento('${it.sku}', -1)" style="padding: 2px 8px; font-weight: 700;">-</button>
+                        <input type="number" class="form-control" value="${it.quantidade}" min="1" onchange="setQtdItemEventoManual('${it.sku}', this.value)" style="width: 55px; text-align: center; font-weight: 700; padding: 2px 4px; height: 28px;">
+                        <button class="btn btn-sm btn-secondary" onclick="alterarQtdItemEvento('${it.sku}', 1)" style="padding: 2px 8px; font-weight: 700;">+</button>
+                    </div>
+                </td>
+                <td style="text-align: right; color: var(--text-muted);">R$ ${precoFmt}</td>
+                <td style="text-align: right; font-weight: 700; color: #34d399;">R$ ${subtotal}</td>
+                <td style="text-align: center;">
+                    <button class="btn btn-sm btn-secondary" onclick="removerItemEvento('${it.sku}')" style="color: #f87171; padding: 4px 8px;" title="Remover item">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+async function transmitirRemessaEventoOmie() {
+    if (stateEvento.itens.length === 0) {
+        alert('Nenhum item adicionado na remessa de evento.');
+        return;
+    }
+
+    const nomeEvt = document.getElementById('input-nome-evento')?.value.trim() || 'Evento Geral 2026';
+    const btn = document.getElementById('btn-transmitir-remessa-evento');
+    const stBox = document.getElementById('status-envio-evento');
+    const originalText = btn.innerHTML;
+
+    let totPecas = stateEvento.itens.reduce((acc, x) => acc + x.quantidade, 0);
+    const msgConfirma = `Transmitir remessa para o cliente EVENTOS no Omie?\n\n` +
+                        `• Evento / Identificação: ${nomeEvt}\n` +
+                        `• Total de Títulos: ${stateEvento.itens.length}\n` +
+                        `• Total de Peças: ${totPecas} un\n` +
+                        `• Operação: ${stateEvento.remessaAlvoId > 0 ? 'Atualizar Remessa #' + stateEvento.remessaAlvoId : 'Criar Nova Remessa em Aberto'}\n\n` +
+                        `Confirmar envio?`;
+
+    if (!confirm(msgConfirma)) return;
+
+    try {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Transmitindo ao Omie ERP...';
+
+        if (stBox) {
+            stBox.style.display = 'block';
+            stBox.style.background = 'rgba(56, 189, 248, 0.15)';
+            stBox.style.color = '#38bdf8';
+            stBox.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Cadastrando / atualizando remessa no Omie...';
+        }
+
+        const resp = await fetch('/api/consignacao/eventos/salvar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                nCodRem: stateEvento.remessaAlvoId,
+                nome_evento: nomeEvt,
+                itens: stateEvento.itens
+            })
+        });
+
+        const res = await resp.json();
+        if (res.success) {
+            if (stBox) {
+                stBox.style.background = 'rgba(16, 185, 129, 0.2)';
+                stBox.style.color = '#10b981';
+                stBox.innerHTML = `
+                    <strong><i class="fa-solid fa-circle-check"></i> Sucesso!</strong> ${res.message}<br>
+                    <small>Número da Remessa: <strong>#${res.numero_remessa}</strong> | Peças: ${res.total_pecas} un | Valor: R$ ${(parseFloat(res.valor_total) || 0).toFixed(2)}</small>
+                `;
+            }
+            btn.innerHTML = '<i class="fa-solid fa-check-double"></i> Remessa Gravada no Omie!';
+            btn.style.background = '#059669';
+
+            alert(`✅ ${res.message}\nNúmero da Remessa: #${res.numero_remessa}\nTotal de Peças: ${res.total_pecas} un`);
+
+            // Recarregar lista de remessas e manter o ID
+            await carregarRemessasEventos();
+            if (res.nCodRem) {
+                stateEvento.remessaAlvoId = res.nCodRem;
+                const sel = document.getElementById('select-remessa-evento-alvo');
+                if (sel) sel.value = res.nCodRem;
+            }
+        } else {
+            throw new Error(res.message || 'Falha ao gravar remessa no Omie.');
+        }
+    } catch (e) {
+        if (stBox) {
+            stBox.style.background = 'rgba(239, 68, 68, 0.2)';
+            stBox.style.color = '#ef4444';
+            stBox.innerHTML = `<strong><i class="fa-solid fa-triangle-exclamation"></i> Erro:</strong> ${e.message}`;
+        }
+        alert('Erro ao transmitir remessa: ' + e.message);
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
 // Expor funções globais da Consignação
 window.inicializarModuloConsignacao = inicializarModuloConsignacao;
 window.buscarClientesConsignacao = buscarClientesConsignacao;
@@ -7034,6 +7513,16 @@ window.confirmarIntegracaoOmieConsignacao = confirmarIntegracaoOmieConsignacao;
 window.carregarHistoricoAcertosConsignacao = carregarHistoricoAcertosConsignacao;
 window.carregarAcertoSalvo = carregarAcertoSalvo;
 window.atualizarStepperConsignacao = atualizarStepperConsignacao;
+window.trocarSubAbaConsignacao = trocarSubAbaConsignacao;
+window.carregarRemessasEventos = carregarRemessasEventos;
+window.selecionarRemessaEventoAlvo = selecionarRemessaEventoAlvo;
+window.setMultiplicadorEvento = setMultiplicadorEvento;
+window.selecionarProdutoSugestaoEvento = selecionarProdutoSugestaoEvento;
+window.alterarQtdItemEvento = alterarQtdItemEvento;
+window.setQtdItemEventoManual = setQtdItemEventoManual;
+window.removerItemEvento = removerItemEvento;
+window.limparItensEvento = limparItensEvento;
+window.transmitirRemessaEventoOmie = transmitirRemessaEventoOmie;
 
 // =========================================================================
 // MÓDULO 3: GESTÃO DE ASSINATURAS PÃO DA VIDA (LITURGIA DIÁRIA)

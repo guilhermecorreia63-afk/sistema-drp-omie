@@ -209,7 +209,8 @@ class ConsignacaoService:
                                 "data_previsao": c.get('dPrevisao') or '',
                                 "valor_total": float(c.get('nValorTotal') or 0.0),
                                 "etapa": c.get('cEtapa') or 'Concluído',
-                                "cenario_impostos": c.get('codigo_cenario_impostos')
+                                "cenario_impostos": c.get('codigo_cenario_impostos'),
+                                "faturada": c.get('faturada') or 'N'
                             })
             
             # Ordenar por número decrescente
@@ -260,7 +261,8 @@ class ConsignacaoService:
                 "nCodRem": nCodRem,
                 "numero_remessa": num_rem,
                 "data": cab.get('dPrevisao'),
-                "valor_total": float(cab.get('nValorTotal') or 0.0)
+                "valor_total": float(cab.get('nValorTotal') or 0.0),
+                "faturada": cab.get('faturada') or 'N'
             })
 
             for p in rem.get('produtos', []):
@@ -606,7 +608,31 @@ class ConsignacaoService:
         for rem_info in remessas_unificadas:
             nCodRem = rem_info.get("nCodRem") if isinstance(rem_info, dict) else None
             num_rem = rem_info.get("numero_remessa") if isinstance(rem_info, dict) else str(rem_info)
+            is_faturada = None
+            if isinstance(rem_info, dict) and "faturada" in rem_info:
+                is_faturada = (rem_info.get("faturada") == "S")
+
             if nCodRem:
+                # Se não sabemos se está faturada pelo cache, consultar o cabeçalho no Omie
+                if is_faturada is None:
+                    try:
+                        r_det = self.obter_detalhes_remessa(nCodRem)
+                        is_faturada = (r_det.get("cabec", {}).get("faturada") == "S")
+                    except Exception:
+                        is_faturada = True # fallback
+                
+                # Se a remessa NÃO foi faturada no Omie (manual em aberto), NÃO gera devolução fiscal
+                if not is_faturada:
+                    resultado["devolucoes"].append({
+                        "numero_remessa": num_rem,
+                        "nCodRem": nCodRem,
+                        "faturada": "N",
+                        "tipo": "MANUAL_NAO_FATURADA",
+                        "mensagem": f"Remessa #{num_rem} não foi faturada no Omie. Favor excluir a remessa manualmente no Omie após validar com o vendedor para estornar o estoque."
+                    })
+                    continue
+
+                # Se a remessa FOI faturada no Omie, gera a Devolução de Remessa oficial (CFOP 1.917)
                 try:
                     payload_dev = {"nCodRem": int(nCodRem)}
                     res_dev = self.client.executar("produtos/remessa/", "DevolverRemessa", [payload_dev])
@@ -659,7 +685,12 @@ class ConsignacaoService:
 
         # 3. Atualizar status no Turso DB
         # Se foi concluído ou se já tinha devolução feita e vinculou o pedido
-        tem_devolucao_ok = any(d.get("resultado", {}).get("cCodStatus") == "0" or "sucesso" in str(d.get("resultado", "")).lower() for d in resultado["devolucoes"])
+        tem_devolucao_ok = any(
+            d.get("resultado", {}).get("cCodStatus") == "0" or 
+            "sucesso" in str(d.get("resultado", "")).lower() or
+            d.get("tipo") == "MANUAL_NAO_FATURADA"
+            for d in resultado["devolucoes"]
+        )
         tem_pv_ok = bool(resultado["pedido_venda"])
 
         if tem_pv_ok and (tem_devolucao_ok or not resultado["devolucoes"]):
@@ -691,4 +722,169 @@ class ConsignacaoService:
 
         resultado["novo_status"] = novo_status
         return resultado
+
+    CLIENTE_EVENTOS_ID = 2266589781
+
+    def listar_remessas_eventos(self) -> List[Dict[str, Any]]:
+        """Lista as remessas em aberto do cliente EVENTOS (ID 2266589781)."""
+        return self.listar_remessas_cliente(self.CLIENTE_EVENTOS_ID)
+
+    def salvar_remessa_evento(self, dados: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Cria ou atualiza uma remessa em aberto para o cliente EVENTOS.
+        Suporta inserção por leitor de código de barras / mobile.
+        """
+        nCodRem = int(dados.get('nCodRem') or 0)
+        nome_evento = str(dados.get('nome_evento') or 'Evento / Stand Comercial').strip()
+        itens = dados.get('itens', [])
+        if not itens:
+            return {"success": False, "message": "Nenhum produto adicionado na remessa de evento."}
+
+        cache = self._carregar_produtos_cache()
+
+        produtos_payload = []
+        tot_pecas = 0
+        tot_valor = 0.0
+
+        for idx, it in enumerate(itens, 1):
+            sku = str(it.get('sku') or '').strip().upper()
+            ncod = int(it.get('codigo_produto') or it.get('nCodProd') or 0)
+            qtd = int(it.get('quantidade') or it.get('nQtde') or 1)
+            val_unit = float(it.get('preco_unitario') or it.get('nValUnit') or 0.0)
+
+            if ncod == 0 and sku:
+                p_info = cache.get('by_sku', {}).get(sku)
+                if p_info:
+                    ncod = int(p_info.get('id_produto') or p_info.get('codigo_produto') or 0)
+                    if val_unit <= 0:
+                        val_unit = float(p_info.get('valor_unitario') or 0.0)
+
+            if val_unit <= 0 and ncod in cache.get('by_id', {}):
+                val_unit = float(cache['by_id'][ncod].get('valor_unitario') or 0.0)
+
+            tot_pecas += qtd
+            tot_valor += (qtd * val_unit)
+
+            produtos_payload.append({
+                "cCFOP": "5.917",
+                "cCodItInt": f"EV_{idx}_{sku}"[:20],
+                "nCodIt": 0,
+                "nCodProd": ncod,
+                "nQtde": qtd,
+                "nValUnit": val_unit
+            })
+
+        if nCodRem > 0:
+            # Alterar remessa existente
+            try:
+                rem_existente = self.client.executar("produtos/remessa/", "ConsultarRemessa", [{"nCodRem": nCodRem}])
+                if not rem_existente or "cabec" not in rem_existente:
+                    return {"success": False, "message": f"Remessa #{nCodRem} não encontrada no Omie."}
+
+                cabec = rem_existente.get("cabec", {})
+                frete = rem_existente.get("frete", {})
+                infAdic = rem_existente.get("infAdic", {})
+
+                cabec["codigo_cenario_impostos"] = CENARIO_FISCAL_5917
+                cabec["nCodCli"] = self.CLIENTE_EVENTOS_ID
+
+                payload_alterar = {
+                    "cabec": cabec,
+                    "frete": frete,
+                    "infAdic": infAdic,
+                    "obs": {"cObs": f"Remessa Evento: {nome_evento}"},
+                    "produtos": produtos_payload
+                }
+
+                def strip_bad_keys(d):
+                    if isinstance(d, dict):
+                        for k in list(d.keys()):
+                            if k.lower() in ('ncodcen', 'ccodcen'):
+                                d.pop(k, None)
+                            else:
+                                strip_bad_keys(d[k])
+                    elif isinstance(d, list):
+                        for item in d:
+                            strip_bad_keys(item)
+
+                strip_bad_keys(payload_alterar)
+                res_omie = self.client.executar("produtos/remessa/", "AlterarRemessa", [payload_alterar])
+                cCodStatus = str(res_omie.get("cCodStatus") or "")
+                faultstring = res_omie.get("faultstring") or res_omie.get("cDesStatus") or ""
+
+                if faultstring and ("ERROR" in faultstring.upper() or (cCodStatus and cCodStatus != "0")):
+                    return {"success": False, "message": f"Erro Omie: {faultstring}", "raw_omie": res_omie}
+
+                return {
+                    "success": True,
+                    "nCodRem": nCodRem,
+                    "numero_remessa": str(cabec.get("cNumeroRemessa") or nCodRem),
+                    "total_pecas": tot_pecas,
+                    "valor_total": tot_valor,
+                    "message": f"Remessa #{cabec.get('cNumeroRemessa') or nCodRem} atualizada com sucesso no Omie ERP!"
+                }
+            except Exception as e:
+                return {"success": False, "message": f"Exceção ao alterar remessa: {str(e)}"}
+        else:
+            # Criar nova remessa para EVENTOS
+            cod_int_rem = f"EVT_{int(time.time())}"[:20]
+            payload_nova = {
+                "cabec": {
+                    "cCodIntRem": cod_int_rem,
+                    "dPrevisao": datetime.now().strftime("%d/%m/%Y"),
+                    "nCodCli": self.CLIENTE_EVENTOS_ID,
+                    "nCodRem": 0,
+                    "nCodVend": "1818533592", # Lyvia Rodrigues ou vendedor padrão
+                    "codigo_cenario_impostos": CENARIO_FISCAL_5917
+                },
+                "frete": {
+                    "cEspVol": "VOLUMES",
+                    "cMarVol": "",
+                    "cNumVol": "1",
+                    "cPlaca": "",
+                    "cTpFrete": "9",
+                    "cUF": "",
+                    "nCodTransp": 0,
+                    "nPesoBruto": round(tot_pecas * 0.3, 2),
+                    "nPesoLiq": round(tot_pecas * 0.28, 2),
+                    "nQtdVol": 1,
+                    "nValFrete": 0,
+                    "nValOutras": 0,
+                    "nValSeguro": 0
+                },
+                "infAdic": {
+                    "cCodCateg": CATEGORIA_RECEITA,
+                    "cConsFinal": "S",
+                    "cContato": "EVENTOS SHALOM",
+                    "cDadosAdic": f"Remessa de mercadorias para evento em consignacao - {nome_evento}",
+                    "cNumCtr": "",
+                    "cPedido": "",
+                    "nCodProj": 0
+                },
+                "obs": {
+                    "cObs": f"Evento: {nome_evento} (Remessa em Aberto)"
+                },
+                "produtos": produtos_payload
+            }
+
+            try:
+                res = self.client.executar("produtos/remessa/", "IncluirRemessa", [payload_nova])
+                c_status = str(res.get("cCodStatus") or "")
+                num_rem = res.get("cNumeroRemessa") or str(res.get("nCodRem") or "")
+                faultstring = res.get("faultstring") or res.get("cDesStatus") or ""
+
+                if (c_status == "0" or num_rem) and not res.get("faultstring"):
+                    return {
+                        "success": True,
+                        "nCodRem": res.get("nCodRem"),
+                        "numero_remessa": num_rem,
+                        "total_pecas": tot_pecas,
+                        "valor_total": tot_valor,
+                        "message": f"Nova Remessa #{num_rem} criada com sucesso para EVENTOS no Omie ERP!"
+                    }
+                else:
+                    return {"success": False, "message": f"Erro Omie: {faultstring}", "raw_omie": res}
+            except Exception as e:
+                return {"success": False, "message": f"Exceção ao incluir remessa no Omie: {str(e)}"}
+
 
