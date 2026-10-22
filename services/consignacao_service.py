@@ -62,6 +62,8 @@ class ConsignacaoService:
         caminho_json = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'produtos_turso.json')
         id_map = {}
         sku_map = {}
+        ean_map = {}
+        prods = []
         if os.path.exists(caminho_json):
             try:
                 with open(caminho_json, 'r', encoding='utf-8') as f:
@@ -69,13 +71,127 @@ class ConsignacaoService:
                     for p in prods:
                         if p.get('id_produto'):
                             id_map[int(p['id_produto'])] = p
-                        if p.get('codigo'):
-                            sku_map[str(p['codigo']).strip()] = p
+                        if p.get('codigo_produto'):
+                            id_map[int(p['codigo_produto'])] = p
+                        sku_val = str(p.get('sku') or p.get('codigo') or '').strip().upper()
+                        if sku_val:
+                            sku_map[sku_val] = p
+                        ean_val = str(p.get('ean') or p.get('codigo_barras') or '').strip()
+                        if ean_val:
+                            ean_map[ean_val] = p
             except Exception as e:
                 print(f"[CONSIGNACAO] Erro ao carregar cache de produtos: {e}")
         
-        self._produtos_cache = {"by_id": id_map, "by_sku": sku_map}
+        self._produtos_cache = {"by_id": id_map, "by_sku": sku_map, "by_ean": ean_map, "lista": prods}
         return self._produtos_cache
+
+    def buscar_produto(self, termo: str) -> List[Dict[str, Any]]:
+        """
+        Busca produtos por Código (SKU), Código Omie (ID numérico),
+        EAN / Código de Barras, ou Nome / Descrição.
+        """
+        termo = str(termo or "").strip()
+        if not termo:
+            return []
+
+        termo_upper = termo.upper()
+        termo_sem_zero = termo_upper.lstrip("0")
+        cache = self._carregar_produtos_cache()
+
+        resultados = []
+        ids_vistos = set()
+
+        # 1. Match direto em EAN / Código de barras
+        if termo in cache.get("by_ean", {}):
+            p = cache["by_ean"][termo]
+            pid = int(p.get("id_produto") or p.get("codigo_produto") or 0)
+            ids_vistos.add(pid)
+            resultados.append({
+                "sku": str(p.get("sku") or p.get("codigo") or "").strip(),
+                "id_produto": pid,
+                "codigo_produto": pid,
+                "nome": p.get("nome") or p.get("descricao") or "",
+                "descricao": p.get("nome") or p.get("descricao") or "",
+                "ean": termo,
+                "codigo_barras": termo,
+                "valor_unitario": float(p.get("valor_unitario") or 0.0),
+                "familia": p.get("familia") or ""
+            })
+
+        # 2. Match direto em SKU / Código
+        if termo_upper in cache.get("by_sku", {}):
+            p = cache["by_sku"][termo_upper]
+            pid = int(p.get("id_produto") or p.get("codigo_produto") or 0)
+            if pid not in ids_vistos:
+                ids_vistos.add(pid)
+                resultados.append({
+                    "sku": str(p.get("sku") or p.get("codigo") or "").strip(),
+                    "id_produto": pid,
+                    "codigo_produto": pid,
+                    "nome": p.get("nome") or p.get("descricao") or "",
+                    "descricao": p.get("nome") or p.get("descricao") or "",
+                    "ean": str(p.get("ean") or p.get("codigo_barras") or ""),
+                    "codigo_barras": str(p.get("ean") or p.get("codigo_barras") or ""),
+                    "valor_unitario": float(p.get("valor_unitario") or 0.0),
+                    "familia": p.get("familia") or ""
+                })
+
+        # 3. Match em toda a lista (SKU com/sem zeros, ID numérico, EAN, Nome)
+        for p in cache.get("lista", []):
+            sku = str(p.get("sku") or p.get("codigo") or "").strip().upper()
+            pid_str = str(p.get("id_produto") or p.get("codigo_produto") or "").strip()
+            pid = int(pid_str) if pid_str.isdigit() else 0
+            if pid in ids_vistos:
+                continue
+
+            ean = str(p.get("ean") or p.get("codigo_barras") or "").strip()
+            nome = str(p.get("nome") or p.get("descricao") or "").strip().upper()
+
+            match = False
+            if termo_upper in (sku, pid_str, ean):
+                match = True
+            elif termo_sem_zero and (sku.lstrip("0") == termo_sem_zero or pid_str == termo_sem_zero or (ean and ean.lstrip("0") == termo_sem_zero)):
+                match = True
+            elif termo_upper in sku or (ean and termo_upper in ean) or termo_upper in nome:
+                match = True
+
+            if match:
+                ids_vistos.add(pid)
+                resultados.append({
+                    "sku": sku,
+                    "id_produto": pid,
+                    "codigo_produto": pid,
+                    "nome": p.get("nome") or p.get("descricao") or "",
+                    "descricao": p.get("nome") or p.get("descricao") or "",
+                    "ean": ean,
+                    "codigo_barras": ean,
+                    "valor_unitario": float(p.get("valor_unitario") or 0.0),
+                    "familia": p.get("familia") or ""
+                })
+                if len(resultados) >= 15:
+                    break
+
+        # 4. Fallback Omie API caso não encontre
+        if not resultados and len(termo) >= 3:
+            try:
+                res_cod = self.client.executar("geral/produtos/", "ConsultarProduto", [{"codigo": termo}])
+                if res_cod and "codigo_produto" in res_cod:
+                    pid = int(res_cod.get("codigo_produto") or 0)
+                    resultados.append({
+                        "sku": str(res_cod.get("codigo") or termo).strip(),
+                        "id_produto": pid,
+                        "codigo_produto": pid,
+                        "nome": res_cod.get("descricao") or "",
+                        "descricao": res_cod.get("descricao") or "",
+                        "ean": str(res_cod.get("ean") or "").strip(),
+                        "codigo_barras": str(res_cod.get("ean") or "").strip(),
+                        "valor_unitario": float(res_cod.get("valor_unitario") or 0.0),
+                        "familia": str(res_cod.get("descricao_familia") or "")
+                    })
+            except Exception:
+                pass
+
+        return resultados
 
     def buscar_clientes(self, termo: str) -> List[Dict[str, Any]]:
         """Busca clientes por Nome Fantasia, Razão Social, CNPJ ou Número de Remessa no Omie/Turso."""

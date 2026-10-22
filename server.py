@@ -78,6 +78,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_consignacao_acerto_obter()
         elif url_path == '/api/consignacao/eventos/remessas':
             self.handle_api_consignacao_eventos_remessas()
+        elif url_path == '/api/consignacao/buscar_produto':
+            self.handle_api_consignacao_buscar_produto()
         elif url_path in ['/api/inteligencia_matriz', '/api/drp/inteligencia_matriz']:
             self.handle_api_inteligencia_matriz()
         elif url_path in ['/api/coordenacao/pauta', '/api/drp/coordenacao/pauta']:
@@ -2439,6 +2441,18 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._send_json(res)
         except Exception as e:
             print(f"[API SERVER] Erro em consignacao_eventos_salvar: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_consignacao_buscar_produto(self):
+        try:
+            query = parse_qs(urlparse(self.path).query)
+            q = query.get('q', [''])[0].strip()
+            from services.consignacao_service import ConsignacaoService
+            service = ConsignacaoService()
+            prods = service.buscar_produto(q)
+            self._send_json({"success": True, "produtos": prods})
+        except Exception as e:
+            print(f"[API SERVER] Erro em consignacao_buscar_produto: {e}")
             self._send_json({"success": False, "message": str(e)}, status=500)
 
     # =========================================================================

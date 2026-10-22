@@ -164,6 +164,11 @@ window.navegarParaAba = function(tabId) {
         if (typeof inicializarModuloConsignacao === 'function') {
             inicializarModuloConsignacao();
         }
+    } else if (tabId === 'tab-eventos-mobile') {
+        if (typeof abrirModuloEventosMobile === 'function') {
+            abrirModuloEventosMobile();
+        }
+        return;
     } else if (tabId === 'tab-combos-kit') {
         document.getElementById('page-heading').innerText = '📦 Módulo 2 — Gestão de Combos & Kits Omie (SKU 000223)';
         document.getElementById('page-subheading').innerHTML = 'Monitoramento de componentes e automação de redefinição de valor de venda do <strong>Kit Assinatura Pão da Vida (SKU 000223)</strong>';
@@ -6362,17 +6367,21 @@ function processarBipagemItem(codigoBipado) {
     const inputMult = document.getElementById('input-qtd-multiplicador-bip');
     const mult = parseInt(inputMult?.value || 1);
 
-    const termo = codigoBipado.toUpperCase();
-    const it = stateConsignacao.itensUnificados.find(x => 
-        x.sku.toUpperCase() === termo || 
-        (x.ean && x.ean === termo) ||
-        x.sku.replace(/^0+/, '') === termo.replace(/^0+/, '')
-    );
+    const termo = String(codigoBipado || '').trim().toUpperCase();
+    const termoSemZero = termo.replace(/^0+/, '');
+    const it = stateConsignacao.itensUnificados.find(x => {
+        const sku = String(x.sku || '').toUpperCase();
+        const pid = String(x.codigo_produto || '');
+        const ean = String(x.ean || x.codigo_barras || '').toUpperCase();
+        if (sku === termo || pid === termo || ean === termo) return true;
+        if (termoSemZero && (sku.replace(/^0+/, '') === termoSemZero || pid === termoSemZero || (ean && ean.replace(/^0+/, '') === termoSemZero))) return true;
+        return false;
+    });
 
     if (!it) {
         // Toca alerta sonoro de não encontrado
         tocarBeepFeedback(false);
-        alert(`Produto SKU/EAN "${codigoBipado}" não faz parte das remessas selecionadas!`);
+        alert(`Produto "${codigoBipado}" (SKU / Código / EAN) não faz parte das remessas selecionadas!`);
         return;
     }
 
@@ -7203,25 +7212,45 @@ function setupEventoBipagemInput() {
             }
         });
 
-        inp.addEventListener('input', () => {
+        inp.addEventListener('input', async () => {
             const termo = inp.value.trim().toLowerCase();
             if (!boxSugestoes) return;
 
-            if (termo.length < 3) {
+            if (termo.length < 2) {
                 boxSugestoes.style.display = 'none';
                 boxSugestoes.innerHTML = '';
                 return;
             }
 
-            // Buscar catálogo de produtos
+            const termoUpper = termo.toUpperCase();
+            const termoSemZero = termoUpper.replace(/^0+/, '');
             const catalogo = state.produtos || [];
-            const matches = catalogo.filter(p => {
-                const sku = String(p.sku || '').toLowerCase();
-                const cod = String(p.codigo || '').toLowerCase();
-                const nome = String(p.nome || p.descricao || '').toLowerCase();
-                const ean = String(p.codigo_barras || p.ean || '').toLowerCase();
-                return sku.includes(termo) || cod.includes(termo) || nome.includes(termo) || ean.includes(termo);
-            }).slice(0, 10);
+
+            // Buscar catálogo de produtos por SKU, Código, ID, EAN ou Nome
+            let matches = catalogo.filter(p => {
+                const sku = String(p.sku || p.codigo || '').toUpperCase();
+                const cod = String(p.codigo || '').toUpperCase();
+                const pid = String(p.id_produto || p.codigo_produto || '');
+                const nome = String(p.nome || p.descricao || '').toUpperCase();
+                const ean = String(p.codigo_barras || p.ean || '').toUpperCase();
+
+                if (sku.includes(termoUpper) || cod.includes(termoUpper) || pid.includes(termoUpper)) return true;
+                if (ean && ean.includes(termoUpper)) return true;
+                if (termoSemZero && (sku.replace(/^0+/, '').includes(termoSemZero) || (ean && ean.replace(/^0+/, '').includes(termoSemZero)))) return true;
+                if (nome.includes(termoUpper)) return true;
+                return false;
+            }).slice(0, 12);
+
+            // Se não encontrou no catálogo local e digitou >= 3 caracteres, busca no Omie / backend
+            if (matches.length === 0 && termo.length >= 3) {
+                try {
+                    const resp = await fetch('/api/consignacao/buscar_produto?q=' + encodeURIComponent(termo));
+                    const data = await resp.json();
+                    if (data.success && data.produtos) {
+                        matches = data.produtos.slice(0, 12);
+                    }
+                } catch (e) {}
+            }
 
             if (matches.length === 0) {
                 boxSugestoes.style.display = 'block';
@@ -7231,17 +7260,23 @@ function setupEventoBipagemInput() {
 
             boxSugestoes.style.display = 'block';
             boxSugestoes.innerHTML = matches.map(p => {
-                const sku = p.sku || p.codigo;
+                const sku = p.sku || p.codigo || '';
+                const ean = p.ean || p.codigo_barras || '';
                 const nome = p.nome || p.descricao || 'Produto sem nome';
                 const preco = parseFloat(p.valor_unitario || p.preco_venda || 0).toFixed(2);
+                const eanTag = ean ? `<span style="background: rgba(148, 163, 184, 0.2); color: #cbd5e1; font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">EAN: ${ean}</span>` : '';
                 return `
-                    <div class="sugestao-item-evento" onclick="selecionarProdutoSugestaoEvento('${sku}')" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid #1e293b; cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='#1e293b'" onmouseout="this.style.background='transparent'">
-                        <div>
-                            <strong style="color: #38bdf8; font-size: 0.88rem;">${sku}</strong> — <span style="color: #f8fafc; font-size: 0.85rem;">${nome}</span>
+                    <div class="sugestao-item-evento" onclick="selecionarProdutoSugestaoEvento('${sku || p.id_produto}')" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid #1e293b; cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='#1e293b'" onmouseout="this.style.background='transparent'">
+                        <div style="flex: 1; min-width: 0; padding-right: 10px;">
+                            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                <strong style="color: #38bdf8; font-size: 0.88rem;">${sku}</strong>
+                                ${eanTag}
+                            </div>
+                            <div style="color: #f8fafc; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 480px;">${nome}</div>
                         </div>
                         <div style="display: flex; align-items: center; gap: 12px;">
                             <span style="color: #34d399; font-weight: 700; font-size: 0.85rem;">R$ ${preco}</span>
-                            <button class="btn btn-sm btn-primary" style="padding: 3px 8px; font-size: 0.75rem;">+ Adicionar</button>
+                            <button class="btn btn-sm btn-primary" style="padding: 4px 10px; font-size: 0.78rem;">+ Adicionar</button>
                         </div>
                     </div>
                 `;
@@ -7258,33 +7293,54 @@ function selecionarProdutoSugestaoEvento(sku) {
     processarEntradaEvento(sku);
 }
 
-function processarEntradaEvento(codigoOuTermo) {
+async function processarEntradaEvento(codigoOuTermo) {
     const catalogo = state.produtos || [];
     const termo = String(codigoOuTermo).trim().toUpperCase();
+    if (!termo) return;
 
-    // Match exato por SKU, Código, EAN ou ID
-    const prod = catalogo.find(p => 
-        String(p.sku || '').toUpperCase() === termo ||
-        String(p.codigo || '').toUpperCase() === termo ||
-        String(p.codigo_barras || p.ean || '').toUpperCase() === termo ||
-        String(p.id_produto || '') === termo
-    );
+    const termoSemZero = termo.replace(/^0+/, '');
+
+    // 1. Match exato por SKU, Código, EAN, Código de Barras ou ID do Produto
+    let prod = catalogo.find(p => {
+        const sku = String(p.sku || p.codigo || '').toUpperCase();
+        const cod = String(p.codigo || '').toUpperCase();
+        const pid = String(p.id_produto || p.codigo_produto || '');
+        const ean = String(p.codigo_barras || p.ean || '').toUpperCase();
+
+        if (sku === termo || cod === termo || ean === termo || pid === termo) return true;
+        if (termoSemZero && (sku.replace(/^0+/, '') === termoSemZero || ean.replace(/^0+/, '') === termoSemZero || pid === termoSemZero)) return true;
+        return false;
+    });
+
+    // 2. Tenta achar por nome / descrição parcial
+    if (!prod) {
+        prod = catalogo.find(p => {
+            const nome = String(p.nome || p.descricao || '').toUpperCase();
+            return nome.includes(termo);
+        });
+    }
+
+    // 3. Se não achou no catálogo local, faz busca no backend (que consulta o Omie diretamente)
+    if (!prod) {
+        try {
+            const resp = await fetch('/api/consignacao/buscar_produto?q=' + encodeURIComponent(termo));
+            const data = await resp.json();
+            if (data.success && data.produtos && data.produtos.length > 0) {
+                prod = data.produtos[0];
+                catalogo.push(prod);
+            }
+        } catch (e) {
+            console.error('Erro na consulta remota de produto:', e);
+        }
+    }
 
     if (!prod) {
-        // Tenta achar com contains
-        const softMatch = catalogo.find(p => 
-            String(p.sku || '').toUpperCase().includes(termo) ||
-            String(p.nome || p.descricao || '').toUpperCase().includes(termo)
-        );
-        if (softMatch) {
-            adicionarItemEvento(softMatch, stateEvento.multiplicador);
-            return;
-        }
-
-        alert(`Produto "${codigoOuTermo}" não encontrado no catálogo.`);
+        tocarBeepFeedback(false);
+        alert(`Produto "${codigoOuTermo}" não encontrado por Código, EAN ou Nome.`);
         return;
     }
 
+    tocarBeepFeedback(true);
     adicionarItemEvento(prod, stateEvento.multiplicador);
 }
 
@@ -7962,8 +8018,26 @@ window.baixarPdfRelatorio = baixarPdfRelatorio;
 window.baixarPdfRelatorioAtivo = baixarPdfRelatorioAtivo;
 window.baixarPdfRomaneioLinha = baixarPdfRomaneioLinha;
 window.baixarPdfRomaneioParoquiaSelecionada = baixarPdfRomaneioParoquiaSelecionada;
-window.exportarArquivoCorreios = exportarArquivoCorreios;
-window.exportarArquivoCorreiosAtivo = exportarArquivoCorreiosAtivo;
+window.abrirModuloEventosMobile = function() {
+    window.navegarParaAba('tab-consignacao');
+    if (typeof trocarSubAbaConsignacao === 'function') {
+        trocarSubAbaConsignacao('eventos');
+    }
+};
+
+// Auto-abertura da aba de eventos se indicado por hash ou query
+if (typeof window !== 'undefined') {
+    const checkHashEventos = () => {
+        if (window.location.hash === '#eventos' || window.location.search.includes('eventos')) {
+            setTimeout(window.abrirModuloEventosMobile, 300);
+        }
+    };
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', checkHashEventos);
+    } else {
+        checkHashEventos();
+    }
+}
 
 
 

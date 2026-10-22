@@ -13,7 +13,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Chart.js para Gráficos Dinâmicos de Tendência -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20261022_eventos_v2">
 </head>
 <body>
     <div class="app-container" id="app-container">
@@ -74,6 +74,10 @@
                 <button class="nav-tab" data-tab="tab-consignacao" style="background: rgba(16, 185, 129, 0.1); border-left: 3px solid #10b981;">
                     <i class="fa-solid fa-arrow-right-arrow-left" style="color: #10b981;"></i>
                     <span style="font-weight: 700; color: #10b981;">🚚 Consignação (Ida e Volta)</span>
+                </button>
+                <button class="nav-tab" data-tab="tab-eventos-mobile" onclick="abrirModuloEventosMobile()" style="background: rgba(14, 165, 233, 0.12); border-left: 3px solid #38bdf8;">
+                    <i class="fa-solid fa-mobile-screen-button" style="color: #38bdf8;"></i>
+                    <span style="font-weight: 700; color: #38bdf8;">📱 Stand & Eventos (Mobile)</span>
                 </button>
                 <button class="nav-tab" data-tab="tab-combos-kit">
                     <i class="fa-solid fa-boxes-packing" style="color: #f59e0b;"></i>
@@ -283,6 +287,20 @@
                             </div>
                             
                             <div style="display: flex; flex-direction: column; gap: 12px;">
+                                <!-- Botão Destaque Stand / Eventos Mobile -->
+                                <button class="hub-action-btn btn-featured" onclick="abrirModuloEventosMobile()" style="padding: 18px 22px; background: linear-gradient(135deg, #0284c7, #0369a1); border: 2px solid #38bdf8; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);">
+                                    <div class="hub-btn-content">
+                                        <i class="fa-solid fa-mobile-screen-button" style="font-size: 1.5rem; color: #ffffff;"></i>
+                                        <div>
+                                            <div style="font-size: 1.1rem; font-weight: 800; color: #ffffff;">📱 Stand & Eventos (Bipagem no Celular)</div>
+                                            <div style="font-size: 0.8rem; color: #e0f2fe;">Bipe livros e camisas direto pelo celular para criar ou adicionar na remessa do evento em aberto</div>
+                                        </div>
+                                    </div>
+                                    <span class="badge" style="background: #38bdf8; color: #0b1120; font-size: 0.75rem; font-weight: 800; padding: 5px 10px; border-radius: 6px;">
+                                        NOVO MOBILE ⚡
+                                    </span>
+                                </button>
+
                                 <!-- Botão Destaque Consignação -->
                                 <button class="hub-action-btn btn-featured" onclick="navegarParaAba('tab-consignacao')" style="padding: 18px 22px;">
                                     <div class="hub-btn-content">
@@ -1455,6 +1473,15 @@
 
                 <!-- SUB-ABA 2: REMESSAS DE EVENTOS (MOBILE / STAND) -->
                 <div id="subaba-consig-eventos" style="display: none;">
+                    <div style="margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+                        <button class="btn btn-secondary" onclick="navegarParaAba('tab-hub')" style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-arrow-left"></i> Voltar ao Início / Hub
+                        </button>
+                        <span style="font-size: 0.82rem; color: #38bdf8; font-weight: 600;">
+                            <i class="fa-solid fa-wifi"></i> Modo Stand Online
+                        </span>
+                    </div>
+
                     <div class="card" style="background: #0d1524; border: 1px solid #1e2c45; padding: 22px; border-radius: var(--radius-lg); margin-bottom: 20px;">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
                             <div>
@@ -2467,7 +2494,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=20261020_romaneio_pdf"></script>
+    <script src="app.js?v=20261022_eventos_v2"></script>
 </body>
 
 </html>
