@@ -80,6 +80,12 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_consignacao_eventos_remessas()
         elif url_path == '/api/consignacao/buscar_produto':
             self.handle_api_consignacao_buscar_produto()
+        elif url_path == '/api/consignacao/disparar_alertas_prazos':
+            self.handle_api_consignacao_disparar_alertas_prazos()
+        elif url_path == '/api/assinaturas/pedidos_proximo_envio':
+            self.handle_api_assinaturas_listar_pedidos_proximo_envio()
+        elif url_path == '/api/pedidos_venda/consultar':
+            self.handle_api_pedidos_venda_consultar()
         elif url_path in ['/api/inteligencia_matriz', '/api/drp/inteligencia_matriz']:
             self.handle_api_inteligencia_matriz()
         elif url_path in ['/api/coordenacao/pauta', '/api/drp/coordenacao/pauta']:
@@ -163,6 +169,14 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_consignacao_integrar_omie()
         elif url_path == '/api/consignacao/eventos/salvar':
             self.handle_api_consignacao_eventos_salvar()
+        elif url_path == '/api/consignacao/vincular_remessa_aberta':
+            self.handle_api_consignacao_vincular_remessa_aberta()
+        elif url_path == '/api/consignacao/atualizar_inicio_prazo':
+            self.handle_api_consignacao_atualizar_inicio_prazo()
+        elif url_path == '/api/consignacao/disparar_alertas_prazos':
+            self.handle_api_consignacao_disparar_alertas_prazos()
+        elif url_path == '/api/assinaturas/cadastrar_pedido_proximo_envio':
+            self.handle_api_assinaturas_cadastrar_pedido_proximo_envio()
         elif url_path == '/api/assinaturas/sincronizar':
             self.handle_api_assinaturas_sincronizar()
         elif url_path == '/api/assinaturas/gerar_remessa_baixa':
@@ -2453,6 +2467,182 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._send_json({"success": True, "produtos": prods})
         except Exception as e:
             print(f"[API SERVER] Erro em consignacao_buscar_produto: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_consignacao_vincular_remessa_aberta(self):
+        try:
+            body = self._read_body()
+            from services.consignacao_service import ConsignacaoService
+            service = ConsignacaoService()
+            res = service.vincular_remessa_aberta(body)
+            self._send_json(res)
+        except Exception as e:
+            print(f"[API SERVER] Erro em vincular_remessa_aberta: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_consignacao_atualizar_inicio_prazo(self):
+        try:
+            body = self._read_body()
+            acerto_id = body.get("acerto_id") or body.get("id")
+            nova_data = body.get("data_inicio") or body.get("data_inicio_prazo")
+            dias_prazo = int(body.get("dias_prazo") or 30)
+            from services.consignacao_service import ConsignacaoService
+            service = ConsignacaoService()
+            res = service.atualizar_inicio_prazo(acerto_id, nova_data, dias_prazo)
+            self._send_json(res)
+        except Exception as e:
+            print(f"[API SERVER] Erro em atualizar_inicio_prazo: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_pedidos_venda_consultar(self):
+        try:
+            from urllib.parse import urlparse, parse_qs
+            parsed = urlparse(self.path)
+            qs = parse_qs(parsed.query)
+            num_pedido = (qs.get("numero", [""])[0] or qs.get("numero_pedido", [""])[0]).strip()
+
+            if not num_pedido:
+                self._send_json({"success": False, "message": "Número do pedido não informado"}, status=400)
+                return
+
+            from omie_client import OmieClient
+            cli_omie = OmieClient("MATRIZ")
+            res_pv = cli_omie.executar("produtos/pedido/", "ConsultarPedido", [{"numero_pedido": num_pedido}])
+            pv = res_pv.get("pedido_venda_produto", {})
+            cab = pv.get("cabecalho", {})
+            cod_cli = cab.get("codigo_cliente", 0)
+
+            pedido_info = {
+                "numero_pedido": num_pedido,
+                "codigo_pedido_omie": cab.get("codigo_pedido", 0),
+                "codigo_cliente_omie": cod_cli,
+                "cliente_nome": "",
+                "cpf_cnpj": "",
+                "rua": "",
+                "numero": "",
+                "complemento": "",
+                "bairro": "",
+                "cidade": "",
+                "uf": "",
+                "cep": "",
+                "quantidade_assinaturas": 1
+            }
+
+            # Contar quantidade se houver itens
+            itens = pv.get("det", [])
+            total_qtd = 0
+            for it in itens:
+                prod = it.get("produto", {})
+                sku = str(prod.get("codigo_produto_integracao") or prod.get("codigo") or "").strip()
+                if "000223" in sku or "00379" in sku or "00574" in sku or "PAO" in sku.upper() or "ASSINATURA" in (prod.get("descricao") or "").upper():
+                    total_qtd += int(prod.get("quantidade", 1))
+            if total_qtd > 0:
+                pedido_info["quantidade_assinaturas"] = total_qtd
+
+            if cod_cli:
+                res_c = cli_omie.executar("geral/clientes/", "ConsultarCliente", [{"codigo_cliente_omie": cod_cli}])
+                pedido_info["cliente_nome"] = res_c.get("nome_fantasia") or res_c.get("razao_social") or ""
+                pedido_info["cpf_cnpj"] = res_c.get("cnpj_cpf") or ""
+                pedido_info["rua"] = res_c.get("endereco") or ""
+                pedido_info["numero"] = res_c.get("endereco_numero") or ""
+                pedido_info["complemento"] = res_c.get("complemento") or ""
+                pedido_info["bairro"] = res_c.get("bairro") or ""
+                pedido_info["cidade"] = res_c.get("cidade") or ""
+                pedido_info["uf"] = res_c.get("estado") or ""
+                pedido_info["cep"] = res_c.get("cep") or ""
+
+            self._send_json({"success": True, "pedido": pedido_info})
+        except Exception as e:
+            print(f"[API SERVER] Erro ao consultar pedido de venda: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_consignacao_disparar_alertas_prazos(self):
+        try:
+            from services.consignacao_service import ConsignacaoService
+            service = ConsignacaoService()
+            res = service.verificar_alertas_prazos_consignacao()
+            self._send_json(res)
+        except Exception as e:
+            print(f"[API SERVER] Erro em disparar_alertas_prazos: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_assinaturas_listar_pedidos_proximo_envio(self):
+        try:
+            sql = "SELECT * FROM assinaturas_pedidos_proximo_envio ORDER BY id DESC LIMIT 100"
+            df = db.executar_query(sql)
+            rows = []
+            if df is not None and not df.empty:
+                for _, r in df.iterrows():
+                    rows.append(dict(r))
+            self._send_json({"success": True, "pedidos": rows})
+        except Exception as e:
+            print(f"[API ASSINATURAS] Erro ao listar pedidos proximo envio: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_assinaturas_cadastrar_pedido_proximo_envio(self):
+        try:
+            body = self._read_body()
+            num_pedido = str(body.get("numero_pedido") or "").strip()
+            cliente_nome = str(body.get("cliente_nome") or "").strip()
+            cpf_cnpj = str(body.get("cpf_cnpj") or "").strip()
+            qtd_ass = int(body.get("quantidade_assinaturas") or 1)
+            periodo = str(body.get("periodo_envio") or "Próximo Lote 2027").strip()
+            obs = str(body.get("observacao") or "").strip()
+
+            if num_pedido and not cliente_nome:
+                from omie_client import OmieClient
+                cli_omie = OmieClient("MATRIZ")
+                res_pv = cli_omie.executar("produtos/pedido/", "ConsultarPedido", [{"numero_pedido": num_pedido}])
+                cab = res_pv.get("pedido_venda_produto", {}).get("cabecalho", {})
+                cod_cli = cab.get("codigo_cliente", 0)
+                if cod_cli:
+                    res_c = cli_omie.executar("geral/clientes/", "ConsultarCliente", [{"codigo_cliente_omie": cod_cli}])
+                    cliente_nome = res_c.get("nome_fantasia") or res_c.get("razao_social") or ""
+                    cpf_cnpj = res_c.get("cnpj_cpf") or ""
+                    body["rua"] = res_c.get("endereco") or ""
+                    body["numero"] = res_c.get("endereco_numero") or ""
+                    body["complemento"] = res_c.get("complemento") or ""
+                    body["bairro"] = res_c.get("bairro") or ""
+                    body["cidade"] = res_c.get("cidade") or ""
+                    body["uf"] = res_c.get("estado") or ""
+                    body["cep"] = res_c.get("cep") or ""
+                    body["codigo_cliente_omie"] = cod_cli
+                    body["codigo_pedido_omie"] = cab.get("codigo_pedido", 0)
+
+            sql_ins = """
+                INSERT INTO assinaturas_pedidos_proximo_envio (
+                    numero_pedido, codigo_pedido_omie, codigo_cliente_omie,
+                    cliente_nome, cpf_cnpj, rua, numero, complemento,
+                    bairro, cidade, uf, cep, quantidade_assinaturas,
+                    periodo_envio, observacao, criado_em
+                ) VALUES (
+                    :np, :cpo, :cco, :cn, :doc, :rua, :num, :comp,
+                    :bairro, :cid, :uf, :cep, :qtd, :per, :obs, :agora
+                )
+            """
+            agora_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            db.executar_query(sql_ins, {
+                "np": num_pedido,
+                "cpo": int(body.get("codigo_pedido_omie") or 0),
+                "cco": int(body.get("codigo_cliente_omie") or 0),
+                "cn": cliente_nome or "Assinante Novo",
+                "doc": cpf_cnpj,
+                "rua": str(body.get("rua") or ""),
+                "num": str(body.get("numero") or ""),
+                "comp": str(body.get("complemento") or ""),
+                "bairro": str(body.get("bairro") or ""),
+                "cid": str(body.get("cidade") or ""),
+                "uf": str(body.get("uf") or ""),
+                "cep": str(body.get("cep") or ""),
+                "qtd": qtd_ass,
+                "per": periodo,
+                "obs": obs,
+                "agora": agora_str
+            }, is_select=False)
+
+            self._send_json({"success": True, "message": f"Assinatura do pedido #{num_pedido or cliente_nome} salva para o {periodo}!"})
+        except Exception as e:
+            print(f"[API ASSINATURAS] Erro ao cadastrar pedido proximo envio: {e}")
             self._send_json({"success": False, "message": str(e)}, status=500)
 
     # =========================================================================

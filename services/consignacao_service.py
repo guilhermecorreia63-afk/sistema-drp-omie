@@ -12,7 +12,7 @@ import os
 import sys
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -539,23 +539,247 @@ class ConsignacaoService:
         return {"success": True, "acerto_id": acerto_id, "codigo_acerto": codigo_acerto, "status": status}
 
     def listar_acertos(self) -> List[Dict[str, Any]]:
-        """Lista histórico de acertos salvos no Turso DB."""
+        """Lista histórico de acertos salvos no Turso DB com cálculo de prazos de 30 dias."""
         try:
             sql = "SELECT * FROM consignacao_acertos ORDER BY id DESC LIMIT 50"
             df = db.executar_query(sql)
             rows = _df_to_records(df)
             res = []
+            hoje = datetime.now().date()
             for r_dict in rows:
                 if r_dict.get("remessas_unificadas") and isinstance(r_dict["remessas_unificadas"], str):
                     try:
                         r_dict["remessas_unificadas"] = json.loads(r_dict["remessas_unificadas"])
                     except Exception:
                         pass
+
+                # Cálculo de prazos
+                raw_dt_ini = r_dict.get("data_inicio_prazo")
+                raw_criado = r_dict.get("criado_em")
+                dt_ini_str = ""
+                if raw_dt_ini and str(raw_dt_ini).strip() not in ("None", "nan"):
+                    dt_ini_str = str(raw_dt_ini).strip()[:10]
+                elif raw_criado and str(raw_criado).strip() not in ("None", "nan"):
+                    dt_ini_str = str(raw_criado).strip()[:10]
+
+                dias_prazo = 30
+                try:
+                    dias_prazo = int(float(r_dict.get("dias_prazo") or 30))
+                except Exception:
+                    dias_prazo = 30
+
+                dias_decorridos = 0
+                dias_restantes = dias_prazo
+                dt_venc_str = ""
+                dt_ini_fmt = ""
+
+                if dt_ini_str and len(dt_ini_str) == 10:
+                    try:
+                        dt_ini = datetime.strptime(dt_ini_str, "%Y-%m-%d").date()
+                        dias_decorridos = (hoje - dt_ini).days
+                        dias_restantes = dias_prazo - dias_decorridos
+                        dt_venc = dt_ini + timedelta(days=dias_prazo)
+                        dt_venc_str = dt_venc.strftime("%d/%m/%Y")
+                        dt_ini_fmt = dt_ini.strftime("%d/%m/%Y")
+                    except Exception:
+                        pass
+
+                r_dict["dias_prazo"] = dias_prazo
+                r_dict["dias_decorridos"] = max(0, dias_decorridos)
+                r_dict["dias_restantes"] = dias_restantes
+                r_dict["data_vencimento"] = dt_venc_str
+                r_dict["data_inicio_formatada"] = dt_ini_fmt
+
+                st = r_dict.get("status", "EM_CONFERENCIA")
+                if st == "FINALIZADO_OMIE":
+                    r_dict["prazo_status"] = "CONCLUIDO"
+                    r_dict["prazo_label"] = "Concluído Omie"
+                    r_dict["prazo_cor"] = "#10b981"
+                elif dias_restantes <= 0:
+                    r_dict["prazo_status"] = "VENCIDO"
+                    r_dict["prazo_label"] = f"Vencido há {abs(dias_restantes)} dias! Fazer contagem" if dias_restantes < 0 else "Prazo Venceu Hoje! Fazer contagem"
+                    r_dict["prazo_cor"] = "#ef4444"
+                elif dias_restantes <= 5:
+                    r_dict["prazo_status"] = "ALERTA_5D"
+                    r_dict["prazo_label"] = f"Atenção: Faltam {dias_restantes} dias ({dt_venc_str})"
+                    r_dict["prazo_cor"] = "#f59e0b"
+                else:
+                    r_dict["prazo_status"] = "EM_ANDAMENTO"
+                    r_dict["prazo_label"] = f"Faltam {dias_restantes} dias ({dt_venc_str})"
+                    r_dict["prazo_cor"] = "#38bdf8"
+
                 res.append(r_dict)
             return res
         except Exception as e:
             print(f"[CONSIGNACAO] Erro ao listar acertos: {e}")
             return []
+
+    def vincular_remessa_aberta(self, dados: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Vincula uma remessa existente no Omie para iniciar a contagem regressiva de 30 dias.
+        """
+        nCodRem = int(dados.get("nCodRem") or 0)
+        num_rem_input = str(dados.get("numero_remessa") or "").strip()
+        dt_inicio = str(dados.get("data_inicio") or datetime.now().strftime("%Y-%m-%d")).strip()[:10]
+        dias_prazo = int(dados.get("dias_prazo") or 30)
+
+        if not nCodRem and num_rem_input:
+            try:
+                res_busca = self.client.executar("produtos/remessa/", "ConsultarRemessa", [{"cNumeroRemessa": num_rem_input}])
+                if res_busca and "cabec" in res_busca:
+                    nCodRem = int(res_busca["cabec"].get("nCodRem") or 0)
+            except Exception as e_busca:
+                print(f"[CONSIGNACAO] Busca por cNumeroRemessa {num_rem_input} falhou: {e_busca}")
+
+        if not nCodRem:
+            return {"success": False, "message": f"Remessa #{num_rem_input or nCodRem} não encontrada no Omie."}
+
+        unif = self.unificar_remessas([nCodRem], desconto_padrao_pct=30.0)
+        itens = unif.get("itens", [])
+        if not itens:
+            return {"success": False, "message": f"Remessa {num_rem_input or nCodRem} não encontrada ou vazia no Omie."}
+
+        num_rem = "0"
+        for it in itens:
+            orig = it.get("remessas_origem", {})
+            if orig:
+                num_rem = list(orig.keys())[0]
+                break
+
+        res_rem = self.client.executar("produtos/remessa/", "ConsultarRemessa", [{"nCodRem": nCodRem}])
+        cab = res_rem.get("cabec", {})
+        cod_cli = cab.get("nCodCli", 0)
+        num_rem = cab.get("cNumeroRemessa", num_rem)
+
+        cli_nome = f"Cliente Remessa #{num_rem}"
+        cli_doc = ""
+        if cod_cli:
+            try:
+                res_c = self.client.executar("geral/clientes/", "ConsultarCliente", [{"codigo_cliente_omie": cod_cli}])
+                cli_nome = res_c.get("nome_fantasia") or res_c.get("razao_social") or cli_nome
+                cli_doc = res_c.get("cnpj_cpf") or ""
+            except Exception:
+                pass
+
+        cod_acerto = f"AC-REM{num_rem}"
+        payload_acerto = {
+            "codigo_acerto": cod_acerto,
+            "cliente": {
+                "codigo_cliente": cod_cli,
+                "nome_fantasia": cli_nome,
+                "razao_social": cli_nome,
+                "cnpj_cpf": cli_doc
+            },
+            "remessas_selecionadas": [{
+                "nCodRem": nCodRem,
+                "numero_remessa": str(num_rem),
+                "data_previsao": cab.get("dPrevisao", ""),
+                "valor_total": sum(it.get("qtd_enviada", 0) * it.get("preco_unitario", 0) for it in itens),
+                "faturada": "N"
+            }],
+            "itens": itens,
+            "desconto_padrao_pct": 30.0,
+            "condicao_comercial": "A_VISTA_AUTO",
+            "status": "EM_ANDAMENTO"
+        }
+
+        res_salvar = self.salvar_acerto(payload_acerto)
+        if res_salvar.get("success"):
+            db.executar_query("""
+                UPDATE consignacao_acertos
+                SET data_inicio_prazo = :dt, dias_prazo = :dp, alerta_5d_enviado = 0, alerta_30d_enviado = 0
+                WHERE codigo_acerto = :ca
+            """, {"dt": dt_inicio, "dp": dias_prazo, "ca": cod_acerto}, is_select=False)
+            return {"success": True, "codigo_acerto": cod_acerto, "message": f"Remessa #{num_rem} vinculada com sucesso! Prazo de {dias_prazo} dias iniciado em {dt_inicio}."}
+
+        return res_salvar
+
+    def atualizar_inicio_prazo(self, acerto_id: int, nova_data_inicio: str, dias_prazo: int = 30) -> Dict[str, Any]:
+        """Atualiza a data de início e prazo da contagem."""
+        try:
+            db.executar_query("""
+                UPDATE consignacao_acertos
+                SET data_inicio_prazo = :dt, dias_prazo = :dp, alerta_5d_enviado = 0, alerta_30d_enviado = 0
+                WHERE id = :id
+            """, {"dt": nova_data_inicio[:10], "dp": dias_prazo, "id": int(acerto_id)}, is_select=False)
+            return {"success": True, "message": "Prazo de consignação atualizado com sucesso!"}
+        except Exception as e:
+            return {"success": False, "message": str(e)}
+
+    def verificar_alertas_prazos_consignacao(self) -> Dict[str, Any]:
+        """
+        Verifica remessas em aberto e dispara e-mail de alerta:
+        - 5 dias antes de vencer o prazo de 30 dias.
+        - Quando completar 30 dias (vencido o prazo para contagem física).
+        Destinatários: faturamentoedicoes@comshalom.org e comprasedicoes@comshalom.org
+        Remetente: logisticaedicoes@gmail.com
+        """
+        destinatarios = ["faturamentoedicoes@comshalom.org", "comprasedicoes@comshalom.org"]
+        acertos = self.listar_acertos()
+        alertas_disparados = []
+
+        import alertas_email
+
+        for ac in acertos:
+            st = ac.get("status")
+            if st == "FINALIZADO_OMIE":
+                continue
+
+            dias_rest = ac.get("dias_restantes", 30)
+            alerta_5d = int(ac.get("alerta_5d_enviado") or 0)
+            alerta_30d = int(ac.get("alerta_30d_enviado") or 0)
+            cli = ac.get("cliente_nome", "Cliente")
+            rems = [f"#{r.get('numero_remessa') or r}" for r in (ac.get("remessas_unificadas") or [])]
+            rems_txt = ", ".join(rems) if rems else ac.get("codigo_acerto")
+            dt_venc = ac.get("data_vencimento", "")
+            ac_id = ac.get("id")
+
+            # Alerta de 5 dias
+            if dias_rest <= 5 and dias_rest > 0 and alerta_5d == 0:
+                assunto = f"⏳ [Consignação] Faltam {dias_rest} dias para acerto: {cli} (Remessa {rems_txt})"
+                corpo = f"""
+                <div style="font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; padding: 25px; border-radius: 8px;">
+                    <h2 style="color: #f59e0b; margin-top: 0;">⏳ Alerta de Consignação - Vencimento Próximo</h2>
+                    <p style="font-size: 1.05rem;">Atenção Logística e Faturamento,</p>
+                    <p>O consignado abaixo está a <strong>{dias_rest} dias de completar o ciclo de 30 dias</strong>:</p>
+                    <ul style="background: rgba(255,255,255,0.05); padding: 15px 25px; border-radius: 6px; line-height: 1.8;">
+                        <li><strong>Cliente:</strong> {cli}</li>
+                        <li><strong>Remessa(s):</strong> {rems_txt}</li>
+                        <li><strong>Peças Enviadas:</strong> {ac.get('total_enviado')} un</li>
+                        <li><strong>Data Limite da Contagem:</strong> {dt_venc}</li>
+                    </ul>
+                    <p style="color: #cbd5e1;">Favor entrar em contato com a vendedora/responsável para agendar o recolhimento ou contagem física do estoque.</p>
+                </div>
+                """
+                ok, msg = alertas_email.enviar_email_alerta(destinatarios=destinatarios, assunto_custom=assunto, html_custom=corpo)
+                if ok:
+                    db.executar_query("UPDATE consignacao_acertos SET alerta_5d_enviado = 1 WHERE id = :id", {"id": ac_id}, is_select=False)
+                    alertas_disparados.append(f"Alerta 5 dias enviado para {cli} ({rems_txt})")
+
+            # Alerta de 30 dias (Vencido)
+            elif dias_rest <= 0 and alerta_30d == 0:
+                dias_venc = abs(dias_rest)
+                assunto = f"🚨 [Consignação URGENTE] Prazo de 30 Dias Vencido: {cli} (Remessa {rems_txt})"
+                corpo = f"""
+                <div style="font-family: Arial, sans-serif; background: #0f172a; color: #f8fafc; padding: 25px; border-radius: 8px;">
+                    <h2 style="color: #ef4444; margin-top: 0;">🚨 Alerta de Consignação Vencida - Fazer Contagem!</h2>
+                    <p style="font-size: 1.05rem;">Atenção Logística e Faturamento,</p>
+                    <p>O prazo de 30 dias do consignado <strong>completou o ciclo e venceu</strong>{' hoje' if dias_venc == 0 else f' há {dias_venc} dias'}:</p>
+                    <ul style="background: rgba(255,255,255,0.05); padding: 15px 25px; border-radius: 6px; line-height: 1.8;">
+                        <li><strong>Cliente:</strong> {cli}</li>
+                        <li><strong>Remessa(s):</strong> {rems_txt}</li>
+                        <li><strong>Peças em Consignação:</strong> {ac.get('total_enviado')} un</li>
+                        <li><strong>Data Limite Original:</strong> {dt_venc}</li>
+                    </ul>
+                    <p style="color: #fca5a5; font-weight: bold;">É necessário realizar a contagem física das peças devolvidas e faturar os itens vendidos no Omie ERP imediatamente.</p>
+                </div>
+                """
+                ok, msg = alertas_email.enviar_email_alerta(destinatarios=destinatarios, assunto_custom=assunto, html_custom=corpo)
+                if ok:
+                    db.executar_query("UPDATE consignacao_acertos SET alerta_30d_enviado = 1 WHERE id = :id", {"id": ac_id}, is_select=False)
+                    alertas_disparados.append(f"Alerta 30 dias enviado para {cli} ({rems_txt})")
+
+        return {"success": True, "alertas_enviados": alertas_disparados}
 
     def obter_acerto(self, acerto_id_ou_cod: Any) -> Dict[str, Any]:
         """Obtém um acerto completo e seus itens do Turso DB."""

@@ -62,13 +62,43 @@ def carregar_blacklist():
         pass
     return set_bl
 
-def gerar_relatorio_sintetico():
-    caminho_json = os.path.join("data", "produtos_turso.json")
-    if not os.path.exists(caminho_json):
-        return "Arquivo de produtos não encontrado.", [], [], [], [], []
+def carregar_produtos_atualizados():
+    produtos = []
+    try:
+        import database as db_mod
+        produtos = db_mod.carregar_produtos_cache(force_refresh=True)
+        if produtos:
+            print(f"[ALERTAS EMAIL] Carregados {len(produtos)} produtos diretamente do Turso DB / Cache atualizado.")
+    except Exception as e:
+        print(f"[ALERTAS EMAIL] Erro ao carregar cache do Turso DB: {e}")
 
-    with open(caminho_json, "r", encoding="utf-8") as f:
-        produtos = json.load(f)
+    if not produtos:
+        tmp_dir = "/tmp" if os.path.exists("/tmp") else os.path.dirname(os.path.abspath(__file__))
+        tmp_path = os.path.join(tmp_dir, "produtos_turso.json")
+        if os.path.exists(tmp_path):
+            try:
+                with open(tmp_path, "r", encoding="utf-8") as f:
+                    produtos = json.load(f)
+                    if produtos:
+                        print(f"[ALERTAS EMAIL] Carregados {len(produtos)} produtos do cache /tmp.")
+            except Exception:
+                pass
+
+    if not produtos:
+        caminho_json = os.path.join("data", "produtos_turso.json")
+        if os.path.exists(caminho_json):
+            try:
+                with open(caminho_json, "r", encoding="utf-8") as f:
+                    produtos = json.load(f)
+            except Exception:
+                pass
+
+    return produtos
+
+def gerar_relatorio_sintetico():
+    produtos = carregar_produtos_atualizados()
+    if not produtos:
+        return "Arquivo de produtos não encontrado.", [], [], [], [], []
 
     set_producao = carregar_status_producao()
     set_bl = carregar_blacklist()

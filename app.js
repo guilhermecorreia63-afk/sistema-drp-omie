@@ -164,14 +164,17 @@ window.navegarParaAba = function(tabId) {
         if (typeof inicializarModuloConsignacao === 'function') {
             inicializarModuloConsignacao();
         }
+        if (typeof carregarHistoricoAcertosConsignacao === 'function') {
+            carregarHistoricoAcertosConsignacao();
+        }
     } else if (tabId === 'tab-eventos-mobile') {
         if (typeof abrirModuloEventosMobile === 'function') {
             abrirModuloEventosMobile();
         }
         return;
     } else if (tabId === 'tab-combos-kit') {
-        document.getElementById('page-heading').innerText = '📦 Módulo 2 — Gestão de Combos & Kits Omie (SKU 000223)';
-        document.getElementById('page-subheading').innerHTML = 'Monitoramento de componentes e automação de redefinição de valor de venda do <strong>Kit Assinatura Pão da Vida (SKU 000223)</strong>';
+        document.getElementById('page-heading').innerText = '📦 Módulo 2 — Gestão de Combos & Kits Omie';
+        document.getElementById('page-subheading').innerHTML = 'Monitoramento de componentes e automação de valor de venda dos Kits e Assinaturas (000223, PRD00379, PRD00574)';
         carregarDetalhesCombo();
     } else if (tabId === 'tab-assinaturas') {
         document.getElementById('page-heading').innerText = '📖 Módulo 3 — Assinaturas Pão da Vida (Liturgia Diária)';
@@ -179,6 +182,10 @@ window.navegarParaAba = function(tabId) {
         if (typeof carregarAssinaturasPDV === 'function') {
             carregarAssinaturasPDV();
         }
+        if (typeof carregarPedidosProximoEnvio === 'function') {
+            carregarPedidosProximoEnvio();
+        }
+    }
     }
 };
 
@@ -4244,17 +4251,27 @@ async function tirarSelecionadosProducao() {
 }
 
 // ==========================================
-// AUTOMAÇÃO & GESTÃO DO COMBO (SKU 000223)
+// AUTOMAÇÃO & GESTÃO DO COMBO (000223, PRD00379, PRD00574)
 // ==========================================
 
+window.comboAtivoSku = '000223';
+
+function trocarComboAtivo(sku) {
+    window.comboAtivoSku = sku || '000223';
+    carregarDetalhesCombo();
+}
+window.trocarComboAtivo = trocarComboAtivo;
+
 async function carregarDetalhesCombo() {
+    const skuAtivo = window.comboAtivoSku || '000223';
     const tbody = document.getElementById('tbody-componentes-combo');
     const precoEl = document.getElementById('combo-preco-atual');
     const banner = document.getElementById('combo-alert-banner');
     if (!tbody) return;
 
     try {
-        const resp = await fetch('/api/combo/detalhes?sku=000223');
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted); padding: 15px;"><i class="fa-solid fa-spinner fa-spin"></i> Carregando componentes do Combo ${skuAtivo}...</td></tr>`;
+        const resp = await fetch(`/api/combo/detalhes?sku=${encodeURIComponent(skuAtivo)}`);
         const data = await resp.json();
 
         if (!resp.ok || !data.success) {
@@ -4306,7 +4323,7 @@ async function carregarDetalhesCombo() {
                         </td>
                         <td style="padding: 10px 14px; text-align: center;">${badgeStatus}</td>
                         <td style="padding: 10px 14px; text-align: right;">
-                            <button class="btn btn-sm" style="${btnDangerStyle} padding: 6px 12px; font-size: 0.8rem;" onclick="removerComponenteCombo('000223', ${c.codigo_componente}, ${c.codigo_produto_componente}, '${nomeEscaped}')" title="Retirar componente do Kit no Omie ERP e redefinir preço de venda para R$ 89,90">
+                            <button class="btn btn-sm" style="${btnDangerStyle} padding: 6px 12px; font-size: 0.8rem;" onclick="removerComponenteCombo('${skuAtivo}', ${c.codigo_componente}, ${c.codigo_produto_componente}, '${nomeEscaped}')" title="Retirar componente do Kit no Omie ERP e redefinir preço de venda para R$ 89,90">
                                 <i class="fa-solid fa-trash-can"></i> Retirar do Combo & Fixar R$ 89,90
                             </button>
                         </td>
@@ -4334,7 +4351,8 @@ async function carregarDetalhesCombo() {
 }
 
 async function removerComponenteCombo(skuCombo, codComp, codProdComp, nomeComp) {
-    const confirmar = confirm(`⚠️ Confirma a remoção do componente "${nomeComp}" do Combo SKU ${skuCombo}?\n\nIsso executará 2 ações automáticas no Omie ERP:\n1. Excluir o componente do Kit via AlterarComponentesKit.\n2. Redefinir o valor de venda do combo para R$ 89,90 via AlterarProduto.`);
+    const skuAlvo = skuCombo || window.comboAtivoSku || '000223';
+    const confirmar = confirm(`⚠️ Confirma a remoção do componente "${nomeComp}" do Combo SKU ${skuAlvo}?\n\nIsso executará 2 ações automáticas no Omie ERP:\n1. Excluir o componente do Kit via AlterarComponentesKit.\n2. Redefinir o valor de venda do combo para R$ 89,90 via AlterarProduto.`);
     if (!confirmar) return;
 
     try {
@@ -4342,7 +4360,7 @@ async function removerComponenteCombo(skuCombo, codComp, codProdComp, nomeComp) 
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                sku_combo: skuCombo,
+                sku_combo: skuAlvo,
                 codigo_componente: codComp,
                 codigo_produto_componente: codProdComp,
                 novo_valor_venda: 89.90
@@ -4362,7 +4380,8 @@ async function removerComponenteCombo(skuCombo, codComp, codProdComp, nomeComp) 
 }
 
 async function redefinirPrecoCombo() {
-    const confirmar = confirm('Deseja fixar o valor de venda do Combo SKU 000223 para R$ 89,90 no Omie ERP?');
+    const skuAlvo = window.comboAtivoSku || '000223';
+    const confirmar = confirm(`Deseja fixar o valor de venda do Combo SKU ${skuAlvo} para R$ 89,90 no Omie ERP?`);
     if (!confirmar) return;
 
     try {
@@ -4370,7 +4389,7 @@ async function redefinirPrecoCombo() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                sku_combo: '000223',
+                sku_combo: skuAlvo,
                 valor_venda: 89.90
             })
         });
@@ -8039,6 +8058,535 @@ if (typeof window !== 'undefined') {
     }
 }
 
+// ============================================================
+// GESTÃO DE CONIGNAÇÃO: HISTÓRICO, CICLOS DE 30 DIAS & ALERTAS
+// ============================================================
 
+window.acertosConsignacaoCache = [];
+window.filtroConsignacaoAtivo = 'TODOS';
 
+async function carregarHistoricoAcertosConsignacao() {
+    const tbody = document.getElementById('tbody-historico-consignacao');
+    if (!tbody) return;
 
+    try {
+        const resp = await fetch('/api/consignacao/acertos');
+        const data = await resp.json();
+
+        if (!resp.ok || !data.success) {
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #f87171; padding: 20px;">⚠️ Falha ao carregar acertos: ${data.message || 'Erro desconhecido'}</td></tr>`;
+            return;
+        }
+
+        window.acertosConsignacaoCache = data.acertos || [];
+        atualizarContadoresFiltroConsignacao();
+        renderizarTabelaHistoricoConsignacao();
+    } catch (e) {
+        console.error('Erro ao buscar histórico de acertos:', e);
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #f87171; padding: 20px;">⚠️ Erro de rede ao buscar histórico de consignação.</td></tr>`;
+    }
+}
+
+function atualizarContadoresFiltroConsignacao() {
+    const list = window.acertosConsignacaoCache || [];
+    const contTodos = list.length;
+    const contAberto = list.filter(a => a.status === 'EM_ANDAMENTO').length;
+    const contVencidos = list.filter(a => a.prazo_status === 'VENCIDO' || a.prazo_status === 'ALERTA_5D').length;
+    const contVendedora = list.filter(a => a.status === 'AGUARDANDO_VENDEDORA').length;
+    const contConcluido = list.filter(a => a.status === 'CONCLUIDO').length;
+
+    const elTodos = document.getElementById('cont-filtro-todos');
+    const elAberto = document.getElementById('cont-filtro-aberto');
+    const elVencidos = document.getElementById('cont-filtro-vencidos');
+    const elVendedora = document.getElementById('cont-filtro-vendedora');
+    const elConcluido = document.getElementById('cont-filtro-concluido');
+
+    if (elTodos) elTodos.textContent = contTodos;
+    if (elAberto) elAberto.textContent = contAberto;
+    if (elVencidos) elVencidos.textContent = contVencidos;
+    if (elVendedora) elVendedora.textContent = contVendedora;
+    if (elConcluido) elConcluido.textContent = contConcluido;
+}
+
+function filtrarHistoricoConsignacao(tipo) {
+    window.filtroConsignacaoAtivo = tipo || 'TODOS';
+    document.querySelectorAll('.btn-filtro-consignacao').forEach(btn => {
+        if (btn.getAttribute('data-filtro') === tipo) {
+            btn.classList.add('active');
+            btn.style.boxShadow = '0 0 10px rgba(56, 189, 248, 0.4)';
+        } else {
+            btn.classList.remove('active');
+            btn.style.boxShadow = 'none';
+        }
+    });
+    renderizarTabelaHistoricoConsignacao();
+}
+
+function renderizarTabelaHistoricoConsignacao() {
+    const tbody = document.getElementById('tbody-historico-consignacao');
+    if (!tbody) return;
+
+    let list = window.acertosConsignacaoCache || [];
+    const f = window.filtroConsignacaoAtivo;
+
+    if (f === 'EM_ANDAMENTO') {
+        list = list.filter(a => a.status === 'EM_ANDAMENTO');
+    } else if (f === 'ALERTA_VENCIDOS') {
+        list = list.filter(a => a.prazo_status === 'VENCIDO' || a.prazo_status === 'ALERTA_5D');
+    } else if (f === 'AGUARDANDO_VENDEDORA') {
+        list = list.filter(a => a.status === 'AGUARDANDO_VENDEDORA');
+    } else if (f === 'CONCLUIDO') {
+        list = list.filter(a => a.status === 'CONCLUIDO');
+    }
+
+    if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 25px;">Nenhum registro encontrado para este filtro.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = list.map(item => {
+        let statusBadge = '';
+        if (item.status === 'EM_ANDAMENTO') {
+            statusBadge = '<span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);">⏳ Em Aberto</span>';
+        } else if (item.status === 'AGUARDANDO_VENDEDORA') {
+            statusBadge = '<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);">⌛ Aguardando Vendedora</span>';
+        } else if (item.status === 'CONCLUIDO') {
+            statusBadge = '<span class="badge" style="background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3);">✅ Concluído Omie</span>';
+        } else {
+            statusBadge = `<span class="badge">${item.status}</span>`;
+        }
+
+        const prazoColor = item.prazo_cor || '#38bdf8';
+        const prazoLabel = item.prazo_label || `${item.dias_restantes || 30} dias restantes`;
+        const dataInicioFmt = item.data_inicio_prazo ? item.data_inicio_prazo.split('-').reverse().join('/') : '--';
+
+        const remessasHtml = (item.remessas_ids || []).map(r => `<span class="badge" style="background:#1e293b; color:#94a3b8; margin: 2px;">REM ${r}</span>`).join(' ') || '--';
+
+        const fatFormatado = item.faturamento_liquido != null 
+            ? `R$ ${parseFloat(item.faturamento_liquido).toFixed(2).replace('.', ',')}` 
+            : 'R$ 0,00';
+
+        const nomeClienteEscaped = (item.cliente_nome || '').replace(/'/g, "\\'");
+        const dataInicioVal = item.data_inicio_prazo || '';
+
+        return `
+            <tr>
+                <td style="font-weight: 700; color: #a855f7;">${item.codigo_acerto}</td>
+                <td>
+                    <div style="font-weight: 600; color: #f8fafc;">${item.cliente_nome || 'Cliente'}</div>
+                    <small style="color: #64748b;">ID Omie: ${item.cliente_omie_id || '--'}</small>
+                </td>
+                <td>${remessasHtml}</td>
+                <td>
+                    <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; background: rgba(15, 23, 42, 0.7); border: 1px solid ${prazoColor}; color: ${prazoColor}; font-weight: 600; font-size: 0.82rem;">
+                        ${prazoLabel}
+                    </div>
+                    <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">Início: ${dataInicioFmt} (${item.dias_prazo || 30} dias)</div>
+                </td>
+                <td style="text-align: center; font-weight: 600;">${item.total_enviado || 0}</td>
+                <td style="text-align: center; color: #f87171;">${item.total_devolvido || 0}</td>
+                <td style="text-align: center; color: #34d399; font-weight: 700;">${item.total_vendido || 0}</td>
+                <td style="text-align: right; font-weight: 700; color: #34d399;">${fatFormatado}</td>
+                <td style="text-align: center;">${statusBadge}</td>
+                <td style="text-align: center;">
+                    <div style="display: flex; gap: 6px; justify-content: center;">
+                        <button class="btn btn-sm btn-secondary" onclick="abrirModalAjustarPrazo(${item.id}, '${item.codigo_acerto}', '${nomeClienteEscaped}', '${dataInicioVal}', ${item.dias_prazo || 30})" title="Ajustar data de início ou ciclo do prazo" style="padding: 4px 8px; font-size: 0.8rem;">
+                            <i class="fa-solid fa-calendar-day" style="color: #fbbf24;"></i>
+                        </button>
+                        <button class="btn btn-sm" onclick="iniciarConferenciaAcertoExistente(${item.id}, '${nomeClienteEscaped}', '${item.codigo_acerto}')" title="Iniciar contagem física dos produtos devolvidos" style="background: rgba(56, 189, 248, 0.2); border: 1px solid #38bdf8; color: #38bdf8; padding: 4px 10px; font-size: 0.8rem; font-weight: 600;">
+                            <i class="fa-solid fa-clipboard-check"></i> Conferência
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function abrirModalVincularRemessa() {
+    const m = document.getElementById('modal-vincular-remessa');
+    const inputData = document.getElementById('vinc-data-inicio');
+    const inputDias = document.getElementById('vinc-dias-prazo');
+    const inputNum = document.getElementById('vinc-numero-remessa');
+    const statusEl = document.getElementById('vinc-remessa-status');
+
+    if (inputData) inputData.value = new Date().toISOString().split('T')[0];
+    if (inputDias) inputDias.value = '30';
+    if (inputNum) inputNum.value = '';
+    if (statusEl) statusEl.style.display = 'none';
+
+    if (m) m.classList.add('active');
+}
+
+function fecharModalVincularRemessa() {
+    const m = document.getElementById('modal-vincular-remessa');
+    if (m) m.classList.remove('active');
+}
+
+async function executarVinculacaoRemessa() {
+    const numRemessa = (document.getElementById('vinc-numero-remessa')?.value || '').trim();
+    const dataInicio = document.getElementById('vinc-data-inicio')?.value;
+    const diasPrazo = parseInt(document.getElementById('vinc-dias-prazo')?.value || '30', 10);
+    const statusEl = document.getElementById('vinc-remessa-status');
+    const btnConfirmar = document.getElementById('btn-confirmar-vincular-remessa');
+
+    if (!numRemessa) {
+        alert('Por favor, informe o número da remessa emitida no Omie (Ex: 1868).');
+        return;
+    }
+
+    if (statusEl) {
+        statusEl.style.display = 'block';
+        statusEl.style.background = 'rgba(56, 189, 248, 0.15)';
+        statusEl.style.color = '#38bdf8';
+        statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Vinculando remessa e iniciando ciclo no Turso DB...';
+    }
+    if (btnConfirmar) btnConfirmar.disabled = true;
+
+    try {
+        const resp = await fetch('/api/consignacao/vincular_remessa_aberta', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                numero_remessa: numRemessa,
+                data_inicio_prazo: dataInicio,
+                dias_prazo: diasPrazo
+            })
+        });
+
+        const data = await resp.json();
+
+        if (resp.ok && data.success) {
+            if (statusEl) {
+                statusEl.style.background = 'rgba(52, 211, 153, 0.15)';
+                statusEl.style.color = '#34d399';
+                statusEl.innerHTML = `✅ ${data.message}`;
+            }
+            setTimeout(() => {
+                fecharModalVincularRemessa();
+                carregarHistoricoAcertosConsignacao();
+            }, 800);
+        } else {
+            if (statusEl) {
+                statusEl.style.background = 'rgba(239, 68, 68, 0.15)';
+                statusEl.style.color = '#f87171';
+                statusEl.innerHTML = `❌ Erro: ${data.message || 'Falha ao vincular remessa.'}`;
+            }
+        }
+    } catch (e) {
+        console.error('Erro na requisição:', e);
+        if (statusEl) {
+            statusEl.style.background = 'rgba(239, 68, 68, 0.15)';
+            statusEl.style.color = '#f87171';
+            statusEl.innerHTML = '❌ Erro de comunicação com o servidor.';
+        }
+    } finally {
+        if (btnConfirmar) btnConfirmar.disabled = false;
+    }
+}
+
+function abrirModalAjustarPrazo(id, codigo, cliente, dataInicio, diasPrazo) {
+    const m = document.getElementById('modal-ajustar-prazo');
+    document.getElementById('ajustar-acerto-id').value = id;
+    document.getElementById('ajustar-acerto-codigo').textContent = codigo;
+    document.getElementById('ajustar-acerto-cliente').textContent = cliente;
+    document.getElementById('ajustar-data-inicio').value = dataInicio || new Date().toISOString().split('T')[0];
+    document.getElementById('ajustar-dias-prazo').value = diasPrazo || 30;
+    
+    const statusEl = document.getElementById('ajustar-prazo-status');
+    if (statusEl) statusEl.style.display = 'none';
+
+    if (m) m.classList.add('active');
+}
+
+function fecharModalAjustarPrazo() {
+    const m = document.getElementById('modal-ajustar-prazo');
+    if (m) m.classList.remove('active');
+}
+
+async function salvarAjustePrazo() {
+    const id = document.getElementById('ajustar-acerto-id')?.value;
+    const dataInicio = document.getElementById('ajustar-data-inicio')?.value;
+    const diasPrazo = parseInt(document.getElementById('ajustar-dias-prazo')?.value || '30', 10);
+    const statusEl = document.getElementById('ajustar-prazo-status');
+
+    if (!id) return;
+
+    try {
+        const resp = await fetch('/api/consignacao/atualizar_inicio_prazo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: parseInt(id, 10),
+                data_inicio_prazo: dataInicio,
+                dias_prazo: diasPrazo
+            })
+        });
+
+        const data = await resp.json();
+        if (resp.ok && data.success) {
+            if (statusEl) {
+                statusEl.style.display = 'block';
+                statusEl.style.background = 'rgba(52, 211, 153, 0.15)';
+                statusEl.style.color = '#34d399';
+                statusEl.innerHTML = `✅ ${data.message}`;
+            }
+            setTimeout(() => {
+                fecharModalAjustarPrazo();
+                carregarHistoricoAcertosConsignacao();
+            }, 600);
+        } else {
+            alert(`❌ Erro: ${data.message || 'Falha ao atualizar prazo'}`);
+        }
+    } catch (e) {
+        console.error('Erro ao atualizar prazo:', e);
+        alert('❌ Erro de conexão com o servidor.');
+    }
+}
+
+function adiantarContagemImediata() {
+    fecharModalAjustarPrazo();
+    const cliente = document.getElementById('ajustar-acerto-cliente')?.textContent;
+    const codigo = document.getElementById('ajustar-acerto-codigo')?.textContent;
+    const id = document.getElementById('ajustar-acerto-id')?.value;
+    iniciarConferenciaAcertoExistente(id, cliente, codigo);
+}
+
+function iniciarConferenciaAcertoExistente(id, cliente, codigo) {
+    const searchCliente = document.getElementById('consignacao-cliente-search');
+    if (searchCliente) {
+        searchCliente.value = cliente;
+        window.scrollTo({ top: 300, behavior: 'smooth' });
+        if (typeof buscarRemessasAbertasCliente === 'function') {
+            buscarRemessasAbertasCliente();
+        }
+    } else {
+        alert(`Iniciando conferência física para ${cliente} (${codigo}).`);
+    }
+}
+
+async function dispararChecagemAlertasConsignacao() {
+    try {
+        const resp = await fetch('/api/consignacao/disparar_alertas_prazos', { method: 'POST' });
+        const data = await resp.json();
+
+        if (resp.ok && data.success) {
+            alert(`📬 Verificação de Prazos Concluída!\n\n${data.message}`);
+            carregarHistoricoAcertosConsignacao();
+        } else {
+            alert(`⚠️ Aviso: ${data.message || 'Nenhum alerta pendente no momento.'}`);
+        }
+    } catch (e) {
+        console.error('Erro ao checar alertas:', e);
+        alert('❌ Erro ao disparar checagem de alertas.');
+    }
+}
+
+// ============================================================
+// ASSINATURAS: PASSO 2 (PEDIDOS DE VENDA NOVOS - PRÓXIMO ENVIO)
+// ============================================================
+
+async function carregarPedidosProximoEnvio() {
+    const tbody = document.getElementById('tbody-pedidos-proximo-envio');
+    if (!tbody) return;
+
+    try {
+        const resp = await fetch('/api/assinaturas/pedidos_proximo_envio');
+        const data = await resp.json();
+
+        if (!resp.ok || !data.success) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #f87171; padding: 15px;">⚠️ Falha: ${data.message || 'Erro ao carregar'}</td></tr>`;
+            return;
+        }
+
+        const pedidos = data.pedidos || [];
+        if (pedidos.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 20px;">Nenhum pedido de venda registrado para o próximo envio ainda.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = pedidos.map(p => {
+            const endereco = `${p.rua || ''}, ${p.numero || ''} ${p.complemento || ''} - ${p.bairro || ''}`;
+            const cidadeUf = `${p.cidade || ''} / ${p.uf || ''}`;
+            const dataFmt = p.criado_em ? p.criado_em.substring(0, 10).split('-').reverse().join('/') : '--';
+
+            return `
+                <tr>
+                    <td style="font-weight: 700; color: #a855f7;">${p.numero_pedido || p.codigo_pedido_omie || '--'}</td>
+                    <td>
+                        <div style="font-weight: 600; color: #f8fafc;">${p.cliente_nome || '--'}</div>
+                        <small style="color: #64748b;">${p.observacao || ''}</small>
+                    </td>
+                    <td style="color: #cbd5e1;">${p.cpf_cnpj || '--'}</td>
+                    <td>
+                        <div>${endereco}</div>
+                        <small style="color: #94a3b8;">${cidadeUf}</small>
+                    </td>
+                    <td style="font-weight: 600; color: #fbbf24;">${p.cep || '--'}</td>
+                    <td style="text-align: center; font-weight: 700; color: #34d399;">${p.quantidade_assinaturas || 1} un</td>
+                    <td><span class="badge" style="background: rgba(168, 85, 247, 0.2); color: #c084fc;">${p.periodo_envio || 'Próximo Lote'}</span></td>
+                    <td style="color: #94a3b8; font-size: 0.85rem;">${dataFmt}</td>
+                </tr>
+            `;
+        }).join('');
+    } catch (e) {
+        console.error('Erro ao buscar pedidos do próximo envio:', e);
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #f87171; padding: 15px;">⚠️ Erro de conexão com o servidor.</td></tr>`;
+    }
+}
+
+function abrirModalCadastrarPedidoAssinatura() {
+    const m = document.getElementById('modal-cadastrar-pedido-assinatura');
+    const statusEl = document.getElementById('ass-novo-status');
+    if (statusEl) statusEl.style.display = 'none';
+    if (m) m.classList.add('active');
+}
+
+function fecharModalCadastrarPedidoAssinatura() {
+    const m = document.getElementById('modal-cadastrar-pedido-assinatura');
+    if (m) m.classList.remove('active');
+}
+
+async function buscarDadosPedidoOmieNovo() {
+    const numPedido = (document.getElementById('ass-novo-num-pedido')?.value || '').trim();
+    const statusEl = document.getElementById('ass-novo-status');
+
+    if (!numPedido) {
+        alert('Digite o número do Pedido de Venda no Omie (Ex: 28450).');
+        return;
+    }
+
+    if (statusEl) {
+        statusEl.style.display = 'block';
+        statusEl.style.background = 'rgba(168, 85, 247, 0.15)';
+        statusEl.style.color = '#c084fc';
+        statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Consultando pedido e dados cadastrais no Omie ERP...';
+    }
+
+    try {
+        const resp = await fetch(`/api/pedidos_venda/consultar?numero=${encodeURIComponent(numPedido)}`);
+        const data = await resp.json();
+
+        if (resp.ok && data.success && data.pedido) {
+            const p = data.pedido;
+            if (p.cliente_nome) document.getElementById('ass-novo-nome').value = p.cliente_nome;
+            if (p.cpf_cnpj) document.getElementById('ass-novo-doc').value = p.cpf_cnpj;
+            if (p.rua) document.getElementById('ass-novo-rua').value = p.rua;
+            if (p.numero) document.getElementById('ass-novo-numero').value = p.numero;
+            if (p.bairro) document.getElementById('ass-novo-bairro').value = p.bairro;
+            if (p.cidade) document.getElementById('ass-novo-cidade').value = p.cidade;
+            if (p.uf) document.getElementById('ass-novo-uf').value = p.uf;
+            if (p.cep) document.getElementById('ass-novo-cep').value = p.cep;
+            if (p.quantidade_assinaturas) document.getElementById('ass-novo-qtd').value = p.quantidade_assinaturas;
+
+            statusEl.style.background = 'rgba(52, 211, 153, 0.15)';
+            statusEl.style.color = '#34d399';
+            statusEl.innerHTML = `✅ Dados do assinante encontrados com sucesso! Confirme os dados abaixo.`;
+        } else {
+            statusEl.style.background = 'rgba(245, 158, 11, 0.15)';
+            statusEl.style.color = '#fbbf24';
+            statusEl.innerHTML = `ℹ️ Digite os dados abaixo e clique em Salvar para vincular.`;
+        }
+    } catch (e) {
+        console.warn('Erro ao consultar pedido:', e);
+        if (statusEl) {
+            statusEl.style.background = 'rgba(245, 158, 11, 0.15)';
+            statusEl.style.color = '#fbbf24';
+            statusEl.innerHTML = `ℹ️ Digite os dados abaixo e clique em Salvar para vincular.`;
+        }
+    }
+}
+
+async function salvarPedidoNovoAssinatura() {
+    const numPedido = (document.getElementById('ass-novo-num-pedido')?.value || '').trim();
+    const nome = (document.getElementById('ass-novo-nome')?.value || '').trim();
+    const doc = (document.getElementById('ass-novo-doc')?.value || '').trim();
+    const rua = (document.getElementById('ass-novo-rua')?.value || '').trim();
+    const numero = (document.getElementById('ass-novo-numero')?.value || '').trim();
+    const bairro = (document.getElementById('ass-novo-bairro')?.value || '').trim();
+    const cidade = (document.getElementById('ass-novo-cidade')?.value || '').trim();
+    const uf = (document.getElementById('ass-novo-uf')?.value || '').trim();
+    const cep = (document.getElementById('ass-novo-cep')?.value || '').trim();
+    const qtd = parseInt(document.getElementById('ass-novo-qtd')?.value || '1', 10);
+    const periodo = (document.getElementById('ass-novo-periodo')?.value || 'Próximo Lote').trim();
+    const obs = (document.getElementById('ass-novo-obs')?.value || '').trim();
+    const statusEl = document.getElementById('ass-novo-status');
+
+    if (!numPedido && !nome) {
+        alert('Por favor, informe ao menos o Número do Pedido Omie ou o Nome do Assinante.');
+        return;
+    }
+
+    if (statusEl) {
+        statusEl.style.display = 'block';
+        statusEl.style.background = 'rgba(168, 85, 247, 0.15)';
+        statusEl.style.color = '#c084fc';
+        statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Cadastrando pedido para o próximo ciclo...';
+    }
+
+    try {
+        const resp = await fetch('/api/assinaturas/cadastrar_pedido_proximo_envio', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                numero_pedido: numPedido,
+                cliente_nome: nome,
+                cpf_cnpj: doc,
+                rua: rua,
+                numero: numero,
+                bairro: bairro,
+                cidade: cidade,
+                uf: uf,
+                cep: cep,
+                quantidade_assinaturas: qtd,
+                periodo_envio: periodo,
+                observacao: obs
+            })
+        });
+
+        const data = await resp.json();
+
+        if (resp.ok && data.success) {
+            if (statusEl) {
+                statusEl.style.background = 'rgba(52, 211, 153, 0.15)';
+                statusEl.style.color = '#34d399';
+                statusEl.innerHTML = `✅ ${data.message}`;
+            }
+            setTimeout(() => {
+                fecharModalCadastrarPedidoAssinatura();
+                carregarPedidosProximoEnvio();
+            }, 800);
+        } else {
+            if (statusEl) {
+                statusEl.style.background = 'rgba(239, 68, 68, 0.15)';
+                statusEl.style.color = '#f87171';
+                statusEl.innerHTML = `❌ Erro: ${data.message || 'Falha ao salvar'}`;
+            }
+        }
+    } catch (e) {
+        console.error('Erro ao salvar pedido de assinatura:', e);
+        if (statusEl) {
+            statusEl.style.background = 'rgba(239, 68, 68, 0.15)';
+            statusEl.style.color = '#f87171';
+            statusEl.innerHTML = '❌ Erro ao comunicar com o servidor.';
+        }
+    }
+}
+
+// Exportações Globais
+window.carregarHistoricoAcertosConsignacao = carregarHistoricoAcertosConsignacao;
+window.filtrarHistoricoConsignacao = filtrarHistoricoConsignacao;
+window.abrirModalVincularRemessa = abrirModalVincularRemessa;
+window.fecharModalVincularRemessa = fecharModalVincularRemessa;
+window.executarVinculacaoRemessa = executarVinculacaoRemessa;
+window.abrirModalAjustarPrazo = abrirModalAjustarPrazo;
+window.fecharModalAjustarPrazo = fecharModalAjustarPrazo;
+window.salvarAjustePrazo = salvarAjustePrazo;
+window.adiantarContagemImediata = adiantarContagemImediata;
+window.iniciarConferenciaAcertoExistente = iniciarConferenciaAcertoExistente;
+window.dispararChecagemAlertasConsignacao = dispararChecagemAlertasConsignacao;
+window.carregarPedidosProximoEnvio = carregarPedidosProximoEnvio;
+window.abrirModalCadastrarPedidoAssinatura = abrirModalCadastrarPedidoAssinatura;
+window.fecharModalCadastrarPedidoAssinatura = fecharModalCadastrarPedidoAssinatura;
+window.buscarDadosPedidoOmieNovo = buscarDadosPedidoOmieNovo;
+window.salvarPedidoNovoAssinatura = salvarPedidoNovoAssinatura;

@@ -16,7 +16,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <link rel="stylesheet" href="styles.css?v=20261022_v3">
+    <link rel="stylesheet" href="styles.css?v=20261023_v2">
 </head>
 <body>
     <div class="app-container" id="app-container">
@@ -921,8 +921,12 @@
                             </div>
                             <div>
                                 <h3 style="margin: 0; font-size: 1.2rem; color: #f8fafc; font-weight: 700; display: flex; align-items: center; gap: 10px;">
-                                    Gestão de Combo & Alertas do Kit 
-                                    <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); font-size: 0.85rem; padding: 4px 10px;">SKU 000223</span>
+                                    Gestão de Combos & Alertas do Kit 
+                                    <select id="select-combo-ativo" class="form-control" onchange="trocarComboAtivo(this.value)" style="background: #0f172a; border: 1px solid rgba(245, 158, 11, 0.5); color: #fbbf24; font-weight: 700; padding: 4px 10px; font-size: 0.88rem; border-radius: 6px; cursor: pointer;">
+                                        <option value="000223" selected>000223 — Kit Pão da Vida Padrão</option>
+                                        <option value="PRD00379">PRD00379 — Assinatura Pão da Vida 1</option>
+                                        <option value="PRD00574">PRD00574 — Assinatura Pão da Vida 2</option>
+                                    </select>
                                 </h3>
                                 <small style="color: var(--text-muted); font-size: 0.85rem;">Monitoramento automático de componentes e redefinição de valor de venda padrão no Omie ERP</small>
                             </div>
@@ -1445,25 +1449,60 @@
 
                 <!-- ETAPA 4: HISTÓRICO DE ACERTOS SALVOS -->
                 <div class="card" style="background: #0d1524; border: 1px solid #1e2c45; padding: 20px; border-radius: var(--radius-lg); margin-top: 25px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-                        <h3 style="font-size: 1rem; color: #ffffff;"><i class="fa-solid fa-clock-rotate-left" style="color: #a855f7;"></i> Histórico de Acertos de Consignação (Turso DB)</h3>
-                        <button id="btn-recarregar-historico-acertos" class="btn btn-sm btn-secondary"><i class="fa-solid fa-rotate"></i> Atualizar Histórico</button>
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+                        <div>
+                            <h3 style="font-size: 1.05rem; color: #ffffff; margin: 0 0 4px 0; display: flex; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-clock-rotate-left" style="color: #a855f7;"></i> Histórico de Acertos de Consignação (Turso DB)
+                            </h3>
+                            <small style="color: var(--text-muted); font-size: 0.8rem;">Monitoramento com contagem regressiva de 30 dias para conferência física e alertas automáticos por e-mail.</small>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                            <button class="btn btn-sm" onclick="abrirModalVincularRemessa()" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; font-weight: 600;" title="Vincular uma Remessa emitida no Omie para iniciar a contagem regressiva de 30 dias">
+                                <i class="fa-solid fa-plus"></i> Vincular Remessa Aberta (30 Dias)
+                            </button>
+                            <button class="btn btn-sm" onclick="dispararChecagemAlertasConsignacao()" style="background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; color: #fbbf24; font-weight: 600;" title="Disparar verificação de e-mails para remessas com 5 dias para vencer ou 30 dias vencidas">
+                                <i class="fa-solid fa-envelope"></i> Checar Alertas E-mail
+                            </button>
+                            <button id="btn-recarregar-historico-acertos" class="btn btn-sm btn-secondary" onclick="carregarHistoricoAcertosConsignacao()">
+                                <i class="fa-solid fa-rotate"></i> Atualizar Histórico
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="table-wrapper" style="max-height: 280px; overflow-y: auto;">
+                    <!-- Filtros Rápidos de Status & Prazos -->
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center;">
+                        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-right: 4px;">Filtros:</span>
+                        <button class="btn btn-sm btn-filtro-consignacao active" data-filtro="TODOS" onclick="filtrarHistoricoConsignacao('TODOS')" style="padding: 4px 12px; font-size: 0.8rem; border-radius: 20px;">
+                            📋 Todos (<span id="cont-filtro-todos">0</span>)
+                        </button>
+                        <button class="btn btn-sm btn-filtro-consignacao" data-filtro="EM_ANDAMENTO" onclick="filtrarHistoricoConsignacao('EM_ANDAMENTO')" style="padding: 4px 12px; font-size: 0.8rem; border-radius: 20px; color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); background: rgba(56, 189, 248, 0.08);">
+                            ⏳ Em Aberto / 30 Dias (<span id="cont-filtro-aberto">0</span>)
+                        </button>
+                        <button class="btn btn-sm btn-filtro-consignacao" data-filtro="ALERTA_VENCIDOS" onclick="filtrarHistoricoConsignacao('ALERTA_VENCIDOS')" style="padding: 4px 12px; font-size: 0.8rem; border-radius: 20px; color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.08);">
+                            ⚠️ Vencendo / Vencidos (<span id="cont-filtro-vencidos">0</span>)
+                        </button>
+                        <button class="btn btn-sm btn-filtro-consignacao" data-filtro="AGUARDANDO_VENDEDORA" onclick="filtrarHistoricoConsignacao('AGUARDANDO_VENDEDORA')" style="padding: 4px 12px; font-size: 0.8rem; border-radius: 20px; color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); background: rgba(245, 158, 11, 0.08);">
+                            ⌛ Aguardando Vendedora (<span id="cont-filtro-vendedora">0</span>)
+                        </button>
+                        <button class="btn btn-sm btn-filtro-consignacao" data-filtro="CONCLUIDO" onclick="filtrarHistoricoConsignacao('CONCLUIDO')" style="padding: 4px 12px; font-size: 0.8rem; border-radius: 20px; color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); background: rgba(52, 211, 153, 0.08);">
+                            ✅ Concluídos Omie (<span id="cont-filtro-concluido">0</span>)
+                        </button>
+                    </div>
+
+                    <div class="table-wrapper" style="max-height: 380px; overflow-y: auto;">
                         <table class="drp-table">
                             <thead>
                                 <tr>
                                     <th>Cód. Acerto</th>
                                     <th>Cliente</th>
                                     <th>Remessas</th>
-                                    <th>Enviado</th>
-                                    <th>Devolvido</th>
-                                    <th>Vendido</th>
-                                    <th>Faturamento Líquido</th>
-                                    <th>Status</th>
-                                    <th>Data</th>
-                                    <th>Ações</th>
+                                    <th>Ciclo 30 Dias (Prazo)</th>
+                                    <th style="text-align: center;">Enviado</th>
+                                    <th style="text-align: center;">Devolvido</th>
+                                    <th style="text-align: center;">Vendido</th>
+                                    <th style="text-align: right;">Faturamento Líquido</th>
+                                    <th style="text-align: center;">Status</th>
+                                    <th style="text-align: center;">Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="tbody-historico-consignacao">
@@ -1778,6 +1817,48 @@
                             <tr><td colspan="14" style="text-align: center; color: var(--text-muted); padding: 30px;">Carregando assinantes...</td></tr>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- PASSO 2: PEDIDOS DE VENDA NOVOS (PRÓXIMO LOTE / ENVIO) -->
+                <div class="card" style="background: #0d1524; border: 1px solid #1e2c45; padding: 22px; border-radius: var(--radius-lg); margin-top: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+                        <div>
+                            <h3 style="font-size: 1.1rem; color: #ffffff; margin: 0 0 4px 0; display: flex; align-items: center; gap: 10px;">
+                                <i class="fa-solid fa-cart-plus" style="color: #a855f7;"></i> Passo 2: Pedidos de Venda Novos (Próximo Envio / Lote)
+                            </h3>
+                            <small style="color: var(--text-muted); font-size: 0.85rem;">
+                                Quando um novo assinante entrar por Pedido de Venda no Omie, guarde seus dados aqui para alimentar e gerar as remessas do próximo ciclo.
+                            </small>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-sm" onclick="abrirModalCadastrarPedidoAssinatura()" style="background: linear-gradient(135deg, #a855f7, #7e22ce); color: #fff; font-weight: 700; border: none; padding: 8px 16px;">
+                                <i class="fa-solid fa-plus"></i> Cadastrar Novo Pedido de Venda
+                            </button>
+                            <button class="btn btn-sm btn-secondary" onclick="carregarPedidosProximoEnvio()">
+                                <i class="fa-solid fa-rotate"></i> Atualizar Lista
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper" style="max-height: 320px; overflow-y: auto;">
+                        <table class="drp-table">
+                            <thead>
+                                <tr>
+                                    <th>Pedido Omie</th>
+                                    <th>Assinante / Cliente</th>
+                                    <th>CPF / CNPJ</th>
+                                    <th>Endereço / Cidade / UF</th>
+                                    <th>CEP</th>
+                                    <th style="text-align: center;">Qtd Assinaturas</th>
+                                    <th>Período Previsto</th>
+                                    <th>Data Cadastro</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-pedidos-proximo-envio">
+                                <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 20px;">Nenhum pedido de venda registrado para o próximo envio ainda.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
         </main>
@@ -2498,7 +2579,174 @@
         </div>
     </div>
 
-    <script src="app.js?v=20261022_v3"></script>
+    <!-- Modal Vincular Remessa Aberta (30 Dias) -->
+    <div id="modal-vincular-remessa" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-link" style="color: #38bdf8;"></i> Vincular Remessa Aberta (Prazo 30 Dias)</h3>
+                <button class="modal-close" onclick="fecharModalVincularRemessa()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 14px;">
+                    Vincule o número de uma remessa emitida no Omie para iniciar a contagem regressiva de 30 dias para conferência física de consignação:
+                </p>
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label><b>Número da Remessa no Omie:</b></label>
+                    <input type="text" id="vinc-numero-remessa" class="form-control" placeholder="Ex: 1868" style="font-size: 1.1rem; font-weight: bold; color: #38bdf8;">
+                    <small style="color: #64748b;">Pode ser o número da remessa (ex: 1868) ou o ID interno.</small>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                    <div class="form-group">
+                        <label><b>Data de Início do Prazo:</b></label>
+                        <input type="date" id="vinc-data-inicio" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label><b>Ciclo (Dias):</b></label>
+                        <input type="number" id="vinc-dias-prazo" class="form-control" value="30" min="1" max="180">
+                    </div>
+                </div>
+                <div id="vinc-remessa-status" style="display: none; padding: 10px; border-radius: 6px; font-size: 0.85rem; margin-top: 10px;"></div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button class="btn btn-secondary" onclick="fecharModalVincularRemessa()">Cancelar</button>
+                <button class="btn btn-primary" id="btn-confirmar-vincular-remessa" onclick="executarVinculacaoRemessa()" style="background: linear-gradient(135deg, #0284c7, #0369a1); border: none; font-weight: bold;">
+                    <i class="fa-solid fa-check"></i> Vincular & Iniciar Contagem
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Ajustar Início / Prazo do Acerto -->
+    <div id="modal-ajustar-prazo" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-calendar-check" style="color: #f59e0b;"></i> Ajustar Prazo de Consignação</h3>
+                <button class="modal-close" onclick="fecharModalAjustarPrazo()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="ajustar-acerto-id">
+                <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 14px;">
+                    <strong id="ajustar-acerto-codigo" style="color: #fbbf24; font-size: 1rem;">AC-REM0000</strong>
+                    <div id="ajustar-acerto-cliente" style="font-size: 0.85rem; color: #cbd5e1; margin-top: 3px;">Cliente</div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                    <div class="form-group">
+                        <label><b>Nova Data Início:</b></label>
+                        <input type="date" id="ajustar-data-inicio" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label><b>Ciclo (Dias):</b></label>
+                        <input type="number" id="ajustar-dias-prazo" class="form-control" value="30" min="1" max="180">
+                    </div>
+                </div>
+                <div style="margin-top: 10px; background: rgba(56, 189, 248, 0.08); border: 1px dashed rgba(56, 189, 248, 0.3); padding: 12px; border-radius: 6px;">
+                    <div style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 6px;">Deseja fazer a contagem física agora antes de completar os 30 dias?</div>
+                    <button class="btn btn-sm btn-secondary" onclick="adiantarContagemImediata()" style="width: 100%; color: #38bdf8; font-weight: 600;">
+                        <i class="fa-solid fa-forward"></i> Iniciar / Adiantar Conferência Imediatamente
+                    </button>
+                </div>
+                <div id="ajustar-prazo-status" style="display: none; padding: 10px; border-radius: 6px; font-size: 0.85rem; margin-top: 10px;"></div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button class="btn btn-secondary" onclick="fecharModalAjustarPrazo()">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarAjustePrazo()" style="background: linear-gradient(135deg, #d97706, #b45309); border: none; font-weight: bold;">
+                    <i class="fa-solid fa-save"></i> Salvar Prazo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Cadastrar Novo Pedido de Venda para Assinaturas -->
+    <div id="modal-cadastrar-pedido-assinatura" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 580px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-cart-plus" style="color: #a855f7;"></i> Cadastrar Pedido de Venda Novo</h3>
+                <button class="modal-close" onclick="fecharModalCadastrarPedidoAssinatura()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 12px;">
+                    Informe o número do Pedido de Venda emitido no Omie para puxar dados cadastrais ou preencha manualmente:
+                </p>
+                <div style="display: flex; gap: 10px; margin-bottom: 14px;">
+                    <div style="flex: 1;">
+                        <label><b>Nº Pedido de Venda Omie:</b></label>
+                        <input type="text" id="ass-novo-num-pedido" class="form-control" placeholder="Ex: 28450" style="font-weight: bold; color: #a855f7;">
+                    </div>
+                    <div style="display: flex; align-items: flex-end;">
+                        <button class="btn btn-secondary" onclick="buscarDadosPedidoOmieNovo()" style="height: 38px; color: #a855f7; border-color: #a855f7; font-weight: 600;">
+                            <i class="fa-solid fa-cloud-arrow-down"></i> Puxar do Omie
+                        </button>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <div class="form-group">
+                        <label><b>Nome do Assinante:</b></label>
+                        <input type="text" id="ass-novo-nome" class="form-control" placeholder="Nome completo ou Razão">
+                    </div>
+                    <div class="form-group">
+                        <label><b>CPF / CNPJ:</b></label>
+                        <input type="text" id="ass-novo-doc" class="form-control" placeholder="000.000.000-00">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 3fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <div class="form-group">
+                        <label><b>Logradouro / Rua:</b></label>
+                        <input type="text" id="ass-novo-rua" class="form-control" placeholder="Av / Rua">
+                    </div>
+                    <div class="form-group">
+                        <label><b>Número:</b></label>
+                        <input type="text" id="ass-novo-numero" class="form-control" placeholder="123">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <div class="form-group">
+                        <label><b>Bairro:</b></label>
+                        <input type="text" id="ass-novo-bairro" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label><b>Cidade:</b></label>
+                        <input type="text" id="ass-novo-cidade" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label><b>UF / CEP:</b></label>
+                        <div style="display: flex; gap: 4px;">
+                            <input type="text" id="ass-novo-uf" class="form-control" placeholder="CE" style="max-width: 50px;">
+                            <input type="text" id="ass-novo-cep" class="form-control" placeholder="00000-000">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <div class="form-group">
+                        <label><b>Qtd de Assinaturas:</b></label>
+                        <input type="number" id="ass-novo-qtd" class="form-control" value="1" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label><b>Período de Envio:</b></label>
+                        <input type="text" id="ass-novo-periodo" class="form-control" value="Próximo Lote 2027">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label><b>Observações:</b></label>
+                    <input type="text" id="ass-novo-obs" class="form-control" placeholder="Ex: Assinatura renovada via site">
+                </div>
+
+                <div id="ass-novo-status" style="display: none; padding: 10px; border-radius: 6px; font-size: 0.85rem;"></div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button class="btn btn-secondary" onclick="fecharModalCadastrarPedidoAssinatura()">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarPedidoNovoAssinatura()" style="background: linear-gradient(135deg, #a855f7, #7e22ce); border: none; font-weight: bold;">
+                    <i class="fa-solid fa-save"></i> Salvar para Próximo Envio
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=20261023_v2"></script>
 </body>
 
 </html>
