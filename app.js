@@ -8092,7 +8092,7 @@ function atualizarContadoresFiltroConsignacao() {
     const contAberto = list.filter(a => a.status === 'EM_ANDAMENTO').length;
     const contVencidos = list.filter(a => a.prazo_status === 'VENCIDO' || a.prazo_status === 'ALERTA_5D').length;
     const contVendedora = list.filter(a => a.status === 'AGUARDANDO_VENDEDORA').length;
-    const contConcluido = list.filter(a => a.status === 'CONCLUIDO').length;
+    const contConcluido = list.filter(a => a.status === 'CONCLUIDO' || a.status === 'FINALIZADO_OMIE').length;
 
     const elTodos = document.getElementById('cont-filtro-todos');
     const elAberto = document.getElementById('cont-filtro-aberto');
@@ -8135,7 +8135,7 @@ function renderizarTabelaHistoricoConsignacao() {
     } else if (f === 'AGUARDANDO_VENDEDORA') {
         list = list.filter(a => a.status === 'AGUARDANDO_VENDEDORA');
     } else if (f === 'CONCLUIDO') {
-        list = list.filter(a => a.status === 'CONCLUIDO');
+        list = list.filter(a => a.status === 'CONCLUIDO' || a.status === 'FINALIZADO_OMIE');
     }
 
     if (list.length === 0) {
@@ -8146,24 +8146,31 @@ function renderizarTabelaHistoricoConsignacao() {
     tbody.innerHTML = list.map(item => {
         let statusBadge = '';
         if (item.status === 'EM_ANDAMENTO') {
-            statusBadge = '<span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);">⏳ Em Aberto</span>';
+            statusBadge = '<span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-weight: 700; padding: 4px 8px; border-radius: 6px;">⏳ Em Aberto</span>';
         } else if (item.status === 'AGUARDANDO_VENDEDORA') {
-            statusBadge = '<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);">⌛ Aguardando Vendedora</span>';
-        } else if (item.status === 'CONCLUIDO') {
-            statusBadge = '<span class="badge" style="background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3);">✅ Concluído Omie</span>';
+            statusBadge = '<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); font-weight: 700; padding: 4px 8px; border-radius: 6px;">⌛ Aguardando Vendedora</span>';
+        } else if (item.status === 'CONCLUIDO' || item.status === 'FINALIZADO_OMIE') {
+            statusBadge = '<span class="badge" style="background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); font-weight: 700; padding: 4px 8px; border-radius: 6px;">✅ Concluído Omie</span>';
         } else {
-            statusBadge = `<span class="badge">${item.status}</span>`;
+            statusBadge = `<span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); font-weight: 600; padding: 4px 8px; border-radius: 6px;">${item.status || 'Pendente'}</span>`;
         }
 
         const prazoColor = item.prazo_cor || '#38bdf8';
         const prazoLabel = item.prazo_label || `${item.dias_restantes || 30} dias restantes`;
-        const dataInicioFmt = item.data_inicio_prazo ? item.data_inicio_prazo.split('-').reverse().join('/') : '--';
+        const dataInicioFmt = item.data_inicio_prazo ? item.data_inicio_prazo.split('-').reverse().join('/') : (item.data_inicio_formatada || '--');
 
-        const remessasHtml = (item.remessas_ids || []).map(r => `<span class="badge" style="background:#1e293b; color:#94a3b8; margin: 2px;">REM ${r}</span>`).join(' ') || '--';
+        const remList = (item.remessas_ids && item.remessas_ids.length) 
+            ? item.remessas_ids 
+            : ((item.remessas_unificadas || []).map(r => r.numero_remessa || r.nCodRem).filter(Boolean));
+        const remessasHtml = remList.map(r => `<span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-weight: 700; margin: 2px;">REM ${r}</span>`).join(' ') || '--';
 
-        const fatFormatado = item.faturamento_liquido != null 
-            ? `R$ ${parseFloat(item.faturamento_liquido).toFixed(2).replace('.', ',')}` 
-            : 'R$ 0,00';
+        const fatValor = item.faturamento_liquido != null ? item.faturamento_liquido : (item.valor_total_liquido != null ? item.valor_total_liquido : 0);
+        const fatFormatado = `R$ ${parseFloat(fatValor || 0).toFixed(2).replace('.', ',')}`;
+
+        const totEnviado = item.total_enviado || 0;
+        const totDevolvido = item.total_devolvido != null ? item.total_devolvido : (item.total_retorno != null ? item.total_retorno : 0);
+        const totVendido = item.total_vendido || 0;
+        const codCliente = item.cliente_omie_id || item.codigo_cliente_omie || '--';
 
         const nomeClienteEscaped = (item.cliente_nome || '').replace(/'/g, "\\'");
         const dataInicioVal = item.data_inicio_prazo || '';
@@ -8173,7 +8180,7 @@ function renderizarTabelaHistoricoConsignacao() {
                 <td style="font-weight: 700; color: #a855f7;">${item.codigo_acerto}</td>
                 <td>
                     <div style="font-weight: 600; color: #f8fafc;">${item.cliente_nome || 'Cliente'}</div>
-                    <small style="color: #64748b;">ID Omie: ${item.cliente_omie_id || '--'}</small>
+                    <small style="color: #64748b;">ID Omie: ${codCliente}</small>
                 </td>
                 <td>${remessasHtml}</td>
                 <td>
@@ -8182,9 +8189,9 @@ function renderizarTabelaHistoricoConsignacao() {
                     </div>
                     <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">Início: ${dataInicioFmt} (${item.dias_prazo || 30} dias)</div>
                 </td>
-                <td style="text-align: center; font-weight: 600;">${item.total_enviado || 0}</td>
-                <td style="text-align: center; color: #f87171;">${item.total_devolvido || 0}</td>
-                <td style="text-align: center; color: #34d399; font-weight: 700;">${item.total_vendido || 0}</td>
+                <td style="text-align: center; font-weight: 600;">${totEnviado}</td>
+                <td style="text-align: center; color: #f87171;">${totDevolvido}</td>
+                <td style="text-align: center; color: #34d399; font-weight: 700;">${totVendido}</td>
                 <td style="text-align: right; font-weight: 700; color: #34d399;">${fatFormatado}</td>
                 <td style="text-align: center;">${statusBadge}</td>
                 <td style="text-align: center;">
@@ -8572,6 +8579,277 @@ async function salvarPedidoNovoAssinatura() {
     }
 }
 
+// =========================================================================
+// MÓDULO ASSINATURAS: LANÇAMENTO DE PEDIDO DE VENDA OMIE ERP & FRENET
+// =========================================================================
+
+function trocarModoModalAssinatura(modo) {
+    const painelLancar = document.getElementById('painel-modal-lancar-omie');
+    const painelImportar = document.getElementById('painel-modal-importar-omie');
+    const btnLancarTab = document.getElementById('btn-tab-modal-lancar-omie');
+    const btnImportarTab = document.getElementById('btn-tab-modal-importar-omie');
+    const btnSubmitLancar = document.getElementById('btn-submit-lancar-omie');
+    const btnSubmitImportar = document.getElementById('btn-submit-importar-omie');
+
+    if (modo === 'LANCAR') {
+        if (painelLancar) painelLancar.style.display = 'block';
+        if (painelImportar) painelImportar.style.display = 'none';
+        if (btnSubmitLancar) btnSubmitLancar.style.display = 'inline-block';
+        if (btnSubmitImportar) btnSubmitImportar.style.display = 'none';
+
+        if (btnLancarTab) {
+            btnLancarTab.style.background = '#a855f7';
+            btnLancarTab.style.color = '#ffffff';
+        }
+        if (btnImportarTab) {
+            btnImportarTab.style.background = 'transparent';
+            btnImportarTab.style.color = '#94a3b8';
+        }
+    } else {
+        if (painelLancar) painelLancar.style.display = 'none';
+        if (painelImportar) painelImportar.style.display = 'block';
+        if (btnSubmitLancar) btnSubmitLancar.style.display = 'none';
+        if (btnSubmitImportar) btnSubmitImportar.style.display = 'inline-block';
+
+        if (btnLancarTab) {
+            btnLancarTab.style.background = 'transparent';
+            btnLancarTab.style.color = '#94a3b8';
+        }
+        if (btnImportarTab) {
+            btnImportarTab.style.background = '#a855f7';
+            btnImportarTab.style.color = '#ffffff';
+        }
+    }
+}
+
+async function buscarClienteOmieParaLancamento() {
+    const q = (document.getElementById('ass-lancar-busca-cliente')?.value || '').trim();
+    const listaEl = document.getElementById('ass-lancar-lista-clientes');
+    if (!listaEl) return;
+
+    if (!q || q.length < 2) {
+        alert('Digite ao menos 2 caracteres para buscar o cliente.');
+        return;
+    }
+
+    listaEl.style.display = 'block';
+    listaEl.innerHTML = '<div style="padding: 10px; color: #94a3b8; font-size: 0.85rem;"><i class="fa-solid fa-spinner fa-spin"></i> Buscando clientes no Omie...</div>';
+
+    try {
+        const resp = await fetch(`/api/assinaturas/buscar_clientes?q=${encodeURIComponent(q)}`);
+        const data = await resp.json();
+
+        if (resp.ok && data.clientes && data.clientes.length > 0) {
+            window._clientesEncontradosLancamento = data.clientes;
+            listaEl.innerHTML = data.clientes.map((c, i) => `
+                <div onclick="selecionarClienteOmieLancamento(${i})" style="padding: 8px 12px; border-bottom: 1px solid #1e293b; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-size: 0.84rem;" onmouseover="this.style.background='#1e293b'" onmouseout="this.style.background='transparent'">
+                    <div>
+                        <strong style="color: #38bdf8;">${c.nome_fantasia || c.razao_social}</strong>
+                        <div style="font-size: 0.75rem; color: #94a3b8;">${c.cnpj_cpf || ''} | ${c.cidade || ''}/${c.estado || ''}</div>
+                    </div>
+                    <span style="font-size: 0.72rem; color: #34d399; font-weight: 600;">Cód: ${c.codigo_cliente_omie}</span>
+                </div>
+            `).join('');
+        } else {
+            listaEl.innerHTML = '<div style="padding: 10px; color: #fbbf24; font-size: 0.85rem;">Nenhum cliente encontrado no Omie com esse termo.</div>';
+        }
+    } catch (e) {
+        console.error('Erro ao buscar clientes:', e);
+        listaEl.innerHTML = '<div style="padding: 10px; color: #f87171; font-size: 0.85rem;">Erro de conexão com o servidor.</div>';
+    }
+}
+
+function selecionarClienteOmieLancamento(index) {
+    const clientes = window._clientesEncontradosLancamento || [];
+    const c = clientes[index];
+    if (!c) return;
+
+    if (document.getElementById('ass-lancar-cod-cliente-omie')) document.getElementById('ass-lancar-cod-cliente-omie').value = c.codigo_cliente_omie;
+    if (document.getElementById('ass-lancar-cliente-nome')) document.getElementById('ass-lancar-cliente-nome').value = c.razao_social || c.nome_fantasia;
+    if (document.getElementById('ass-lancar-cliente-doc')) document.getElementById('ass-lancar-cliente-doc').value = c.cnpj_cpf || '';
+    if (document.getElementById('ass-lancar-rua')) document.getElementById('ass-lancar-rua').value = c.endereco || '';
+    if (document.getElementById('ass-lancar-numero')) document.getElementById('ass-lancar-numero').value = c.endereco_numero || '';
+    if (document.getElementById('ass-lancar-comp')) document.getElementById('ass-lancar-comp').value = c.complemento || '';
+    if (document.getElementById('ass-lancar-bairro')) document.getElementById('ass-lancar-bairro').value = c.bairro || '';
+    if (document.getElementById('ass-lancar-cidade')) document.getElementById('ass-lancar-cidade').value = c.cidade || '';
+    if (document.getElementById('ass-lancar-uf')) document.getElementById('ass-lancar-uf').value = c.estado || '';
+    if (document.getElementById('ass-lancar-cep')) document.getElementById('ass-lancar-cep').value = c.cep || '';
+
+    const listaEl = document.getElementById('ass-lancar-lista-clientes');
+    if (listaEl) listaEl.style.display = 'none';
+}
+
+function aoMudarFormaEnvio(envio) {
+    const freteInput = document.getElementById('ass-lancar-val-frete');
+    if (!freteInput) return;
+
+    if (envio === 'ROBERTO_SOUZA') {
+        freteInput.value = '4.50';
+    } else if (envio === 'FRETE_GRATIS') {
+        freteInput.value = '0.00';
+    }
+    atualizarTotalLancamento();
+}
+
+function atualizarTotalLancamento() {
+    const comboSelect = document.getElementById('ass-lancar-combo');
+    const qtdInput = document.getElementById('ass-lancar-qtd');
+    const unitInput = document.getElementById('ass-lancar-val-unit');
+    const freteInput = document.getElementById('ass-lancar-val-frete');
+    const displayTotal = document.getElementById('ass-lancar-total-display');
+
+    const qtd = parseInt(qtdInput?.value || '1', 10) || 1;
+    const unit = parseFloat(unitInput?.value || '89.90') || 89.90;
+    const frete = parseFloat(freteInput?.value || '0.00') || 0.00;
+
+    const total = (qtd * unit) + frete;
+    if (displayTotal) {
+        displayTotal.textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+    }
+}
+
+async function cotarFreteFrenetLancamento() {
+    const cep = (document.getElementById('ass-lancar-cep')?.value || '').trim();
+    const resultEl = document.getElementById('ass-lancar-frenet-resultado');
+    if (!resultEl) return;
+
+    if (!cep || cep.replace(/\D/g, '').length !== 8) {
+        alert('Por favor, informe um CEP válido com 8 dígitos no endereço do assinante.');
+        return;
+    }
+
+    resultEl.style.display = 'block';
+    resultEl.innerHTML = '<span style="color: #38bdf8;"><i class="fa-solid fa-spinner fa-spin"></i> Consultando cotação de frete na API Frenet...</span>';
+
+    try {
+        const valTotal = parseFloat(document.getElementById('ass-lancar-val-unit')?.value || '89.90');
+        const resp = await fetch(`/api/frenet/cotar?cep=${encodeURIComponent(cep)}&valor=${valTotal}&peso=0.3`);
+        const data = await resp.json();
+
+        if (resp.ok && data.disponivel && data.cotacoes && data.cotacoes.length > 0) {
+            resultEl.innerHTML = `
+                <div style="font-weight: 700; color: #34d399; margin-bottom: 6px;">🚚 Opções de Frete Calculadas (Frenet):</div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    ${data.cotacoes.map(c => `
+                        <button type="button" onclick="aplicarFreteCotado(${c.valor}, '${c.servico}')" class="btn btn-sm" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; padding: 4px 10px; font-size: 0.78rem;">
+                            <strong>${c.servico}</strong>: R$ ${c.valor.toFixed(2).replace('.', ',')} (${c.prazo_dias}d)
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+        } else {
+            resultEl.innerHTML = `<span style="color: #fbbf24;">ℹ️ ${data.mensagem || 'Nenhuma cotação retornada. Usando valor manual ou taxa padrão.'}</span>`;
+        }
+    } catch (e) {
+        console.error('Erro ao cotar frete Frenet:', e);
+        resultEl.innerHTML = '<span style="color: #f87171;">❌ Falha de comunicação com a API Frenet.</span>';
+    }
+}
+
+function aplicarFreteCotado(valor, servico) {
+    const freteInput = document.getElementById('ass-lancar-val-frete');
+    if (freteInput) {
+        freteInput.value = valor.toFixed(2);
+    }
+    const envioSelect = document.getElementById('ass-lancar-envio');
+    if (envioSelect) {
+        if (servico.toUpperCase().includes('SEDEX')) envioSelect.value = 'SEDEX';
+        else if (servico.toUpperCase().includes('PAC')) envioSelect.value = 'PAC';
+    }
+    atualizarTotalLancamento();
+}
+
+async function executarLancamentoPedidoVendaOmie() {
+    const statusEl = document.getElementById('ass-lancar-status');
+    const codCliente = (document.getElementById('ass-lancar-cod-cliente-omie')?.value || '').trim();
+    const nome = (document.getElementById('ass-lancar-cliente-nome')?.value || '').trim();
+    const doc = (document.getElementById('ass-lancar-cliente-doc')?.value || '').trim();
+    const rua = (document.getElementById('ass-lancar-rua')?.value || '').trim();
+    const numero = (document.getElementById('ass-lancar-numero')?.value || '').trim();
+    const comp = (document.getElementById('ass-lancar-comp')?.value || '').trim();
+    const bairro = (document.getElementById('ass-lancar-bairro')?.value || '').trim();
+    const cidade = (document.getElementById('ass-lancar-cidade')?.value || '').trim();
+    const uf = (document.getElementById('ass-lancar-uf')?.value || '').trim();
+    const cep = (document.getElementById('ass-lancar-cep')?.value || '').trim();
+
+    const depto = document.getElementById('ass-lancar-depto')?.value || '1807684664';
+    const parcelas = document.getElementById('ass-lancar-parcelas')?.value || '000';
+    const comboSku = document.getElementById('ass-lancar-combo')?.value || '000223';
+    const qtd = parseInt(document.getElementById('ass-lancar-qtd')?.value || '1', 10) || 1;
+    const valUnit = parseFloat(document.getElementById('ass-lancar-val-unit')?.value || '89.90') || 89.90;
+    const envio = document.getElementById('ass-lancar-envio')?.value || 'PAC';
+    const valFrete = parseFloat(document.getElementById('ass-lancar-val-frete')?.value || '0.00') || 0.00;
+
+    if (!nome && !codCliente) {
+        alert('Por favor, informe ao menos o cliente da assinatura (selecione na busca ou digite o nome).');
+        return;
+    }
+
+    if (statusEl) {
+        statusEl.style.display = 'block';
+        statusEl.style.background = 'rgba(168, 85, 247, 0.15)';
+        statusEl.style.color = '#c084fc';
+        statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Transmitindo Pedido de Venda para o Omie ERP...';
+    }
+
+    try {
+        const payload = {
+            codigo_cliente_omie: codCliente ? parseInt(codCliente, 10) : null,
+            cliente_nome: nome,
+            cpf_cnpj: doc,
+            rua: rua,
+            numero: numero,
+            complemento: comp,
+            bairro: bairro,
+            cidade: cidade,
+            uf: uf,
+            cep: cep,
+            departamento: depto,
+            parcelamento: parcelas,
+            combo_sku: comboSku,
+            quantidade: qtd,
+            valor_unitario: valUnit,
+            forma_envio: envio,
+            valor_frete: valFrete,
+            cenario_fiscal: '1800980891',
+            categoria: '1.01.01'
+        };
+
+        const resp = await fetch('/api/assinaturas/lancar_pedido_venda_omie', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await resp.json();
+
+        if (resp.ok && data.success) {
+            if (statusEl) {
+                statusEl.style.background = 'rgba(52, 211, 153, 0.15)';
+                statusEl.style.color = '#34d399';
+                statusEl.innerHTML = `✅ <strong>Sucesso!</strong> Pedido de Venda <strong>#${data.numero_pedido || ''}</strong> gerado no Omie ERP e salvo no banco para o próximo envio!`;
+            }
+            setTimeout(() => {
+                fecharModalCadastrarPedidoAssinatura();
+                carregarPedidosProximoEnvio();
+            }, 1800);
+        } else {
+            if (statusEl) {
+                statusEl.style.background = 'rgba(239, 68, 68, 0.15)';
+                statusEl.style.color = '#f87171';
+                statusEl.innerHTML = `❌ Falha ao emitir pedido no Omie: ${data.message || 'Erro desconhecido'}`;
+            }
+        }
+    } catch (e) {
+        console.error('Erro ao emitir pedido Omie:', e);
+        if (statusEl) {
+            statusEl.style.background = 'rgba(239, 68, 68, 0.15)';
+            statusEl.style.color = '#f87171';
+            statusEl.innerHTML = '❌ Erro de conexão com o servidor.';
+        }
+    }
+}
+
 // Exportações Globais
 window.carregarHistoricoAcertosConsignacao = carregarHistoricoAcertosConsignacao;
 window.filtrarHistoricoConsignacao = filtrarHistoricoConsignacao;
@@ -8589,3 +8867,12 @@ window.abrirModalCadastrarPedidoAssinatura = abrirModalCadastrarPedidoAssinatura
 window.fecharModalCadastrarPedidoAssinatura = fecharModalCadastrarPedidoAssinatura;
 window.buscarDadosPedidoOmieNovo = buscarDadosPedidoOmieNovo;
 window.salvarPedidoNovoAssinatura = salvarPedidoNovoAssinatura;
+window.trocarModoModalAssinatura = trocarModoModalAssinatura;
+window.buscarClienteOmieParaLancamento = buscarClienteOmieParaLancamento;
+window.selecionarClienteOmieLancamento = selecionarClienteOmieLancamento;
+window.aoMudarFormaEnvio = aoMudarFormaEnvio;
+window.atualizarTotalLancamento = atualizarTotalLancamento;
+window.cotarFreteFrenetLancamento = cotarFreteFrenetLancamento;
+window.aplicarFreteCotado = aplicarFreteCotado;
+window.executarLancamentoPedidoVendaOmie = executarLancamentoPedidoVendaOmie;
+

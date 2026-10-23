@@ -608,6 +608,23 @@ class ConsignacaoService:
                     r_dict["prazo_label"] = f"Faltam {dias_restantes} dias ({dt_venc_str})"
                     r_dict["prazo_cor"] = "#38bdf8"
 
+                # Aliases de compatibilidade para o frontend
+                r_dict["faturamento_liquido"] = float(r_dict.get("valor_total_liquido") or 0.0)
+                r_dict["total_devolvido"] = int(r_dict.get("total_retorno") or 0)
+                r_dict["cliente_omie_id"] = r_dict.get("codigo_cliente_omie")
+                
+                rems_list = r_dict.get("remessas_unificadas") or []
+                if isinstance(rems_list, str):
+                    try:
+                        rems_list = json.loads(rems_list)
+                    except Exception:
+                        rems_list = []
+                r_dict["remessas_ids"] = [
+                    str(r.get("numero_remessa") or r.get("nCodRem") or "")
+                    for r in rems_list
+                    if str(r.get("numero_remessa") or r.get("nCodRem") or "").strip()
+                ]
+
                 res.append(r_dict)
             return res
         except Exception as e:

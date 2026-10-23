@@ -84,6 +84,12 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_consignacao_disparar_alertas_prazos()
         elif url_path == '/api/assinaturas/pedidos_proximo_envio':
             self.handle_api_assinaturas_listar_pedidos_proximo_envio()
+        elif url_path == '/api/assinaturas/metadados':
+            self.handle_api_assinaturas_metadados()
+        elif url_path == '/api/assinaturas/buscar_clientes':
+            self.handle_api_assinaturas_buscar_clientes()
+        elif url_path == '/api/frenet/cotar':
+            self.handle_api_frenet_cotar()
         elif url_path == '/api/pedidos_venda/consultar':
             self.handle_api_pedidos_venda_consultar()
         elif url_path in ['/api/inteligencia_matriz', '/api/drp/inteligencia_matriz']:
@@ -177,6 +183,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_consignacao_disparar_alertas_prazos()
         elif url_path == '/api/assinaturas/cadastrar_pedido_proximo_envio':
             self.handle_api_assinaturas_cadastrar_pedido_proximo_envio()
+        elif url_path == '/api/assinaturas/lancar_pedido_venda_omie':
+            self.handle_api_assinaturas_lancar_pedido_venda_omie()
         elif url_path == '/api/assinaturas/sincronizar':
             self.handle_api_assinaturas_sincronizar()
         elif url_path == '/api/assinaturas/gerar_remessa_baixa':
@@ -2644,6 +2652,52 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             print(f"[API ASSINATURAS] Erro ao cadastrar pedido proximo envio: {e}")
             self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_assinaturas_lancar_pedido_venda_omie(self):
+        try:
+            body = self._read_body()
+            from services.pedidos_assinaturas import PedidosAssinaturasService
+            service = PedidosAssinaturasService()
+            res = service.lancar_pedido_venda_omie(body)
+            self._send_json(res)
+        except Exception as e:
+            print(f"[API ASSINATURAS] Erro ao lancar pedido de venda Omie: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_assinaturas_metadados(self):
+        try:
+            from services.pedidos_assinaturas import PedidosAssinaturasService
+            service = PedidosAssinaturasService()
+            res = service.obter_metadados()
+            self._send_json(res)
+        except Exception as e:
+            print(f"[API ASSINATURAS] Erro ao obter metadados: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_assinaturas_buscar_clientes(self):
+        try:
+            qs = parse_qs(urlparse(self.path).query)
+            q = (qs.get("q", [""])[0] or qs.get("termo", [""])[0]).strip()
+            from services.pedidos_assinaturas import PedidosAssinaturasService
+            service = PedidosAssinaturasService()
+            clientes = service.buscar_clientes_omie(q)
+            self._send_json({"success": True, "clientes": clientes})
+        except Exception as e:
+            print(f"[API ASSINATURAS] Erro ao buscar clientes Omie: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_frenet_cotar(self):
+        try:
+            qs = parse_qs(urlparse(self.path).query)
+            cep = qs.get("cep", [""])[0].strip()
+            valor = float(qs.get("valor", [45.0])[0])
+            peso = float(qs.get("peso", [0.3])[0])
+            from services.frenet_service import cotar_frete_frenet
+            res = cotar_frete_frenet(cep, valor_itens=valor, peso_kg=peso)
+            self._send_json(res)
+        except Exception as e:
+            print(f"[API FRENET] Erro ao cotar frete: {e}")
+            self._send_json({"disponivel": False, "message": str(e)}, status=500)
 
     # =========================================================================
     # MÓDULO 3: ASSINATURAS PÃO DA VIDA (LITURGIA DIÁRIA)

@@ -2657,96 +2657,285 @@
     </div>
 
     <!-- Modal Cadastrar Novo Pedido de Venda para Assinaturas -->
+    <!-- Modal Cadastrar Novo Pedido de Venda para Assinaturas -->
     <div id="modal-cadastrar-pedido-assinatura" class="modal-backdrop">
-        <div class="modal-box" style="max-width: 580px;">
-            <div class="modal-header">
-                <h3><i class="fa-solid fa-cart-plus" style="color: #a855f7;"></i> Cadastrar Pedido de Venda Novo</h3>
+        <div class="modal-box" style="max-width: 780px; width: 95%;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 12px;">
+                <h3 style="margin: 0; color: #f8fafc; font-size: 1.15rem; display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-cart-plus" style="color: #a855f7;"></i> 
+                    Assinaturas Pão da Vida — Gestão de Pedidos de Venda
+                </h3>
                 <button class="modal-close" onclick="fecharModalCadastrarPedidoAssinatura()">&times;</button>
             </div>
-            <div class="modal-body">
-                <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 12px;">
-                    Informe o número do Pedido de Venda emitido no Omie para puxar dados cadastrais ou preencha manualmente:
-                </p>
-                <div style="display: flex; gap: 10px; margin-bottom: 14px;">
-                    <div style="flex: 1;">
-                        <label><b>Nº Pedido de Venda Omie:</b></label>
-                        <input type="text" id="ass-novo-num-pedido" class="form-control" placeholder="Ex: 28450" style="font-weight: bold; color: #a855f7;">
-                    </div>
-                    <div style="display: flex; align-items: flex-end;">
-                        <button class="btn btn-secondary" onclick="buscarDadosPedidoOmieNovo()" style="height: 38px; color: #a855f7; border-color: #a855f7; font-weight: 600;">
-                            <i class="fa-solid fa-cloud-arrow-down"></i> Puxar do Omie
-                        </button>
-                    </div>
+
+            <div class="modal-body" style="padding-top: 14px; max-height: calc(85vh - 120px); overflow-y: auto;">
+                <!-- Abas do Modal -->
+                <div style="display: flex; gap: 8px; margin-bottom: 16px; background: #0b1120; padding: 4px; border-radius: 8px; border: 1px solid #1e293b;">
+                    <button type="button" id="btn-tab-modal-lancar-omie" class="btn btn-sm active" onclick="trocarModoModalAssinatura('LANCAR')" style="flex: 1; padding: 8px 12px; font-weight: 700; border-radius: 6px; border: none; background: #a855f7; color: #ffffff; cursor: pointer;">
+                        🚀 1. Lançar Novo Pedido no Omie ERP
+                    </button>
+                    <button type="button" id="btn-tab-modal-importar-omie" class="btn btn-sm" onclick="trocarModoModalAssinatura('IMPORTAR')" style="flex: 1; padding: 8px 12px; font-weight: 700; border-radius: 6px; border: none; background: transparent; color: #94a3b8; cursor: pointer;">
+                        🔍 2. Puxar Pedido Já Emitido no Omie
+                    </button>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 12px;">
-                    <div class="form-group">
-                        <label><b>Nome do Assinante:</b></label>
-                        <input type="text" id="ass-novo-nome" class="form-control" placeholder="Nome completo ou Razão">
-                    </div>
-                    <div class="form-group">
-                        <label><b>CPF / CNPJ:</b></label>
-                        <input type="text" id="ass-novo-doc" class="form-control" placeholder="000.000.000-00">
-                    </div>
-                </div>
+                <!-- MODO 1: LANÇAR NOVO PEDIDO NO OMIE -->
+                <div id="painel-modal-lancar-omie">
+                    <!-- Seção 1: Cliente Omie -->
+                    <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid #1e293b; border-radius: 8px; padding: 14px; margin-bottom: 14px;">
+                        <h4 style="margin: 0 0 10px 0; font-size: 0.95rem; color: #38bdf8; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-user"></i> 1. Dados do Cliente / Assinante
+                        </h4>
+                        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                            <div style="flex: 1; position: relative;">
+                                <input type="text" id="ass-lancar-busca-cliente" class="form-control" placeholder="Buscar por Nome, Fantasia ou CPF/CNPJ..." onkeyup="if(event.key==='Enter') buscarClienteOmieParaLancamento()">
+                                <input type="hidden" id="ass-lancar-cod-cliente-omie">
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="buscarClienteOmieParaLancamento()" style="padding: 0 16px; background: #38bdf8; color: #0f172a; font-weight: 700; border: none;">
+                                <i class="fa-solid fa-magnifying-glass"></i> Buscar
+                            </button>
+                        </div>
+                        <div id="ass-lancar-lista-clientes" style="display: none; max-height: 140px; overflow-y: auto; background: #0f172a; border: 1px solid #38bdf8; border-radius: 6px; margin-bottom: 10px;"></div>
 
-                <div style="display: grid; grid-template-columns: 3fr 1fr; gap: 12px; margin-bottom: 12px;">
-                    <div class="form-group">
-                        <label><b>Logradouro / Rua:</b></label>
-                        <input type="text" id="ass-novo-rua" class="form-control" placeholder="Av / Rua">
-                    </div>
-                    <div class="form-group">
-                        <label><b>Número:</b></label>
-                        <input type="text" id="ass-novo-numero" class="form-control" placeholder="123">
-                    </div>
-                </div>
+                        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 8px;">
+                            <div>
+                                <label style="font-size: 0.78rem; color: #94a3b8;"><b>Nome / Razão Social:</b></label>
+                                <input type="text" id="ass-lancar-cliente-nome" class="form-control" placeholder="Nome do cliente">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.78rem; color: #94a3b8;"><b>CPF / CNPJ:</b></label>
+                                <input type="text" id="ass-lancar-cliente-doc" class="form-control" placeholder="000.000.000-00">
+                            </div>
+                        </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                    <div class="form-group">
-                        <label><b>Bairro:</b></label>
-                        <input type="text" id="ass-novo-bairro" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label><b>Cidade:</b></label>
-                        <input type="text" id="ass-novo-cidade" class="form-control">
-                    </div>
-                    <div class="form-group">
-                        <label><b>UF / CEP:</b></label>
-                        <div style="display: flex; gap: 4px;">
-                            <input type="text" id="ass-novo-uf" class="form-control" placeholder="CE" style="max-width: 50px;">
-                            <input type="text" id="ass-novo-cep" class="form-control" placeholder="00000-000">
+                        <!-- Endereço Completo -->
+                        <div style="display: grid; grid-template-columns: 3fr 1fr; gap: 10px; margin-bottom: 8px;">
+                            <div>
+                                <label style="font-size: 0.78rem; color: #94a3b8;"><b>Rua / Logradouro:</b></label>
+                                <input type="text" id="ass-lancar-rua" class="form-control">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.78rem; color: #94a3b8;"><b>Número / Compl:</b></label>
+                                <div style="display: flex; gap: 4px;">
+                                    <input type="text" id="ass-lancar-numero" class="form-control" placeholder="Nº" style="max-width: 65px;">
+                                    <input type="text" id="ass-lancar-comp" class="form-control" placeholder="Apt/Sl">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                            <div>
+                                <label style="font-size: 0.78rem; color: #94a3b8;"><b>Bairro:</b></label>
+                                <input type="text" id="ass-lancar-bairro" class="form-control">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.78rem; color: #94a3b8;"><b>Cidade:</b></label>
+                                <input type="text" id="ass-lancar-cidade" class="form-control">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.78rem; color: #94a3b8;"><b>UF / CEP:</b></label>
+                                <div style="display: flex; gap: 4px;">
+                                    <input type="text" id="ass-lancar-uf" class="form-control" placeholder="CE" style="max-width: 50px;">
+                                    <input type="text" id="ass-lancar-cep" class="form-control" placeholder="00000-000">
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                    <div class="form-group">
-                        <label><b>Qtd de Assinaturas:</b></label>
-                        <input type="number" id="ass-novo-qtd" class="form-control" value="1" min="1">
+                    <!-- Seção 2: Fiscais & Contábeis -->
+                    <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid #1e293b; border-radius: 8px; padding: 14px; margin-bottom: 14px;">
+                        <h4 style="margin: 0 0 10px 0; font-size: 0.95rem; color: #fbbf24; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-file-invoice-dollar"></i> 2. Parâmetros Fiscais & Financeiros Omie
+                        </h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                            <div>
+                                <label style="font-size: 0.78rem; color: #94a3b8;"><b>Cenário Fiscal (Omie):</b></label>
+                                <input type="text" class="form-control" value="Venda de Mercadoria - Livrarias/PJ (1800980891)" readonly style="background: #1e293b; color: #34d399; font-weight: 600; font-size: 0.8rem;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.78rem; color: #94a3b8;"><b>Categoria da Conta:</b></label>
+                                <input type="text" class="form-control" value="1.01.01 - Receita Comercial" readonly style="background: #1e293b; color: #38bdf8; font-weight: 600; font-size: 0.8rem;">
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div>
+                                <label style="font-size: 0.78rem; color: #94a3b8;"><b>Departamento Omie:</b></label>
+                                <select id="ass-lancar-depto" class="form-control" style="font-weight: 600;">
+                                    <option value="1807684664" selected>Comercial (1807684664)</option>
+                                    <option value="1807684776">Loja Web / Ecommerce (1807684776)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.78rem; color: #94a3b8;"><b>Condição de Parcelamento (Omie):</b></label>
+                                <select id="ass-lancar-parcelas" class="form-control" style="font-weight: 600;">
+                                    <option value="000" selected>000 — À Vista</option>
+                                    <option value="001">001 — 1 Parcela (Cartão / Boleto)</option>
+                                    <option value="002">002 — 2 Parcelas</option>
+                                    <option value="003">003 — 3 Parcelas</option>
+                                    <option value="004">004 — 4 Parcelas</option>
+                                    <option value="005">005 — 5 Parcelas</option>
+                                    <option value="006">006 — 6 Parcelas</option>
+                                    <option value="007">007 — 7 Parcelas</option>
+                                    <option value="OIW">OIW — 12 Parcelas (Anual)</option>
+                                    <option value="A30">A30 — Para 30 dias</option>
+                                    <option value="A15">A15 — Para 15 dias</option>
+                                    <option value="A07">A07 — Para 7 dias</option>
+                                    <option value="999">999 — Informar número de parcelas</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label><b>Período de Envio:</b></label>
-                        <input type="text" id="ass-novo-periodo" class="form-control" value="Próximo Lote 2027">
+
+                    <!-- Seção 3: Produto & Envio & Frete -->
+                    <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid #1e293b; border-radius: 8px; padding: 14px; margin-bottom: 14px;">
+                        <h4 style="margin: 0 0 10px 0; font-size: 0.95rem; color: #a855f7; display: flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-truck-fast"></i> 3. Combo de Assinatura, Envio & Frete
+                        </h4>
+                        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                            <div>
+                                <label style="font-size: 0.78rem; color: #94a3b8;"><b>Combo / Produto:</b></label>
+                                <select id="ass-lancar-combo" class="form-control" onchange="atualizarTotalLancamento()" style="font-weight: 600;">
+                                    <option value="000223" data-preco="89.90" selected>000223 — Kit Assinatura Pão da Vida (Padrão) - R$ 89,90</option>
+                                    <option value="PRD00379" data-preco="89.90">PRD00379 — Assinatura Pão da Vida 1 - R$ 89,90</option>
+                                    <option value="PRD00574" data-preco="89.90">PRD00574 — Assinatura Pão da Vida 2 - R$ 89,90</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.78rem; color: #94a3b8;"><b>Qtd Assinaturas:</b></label>
+                                <input type="number" id="ass-lancar-qtd" class="form-control" value="1" min="1" onchange="atualizarTotalLancamento()" onkeyup="atualizarTotalLancamento()">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.78rem; color: #94a3b8;"><b>Valor Unitário:</b></label>
+                                <input type="number" step="0.01" id="ass-lancar-val-unit" class="form-control" value="89.90" onchange="atualizarTotalLancamento()">
+                            </div>
+                        </div>
+
+                        <!-- Envio & Frete -->
+                        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; align-items: flex-end;">
+                            <div>
+                                <label style="font-size: 0.78rem; color: #94a3b8;"><b>Forma de Envio:</b></label>
+                                <select id="ass-lancar-envio" class="form-control" onchange="aoMudarFormaEnvio(this.value)" style="font-weight: 600;">
+                                    <option value="PAC" selected>PAC (Correios Nacional)</option>
+                                    <option value="SEDEX">SEDEX (Correios Expresso)</option>
+                                    <option value="FRETE_GRATIS">Frete Grátis</option>
+                                    <option value="JT">J&T Express</option>
+                                    <option value="TOTAL">Total Express</option>
+                                    <option value="ROBERTO_SOUZA">Roberto Souza (Entregador Próprio Fortaleza - R$ 4,50)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.78rem; color: #94a3b8;"><b>Valor Frete (R$):</b></label>
+                                <input type="number" step="0.01" id="ass-lancar-val-frete" class="form-control" value="0.00" onchange="atualizarTotalLancamento()">
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-secondary" onclick="cotarFreteFrenetLancamento()" style="width: 100%; height: 38px; font-size: 0.8rem; font-weight: 600; border-color: #38bdf8; color: #38bdf8;" title="Cotar frete pela API Frenet">
+                                    <i class="fa-solid fa-calculator"></i> Cotar Frenet
+                                </button>
+                            </div>
+                        </div>
+                        <div id="ass-lancar-frenet-resultado" style="display: none; margin-top: 8px; font-size: 0.82rem; padding: 8px; border-radius: 6px; background: #0f172a; border: 1px dashed #38bdf8;"></div>
+
+                        <!-- Resumo Total -->
+                        <div style="margin-top: 12px; display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 10px 14px; border-radius: 6px;">
+                            <span style="font-size: 0.85rem; color: #94a3b8;">Total do Pedido de Venda:</span>
+                            <strong id="ass-lancar-total-display" style="font-size: 1.25rem; color: #34d399;">R$ 89,90</strong>
+                        </div>
                     </div>
+
+                    <div id="ass-lancar-status" style="display: none; padding: 12px; border-radius: 6px; font-size: 0.88rem; margin-bottom: 12px;"></div>
                 </div>
 
-                <div class="form-group" style="margin-bottom: 12px;">
-                    <label><b>Observações:</b></label>
-                    <input type="text" id="ass-novo-obs" class="form-control" placeholder="Ex: Assinatura renovada via site">
-                </div>
+                <!-- MODO 2: IMPORTAR PEDIDO JÁ EMITIDO NO OMIE -->
+                <div id="painel-modal-importar-omie" style="display: none;">
+                    <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 12px;">
+                        Informe o número do Pedido de Venda já emitido no Omie para puxar dados cadastrais e guardar para o próximo envio:
+                    </p>
+                    <div style="display: flex; gap: 10px; margin-bottom: 14px;">
+                        <div style="flex: 1;">
+                            <label><b>Nº Pedido de Venda Omie:</b></label>
+                            <input type="text" id="ass-novo-num-pedido" class="form-control" placeholder="Ex: 28450" style="font-weight: bold; color: #a855f7;">
+                        </div>
+                        <div style="display: flex; align-items: flex-end;">
+                            <button type="button" class="btn btn-secondary" onclick="buscarDadosPedidoOmieNovo()" style="height: 38px; color: #a855f7; border-color: #a855f7; font-weight: 600;">
+                                <i class="fa-solid fa-cloud-arrow-down"></i> Puxar do Omie
+                            </button>
+                        </div>
+                    </div>
 
-                <div id="ass-novo-status" style="display: none; padding: 10px; border-radius: 6px; font-size: 0.85rem;"></div>
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-group">
+                            <label><b>Nome do Assinante:</b></label>
+                            <input type="text" id="ass-novo-nome" class="form-control" placeholder="Nome completo ou Razão">
+                        </div>
+                        <div class="form-group">
+                            <label><b>CPF / CNPJ:</b></label>
+                            <input type="text" id="ass-novo-doc" class="form-control" placeholder="000.000.000-00">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 3fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-group">
+                            <label><b>Logradouro / Rua:</b></label>
+                            <input type="text" id="ass-novo-rua" class="form-control" placeholder="Av / Rua">
+                        </div>
+                        <div class="form-group">
+                            <label><b>Número:</b></label>
+                            <input type="text" id="ass-novo-numero" class="form-control" placeholder="123">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-group">
+                            <label><b>Bairro:</b></label>
+                            <input type="text" id="ass-novo-bairro" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label><b>Cidade:</b></label>
+                            <input type="text" id="ass-novo-cidade" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label><b>UF / CEP:</b></label>
+                            <div style="display: flex; gap: 4px;">
+                                <input type="text" id="ass-novo-uf" class="form-control" placeholder="CE" style="max-width: 50px;">
+                                <input type="text" id="ass-novo-cep" class="form-control" placeholder="00000-000">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-group">
+                            <label><b>Qtd de Assinaturas:</b></label>
+                            <input type="number" id="ass-novo-qtd" class="form-control" value="1" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label><b>Período de Envio:</b></label>
+                            <input type="text" id="ass-novo-periodo" class="form-control" value="Próximo Lote 2027">
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label><b>Observações:</b></label>
+                        <input type="text" id="ass-novo-obs" class="form-control" placeholder="Ex: Assinatura renovada via site">
+                    </div>
+
+                    <div id="ass-novo-status" style="display: none; padding: 10px; border-radius: 6px; font-size: 0.85rem;"></div>
+                </div>
             </div>
-            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px;">
-                <button class="btn btn-secondary" onclick="fecharModalCadastrarPedidoAssinatura()">Cancelar</button>
-                <button class="btn btn-primary" onclick="salvarPedidoNovoAssinatura()" style="background: linear-gradient(135deg, #a855f7, #7e22ce); border: none; font-weight: bold;">
+
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #334155; padding-top: 12px;">
+                <button type="button" class="btn btn-secondary" onclick="fecharModalCadastrarPedidoAssinatura()">Cancelar</button>
+                <button type="button" id="btn-submit-lancar-omie" class="btn btn-primary" onclick="executarLancamentoPedidoVendaOmie()" style="background: linear-gradient(135deg, #10b981, #059669); border: none; font-weight: bold; padding: 10px 20px;">
+                    <i class="fa-solid fa-paper-plane"></i> 🚀 Lançar Pedido no Omie ERP
+                </button>
+                <button type="button" id="btn-submit-importar-omie" class="btn btn-primary" onclick="salvarPedidoNovoAssinatura()" style="background: linear-gradient(135deg, #a855f7, #7e22ce); border: none; font-weight: bold; padding: 10px 20px; display: none;">
                     <i class="fa-solid fa-save"></i> Salvar para Próximo Envio
                 </button>
             </div>
         </div>
     </div>
 
-    <script src="app.js?v=20261023_v3"></script>
+    <script src="app.js?v=20261023_v4"></script>
 </body>
 
 </html>
