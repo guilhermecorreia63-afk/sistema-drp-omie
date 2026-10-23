@@ -186,7 +186,6 @@ window.navegarParaAba = function(tabId) {
             carregarPedidosProximoEnvio();
         }
     }
-    }
 };
 
 // Configurar Listeners de Eventos
