@@ -116,7 +116,7 @@ def gerar_relatorio_sintetico():
     total_em_producao_ruptura = 0
 
     for p in produtos:
-        if not p.get("ativo"):
+        if p.get("ativo") is False or p.get("inativo") in ("S", True):
             continue
 
         sku_str = str(p.get("sku") or p.get("codigo") or "").strip()
@@ -147,7 +147,7 @@ def gerar_relatorio_sintetico():
 
         # 1. CD_SP
         vendas_ss = p.get("vendas_sul_sudeste_30d", 0) or 0
-        est_efetivo_cd = (p.get("cd_sp", 0) or 0) + (p.get("em_transito", 0) or 0)
+        est_efetivo_cd = int(p.get("cd_sp_disponivel") if p.get("cd_sp_disponivel") is not None else (p.get("cd_sp", 0) or 0)) + int(p.get("em_transito", 0) or 0)
         if vendas_ss > 0:
             alvo_cd = (vendas_ss / 30.0) * (30 + 7) * 1.20
             if est_efetivo_cd <= 0:
@@ -163,7 +163,7 @@ def gerar_relatorio_sintetico():
 
         # 2. Matriz
         vendas_geral = p.get("vendas_geral_30d", 0) or 0
-        est_matriz = p.get("matriz", 0) or 0
+        est_matriz = int(p.get("matriz_disponivel") if p.get("matriz_disponivel") is not None else (p.get("matriz", 0) or 0))
         if vendas_geral > 0:
             alvo_mat = (vendas_geral / 30.0) * (30 + 15) * 1.20
             if est_matriz <= 0 and p.get("status_especial") != "Sem Estoque Discipulado":

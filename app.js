@@ -185,6 +185,12 @@ window.navegarParaAba = function(tabId) {
         if (typeof carregarPedidosProximoEnvio === 'function') {
             carregarPedidosProximoEnvio();
         }
+    } else if (tabId === 'tab-assinaturas-pedidos') {
+        document.getElementById('page-heading').innerText = '🛒 2. Pedidos Novos de Assinatura (Próximo Envio)';
+        document.getElementById('page-subheading').innerHTML = 'Banco de Dados <strong>Turso Cloud DB</strong> | Novos assinantes importados de Pedidos de Venda faturados no Omie ERP para remessa do próximo ciclo.';
+        if (typeof carregarPedidosProximoEnvio === 'function') {
+            carregarPedidosProximoEnvio();
+        }
     }
 };
 
@@ -3290,7 +3296,16 @@ async function executarSyncSeletivo() {
         });
 
         clearInterval(timer);
-        const resData = await resp.json();
+        const resText = await resp.text();
+        let resData;
+        try {
+            resData = JSON.parse(resText);
+        } catch (parseErr) {
+            if (resText.includes("FUNCTION_INVOCATION_TIMEOUT") || resp.status === 504) {
+                throw new Error("Tempo limite de 10s do Vercel Serverless atingido. Para o sync mais rápido na nuvem, use a opção '⚡ 1. Atualizar Apenas Estoques (Matriz + CD_SP)'. Para o sync completo e pesado de todo o catálogo, execute via servidor local (python server.py 8889).");
+            }
+            throw new Error(`Resposta inesperada do servidor (${resp.status}): ${resText.slice(0, 160)}...`);
+        }
 
         if (msg) msg.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#34d399;"></i> Sincronização concluída com sucesso (100%)!';
 
@@ -3307,7 +3322,7 @@ async function executarSyncSeletivo() {
     } catch (err) {
         clearInterval(timer);
         console.error('Erro no sync seletivo:', err);
-        alert(`❌ Falha na sincronização:\n${err.message}\n\nCertifique-se de executar 'python server.py 8889'.`);
+        alert(`❌ Falha na sincronização:\n${err.message}`);
     } finally {
         if (btnSyncExec) btnSyncExec.disabled = false;
     }
@@ -7244,8 +7259,22 @@ function setupEventoBipagemInput() {
             const termoSemZero = termoUpper.replace(/^0+/, '');
             const catalogo = state.produtos || [];
 
-            // Buscar catálogo de produtos por SKU, Código, ID, EAN ou Nome
+            // Helper: identificar se é da família COMBO
+            const ehCombo = (p) => {
+                if (!p) return false;
+                const fam = String(p.familia || '').toUpperCase();
+                const sku = String(p.sku || p.codigo || '').toUpperCase();
+                const desc = String(p.nome || p.descricao || '').toUpperCase();
+                if (fam === 'COMBO' || fam.includes('COMBO')) return true;
+                if (['000223', 'PRD00379', 'PRD00574'].includes(sku)) return true;
+                if (desc.startsWith('COMBO ') || desc.includes('KIT ASSINATURA')) return true;
+                return false;
+            };
+
+            // Buscar catálogo de produtos por SKU, Código, ID, EAN ou Nome (Exclui combos)
             let matches = catalogo.filter(p => {
+                if (ehCombo(p)) return false;
+
                 const sku = String(p.sku || p.codigo || '').toUpperCase();
                 const cod = String(p.codigo || '').toUpperCase();
                 const pid = String(p.id_produto || p.codigo_produto || '');
@@ -7265,7 +7294,7 @@ function setupEventoBipagemInput() {
                     const resp = await fetch('/api/consignacao/buscar_produto?q=' + encodeURIComponent(termo));
                     const data = await resp.json();
                     if (data.success && data.produtos) {
-                        matches = data.produtos.slice(0, 12);
+                        matches = data.produtos.filter(p => !ehCombo(p)).slice(0, 12);
                     }
                 } catch (e) {}
             }
@@ -7355,6 +7384,15 @@ async function processarEntradaEvento(codigoOuTermo) {
     if (!prod) {
         tocarBeepFeedback(false);
         alert(`Produto "${codigoOuTermo}" não encontrado por Código, EAN ou Nome.`);
+        return;
+    }
+
+    const famProd = String(prod.familia || '').toUpperCase();
+    const skuProd = String(prod.sku || prod.codigo || '').toUpperCase();
+    const descProd = String(prod.nome || prod.descricao || '').toUpperCase();
+    if (famProd === 'COMBO' || famProd.includes('COMBO') || ['000223', 'PRD00379', 'PRD00574'].includes(skuProd) || descProd.startsWith('COMBO ')) {
+        tocarBeepFeedback(false);
+        alert(`⚠️ O item "${descProd}" pertence à família COMBO e não pode ser adicionado avulso na remessa do stand/evento.`);
         return;
     }
 
@@ -8392,54 +8430,329 @@ async function dispararChecagemAlertasConsignacao() {
 // ASSINATURAS: PASSO 2 (PEDIDOS DE VENDA NOVOS - PRÓXIMO ENVIO)
 // ============================================================
 
+window.pedidosProximoEnvioCache = [];
+
+function renderLinhasPedidosProximoEnvio(pedidos) {
+    if (!pedidos || pedidos.length === 0) {
+        return `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 25px;">Nenhum pedido de venda registrado para o próximo envio ainda.</td></tr>`;
+    }
+    return pedidos.map(p => {
+        const endereco = `${p.rua || ''}, ${p.numero || ''} ${p.complemento || ''} - ${p.bairro || ''}`;
+        const cidadeUf = `${p.cidade || ''} / ${p.uf || ''}`;
+        const dataFmt = p.criado_em ? p.criado_em.substring(0, 10).split('-').reverse().join('/') : '--';
+        const skuCombo = p.sku_produto || '000223';
+        const numPed = p.numero_pedido || p.codigo_pedido_omie || '--';
+        const pedId = p.id || 0;
+
+        return `
+            <tr>
+                <td style="font-weight: 700; color: #a855f7;">#${numPed}</td>
+                <td>
+                    <div style="font-weight: 600; color: #f8fafc;">${p.cliente_nome || '--'}</div>
+                    <small style="color: #64748b;">${p.observacao || ''}</small>
+                </td>
+                <td style="color: #cbd5e1; font-size: 0.85rem;">${p.cpf_cnpj || '--'}</td>
+                <td>
+                    <div style="font-size: 0.85rem;">${endereco}</div>
+                    <small style="color: #94a3b8;">${cidadeUf}</small>
+                </td>
+                <td style="font-weight: 600; color: #fbbf24;">${p.cep || '--'}</td>
+                <td><span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 0.75rem;">${skuCombo}</span></td>
+                <td style="text-align: center; font-weight: 700; color: #34d399;">${p.quantidade_assinaturas || 1} un</td>
+                <td><span class="badge" style="background: rgba(168, 85, 247, 0.2); color: #c084fc;">${p.periodo_envio || 'Próximo Lote'}</span></td>
+                <td style="color: #94a3b8; font-size: 0.85rem;">${dataFmt}</td>
+                <td style="text-align: center;">
+                    <button class="btn btn-sm btn-secondary" onclick="excluirPedidoProximoEnvio(${pedId})" style="color: #f87171; border: 1px solid rgba(239,68,68,0.3); padding: 4px 8px;" title="Remover pedido deste ciclo">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
 async function carregarPedidosProximoEnvio() {
-    const tbody = document.getElementById('tbody-pedidos-proximo-envio');
-    if (!tbody) return;
+    const tbody1 = document.getElementById('tbody-pedidos-proximo-envio');
+    const tbody2 = document.getElementById('tbody-pedidos-proximo-envio-aba2');
 
     try {
         const resp = await fetch('/api/assinaturas/pedidos_proximo_envio');
         const data = await resp.json();
 
         if (!resp.ok || !data.success) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #f87171; padding: 15px;">⚠️ Falha: ${data.message || 'Erro ao carregar'}</td></tr>`;
+            const errHtml = `<tr><td colspan="10" style="text-align: center; color: #f87171; padding: 15px;">⚠️ Falha: ${data.message || 'Erro ao carregar'}</td></tr>`;
+            if (tbody1) tbody1.innerHTML = errHtml;
+            if (tbody2) tbody2.innerHTML = errHtml;
             return;
         }
 
         const pedidos = data.pedidos || [];
-        if (pedidos.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 20px;">Nenhum pedido de venda registrado para o próximo envio ainda.</td></tr>`;
-            return;
-        }
+        window.pedidosProximoEnvioCache = pedidos;
 
-        tbody.innerHTML = pedidos.map(p => {
-            const endereco = `${p.rua || ''}, ${p.numero || ''} ${p.complemento || ''} - ${p.bairro || ''}`;
-            const cidadeUf = `${p.cidade || ''} / ${p.uf || ''}`;
-            const dataFmt = p.criado_em ? p.criado_em.substring(0, 10).split('-').reverse().join('/') : '--';
+        // Atualizar métricas da Aba 2
+        let totExemplares = 0;
+        let totValor = 0;
+        pedidos.forEach(p => {
+            totExemplares += parseInt(p.quantidade_assinaturas || 1, 10);
+            totValor += parseFloat(p.valor_total || 0);
+        });
 
-            return `
-                <tr>
-                    <td style="font-weight: 700; color: #a855f7;">${p.numero_pedido || p.codigo_pedido_omie || '--'}</td>
-                    <td>
-                        <div style="font-weight: 600; color: #f8fafc;">${p.cliente_nome || '--'}</div>
-                        <small style="color: #64748b;">${p.observacao || ''}</small>
-                    </td>
-                    <td style="color: #cbd5e1;">${p.cpf_cnpj || '--'}</td>
-                    <td>
-                        <div>${endereco}</div>
-                        <small style="color: #94a3b8;">${cidadeUf}</small>
-                    </td>
-                    <td style="font-weight: 600; color: #fbbf24;">${p.cep || '--'}</td>
-                    <td style="text-align: center; font-weight: 700; color: #34d399;">${p.quantidade_assinaturas || 1} un</td>
-                    <td><span class="badge" style="background: rgba(168, 85, 247, 0.2); color: #c084fc;">${p.periodo_envio || 'Próximo Lote'}</span></td>
-                    <td style="color: #94a3b8; font-size: 0.85rem;">${dataFmt}</td>
-                </tr>
-            `;
-        }).join('');
+        const elTotCount = document.getElementById('metric-ped-tot-count');
+        const elTotExemp = document.getElementById('metric-ped-tot-exemplares');
+        const elTotVal = document.getElementById('metric-ped-tot-valor');
+        if (elTotCount) elTotCount.innerText = pedidos.length;
+        if (elTotExemp) elTotExemp.innerText = totExemplares.toLocaleString('pt-BR') + ' un';
+        if (elTotVal) elTotVal.innerText = 'R$ ' + totValor.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+
+        const html = renderLinhasPedidosProximoEnvio(pedidos);
+        if (tbody1) tbody1.innerHTML = html;
+        if (tbody2) tbody2.innerHTML = html;
+
     } catch (e) {
         console.error('Erro ao buscar pedidos do próximo envio:', e);
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #f87171; padding: 15px;">⚠️ Erro de conexão com o servidor.</td></tr>`;
+        const errHtml = `<tr><td colspan="10" style="text-align: center; color: #f87171; padding: 15px;">⚠️ Erro de conexão com o servidor.</td></tr>`;
+        if (tbody1) tbody1.innerHTML = errHtml;
+        if (tbody2) tbody2.innerHTML = errHtml;
     }
 }
+
+function filtrarTabelaPedidosProximoEnvio() {
+    const query = (document.getElementById('filtro-pedidos-proximo-envio')?.value || '').toLowerCase().trim();
+    const labelCount = document.getElementById('label-contagem-pedidos-filtrados');
+    const todos = window.pedidosProximoEnvioCache || [];
+
+    if (!query) {
+        if (labelCount) labelCount.innerText = `Exibindo todos os ${todos.length} pedidos`;
+        const html = renderLinhasPedidosProximoEnvio(todos);
+        const tb2 = document.getElementById('tbody-pedidos-proximo-envio-aba2');
+        if (tb2) tb2.innerHTML = html;
+        return;
+    }
+
+    const filtrados = todos.filter(p => {
+        const nome = String(p.cliente_nome || '').toLowerCase();
+        const num = String(p.numero_pedido || p.codigo_pedido_omie || '').toLowerCase();
+        const doc = String(p.cpf_cnpj || '').toLowerCase();
+        const sku = String(p.sku_produto || '').toLowerCase();
+        const cid = String(p.cidade || '').toLowerCase();
+        return nome.includes(query) || num.includes(query) || doc.includes(query) || sku.includes(query) || cid.includes(query);
+    });
+
+    if (labelCount) labelCount.innerText = `${filtrados.length} pedido(s) encontrado(s)`;
+    const html = renderLinhasPedidosProximoEnvio(filtrados);
+    const tb2 = document.getElementById('tbody-pedidos-proximo-envio-aba2');
+    if (tb2) tb2.innerHTML = html;
+}
+
+async function sincronizarPedidosFaturadosOmie(numeroPedidoInformado = null) {
+    const btns = [document.getElementById('btn-sincronizar-pedidos-omie'), document.getElementById('btn-sincronizar-pedidos-omie-aba2')].filter(Boolean);
+    btns.forEach(b => {
+        b.disabled = true;
+        b._orig = b.innerHTML;
+        b.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sincronizando Omie...';
+    });
+
+    try {
+        const payload = { dias_atras: 0 };
+        if (numeroPedidoInformado) {
+            payload.numero_pedido = String(numeroPedidoInformado).trim();
+        }
+        const resp = await fetch('/api/assinaturas/sincronizar_pedidos_omie', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await resp.json();
+        if (resp.ok && data.success) {
+            alert(`✅ Sincronização Concluída!\n\n${data.message || ''}`);
+            await carregarPedidosProximoEnvio();
+        } else {
+            alert(`⚠️ Atenção: ${data.message || 'Nenhum pedido novo identificado.'}`);
+        }
+    } catch (e) {
+        console.error('Erro ao sincronizar pedidos Omie:', e);
+        alert('❌ Erro ao conectar com o servidor para sincronização: ' + e.message);
+    } finally {
+        btns.forEach(b => {
+            b.disabled = false;
+            if (b._orig) b.innerHTML = b._orig;
+        });
+    }
+}
+
+async function excluirPedidoProximoEnvio(id) {
+    if (!id) return;
+    if (!confirm('Deseja realmente remover este registro do próximo envio?')) return;
+
+    try {
+        const resp = await fetch('/api/assinaturas/excluir_pedido_proximo_envio', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.success) {
+            await carregarPedidosProximoEnvio();
+        } else {
+            alert('Erro ao excluir: ' + (data.message || 'Falha ao processar'));
+        }
+    } catch (e) {
+        alert('Erro ao conectar com servidor: ' + e.message);
+    }
+}
+
+// =========================================================================
+// LEITOR DE CÓDIGO DE BARRAS VIA CÂMERA (MOBILE STAND & EVENTOS)
+// =========================================================================
+
+let streamCameraEvento = null;
+let animFrameCameraEvento = null;
+let detectorCodigoBarras = null;
+
+function tocarBeepLeitura() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
+    } catch (e) {}
+}
+
+async function abrirLeitorCameraEvento() {
+    const modal = document.getElementById('modal-leitor-camera-evento');
+    const video = document.getElementById('video-camera-scanner');
+    const statusEl = document.getElementById('camera-scan-status');
+
+    if (modal) modal.classList.add('active');
+    if (statusEl) statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Solicitando acesso à câmera traseira...';
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        if (statusEl) statusEl.innerHTML = '❌ Câmera não suportada neste navegador. Utilize o leitor físico ou digite o código.';
+        return;
+    }
+
+    try {
+        const constraints = {
+            video: {
+                facingMode: { ideal: 'environment' },
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            }
+        };
+        streamCameraEvento = await navigator.mediaDevices.getUserMedia(constraints);
+        if (video) {
+            video.srcObject = streamCameraEvento;
+            await video.play();
+        }
+
+        if (statusEl) statusEl.innerHTML = '🟢 Câmera ativa. Aponte para o código de barras...';
+
+        if ('BarcodeDetector' in window) {
+            try {
+                detectorCodigoBarras = new BarcodeDetector({
+                    formats: ['ean_13', 'ean_8', 'code_128', 'code_39', 'qr_code', 'upc_a', 'upc_e']
+                });
+            } catch (e) {
+                detectorCodigoBarras = new BarcodeDetector();
+            }
+        }
+
+        iniciarLoopVarreduraCamera();
+
+    } catch (err) {
+        console.error('Erro ao acessar câmera:', err);
+        if (statusEl) {
+            statusEl.innerHTML = `❌ Acesso à câmera negado ou indisponível: ${err.message}`;
+        }
+    }
+}
+
+function iniciarLoopVarreduraCamera() {
+    const video = document.getElementById('video-camera-scanner');
+    const statusEl = document.getElementById('camera-scan-status');
+    let lendo = false;
+
+    const varrer = async () => {
+        if (!streamCameraEvento || !video || video.paused || video.ended) return;
+
+        if (detectorCodigoBarras && !lendo && video.readyState >= 2) {
+            lendo = true;
+            try {
+                const barcodes = await detectorCodigoBarras.detect(video);
+                if (barcodes && barcodes.length > 0) {
+                    const primeiro = barcodes[0];
+                    const valorCodigo = (primeiro.rawValue || '').trim();
+
+                    if (valorCodigo) {
+                        tocarBeepLeitura();
+                        if (statusEl) {
+                            statusEl.innerHTML = `✅ Lido com sucesso: <strong>${valorCodigo}</strong>`;
+                        }
+
+                        const inp = document.getElementById('input-evento-bip');
+                        if (inp) inp.value = valorCodigo;
+                        if (typeof processarEntradaEvento === 'function') {
+                            processarEntradaEvento(valorCodigo);
+                        }
+
+                        setTimeout(() => {
+                            if (statusEl) statusEl.innerHTML = '🟢 Pronto para a próxima leitura...';
+                            lendo = false;
+                        }, 1400);
+                        return;
+                    }
+                }
+            } catch (e) {}
+            lendo = false;
+        }
+
+        animFrameCameraEvento = requestAnimationFrame(varrer);
+    };
+
+    animFrameCameraEvento = requestAnimationFrame(varrer);
+}
+
+function fecharLeitorCameraEvento() {
+    const modal = document.getElementById('modal-leitor-camera-evento');
+    if (modal) modal.classList.remove('active');
+
+    if (animFrameCameraEvento) {
+        cancelAnimationFrame(animFrameCameraEvento);
+        animFrameCameraEvento = null;
+    }
+
+    if (streamCameraEvento) {
+        streamCameraEvento.getTracks().forEach(t => t.stop());
+        streamCameraEvento = null;
+    }
+}
+
+async function toggleLanternaCamera() {
+    if (!streamCameraEvento) return;
+    const track = streamCameraEvento.getVideoTracks()[0];
+    if (!track) return;
+    try {
+        const caps = track.getCapabilities();
+        if (caps.torch) {
+            const torchAtual = track.getSettings().torch || false;
+            await track.applyConstraints({ advanced: [{ torch: !torchAtual }] });
+        }
+    } catch (e) {}
+}
+
+window.abrirLeitorCameraEvento = abrirLeitorCameraEvento;
+window.fecharLeitorCameraEvento = fecharLeitorCameraEvento;
+window.toggleLanternaCamera = toggleLanternaCamera;
+window.sincronizarPedidosFaturadosOmie = sincronizarPedidosFaturadosOmie;
+window.excluirPedidoProximoEnvio = excluirPedidoProximoEnvio;
+window.filtrarTabelaPedidosProximoEnvio = filtrarTabelaPedidosProximoEnvio;
 
 function abrirModalCadastrarPedidoAssinatura() {
     const m = document.getElementById('modal-cadastrar-pedido-assinatura');

@@ -1588,11 +1588,14 @@
                         </div>
 
                         <!-- Bipagem Rápida Mobile / Stand -->
-                        <div class="bipagem-box" style="margin-bottom: 16px;">
-                            <div class="bipagem-input-wrapper">
+                        <div class="bipagem-box" style="margin-bottom: 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <div class="bipagem-input-wrapper" style="flex: 1; min-width: 280px;">
                                 <i class="fa-solid fa-barcode" style="color: #38bdf8;"></i>
                                 <input type="text" id="input-evento-bip" class="input-bipagem" placeholder="Bipe o código de barras ou digite SKU / Nome do livro..." autocomplete="off">
                             </div>
+                            <button type="button" class="btn btn-primary" onclick="abrirLeitorCameraEvento()" style="background: linear-gradient(135deg, #0284c7, #0ea5e9); color: #fff; border: none; padding: 0 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; height: 42px; border-radius: var(--radius-md); box-shadow: 0 2px 8px rgba(14,165,233,0.3);" title="Abrir Câmera do Celular para Leitura de Código de Barras">
+                                <i class="fa-solid fa-camera"></i> <span>Ler Câmera</span>
+                            </button>
                             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                                 <span style="font-size: 0.82rem; color: #94a3b8; font-weight: 600;">Multiplicador:</span>
                                 <div class="btn-group" style="display: flex; gap: 4px;">
@@ -1849,9 +1852,12 @@
                                 Quando um novo assinante entrar por Pedido de Venda no Omie, guarde seus dados aqui para alimentar e gerar as remessas do próximo ciclo.
                             </small>
                         </div>
-                        <div style="display: flex; gap: 8px;">
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                             <button class="btn btn-sm" onclick="abrirModalCadastrarPedidoAssinatura()" style="background: linear-gradient(135deg, #a855f7, #7e22ce); color: #fff; font-weight: 700; border: none; padding: 8px 16px;">
                                 <i class="fa-solid fa-plus"></i> Cadastrar Novo Pedido de Venda
+                            </button>
+                            <button id="btn-sincronizar-pedidos-omie" class="btn btn-sm" onclick="sincronizarPedidosFaturadosOmie()" style="background: rgba(168, 85, 247, 0.2); border: 1px solid #a855f7; color: #d8b4fe; font-weight: 600;" title="Consultar pedidos faturados no Omie ERP com os combos 000223, PRD00379 ou PRD00574">
+                                <i class="fa-solid fa-cloud-arrow-down"></i> Sincronizar Pedidos Omie
                             </button>
                             <button class="btn btn-sm btn-secondary" onclick="carregarPedidosProximoEnvio()">
                                 <i class="fa-solid fa-rotate"></i> Atualizar Lista
@@ -1871,16 +1877,146 @@
                                     <th style="text-align: center;">Qtd Assinaturas</th>
                                     <th>Período Previsto</th>
                                     <th>Data Cadastro</th>
+                                    <th style="text-align: center;">Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="tbody-pedidos-proximo-envio">
-                                <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 20px;">Nenhum pedido de venda registrado para o próximo envio ainda.</td></tr>
+                                <tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 20px;">Nenhum pedido de venda registrado para o próximo envio ainda.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA DEDICADA: PEDIDOS NOVOS DE ASSINATURA (PRÓXIMO ENVIO) -->
+            <section id="tab-assinaturas-pedidos" class="tab-content">
+                <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="navegarParaAba('tab-hub')" style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-arrow-left"></i> Voltar ao Início / Hub
+                    </button>
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <span class="badge" style="background: rgba(168, 85, 247, 0.15); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.3); font-size: 0.82rem; padding: 6px 14px;">
+                            <i class="fa-solid fa-database"></i> Banco de Dados Turso Cloud (Real-time)
+                        </span>
+                        <button class="btn btn-sm" onclick="abrirModalCadastrarPedidoAssinatura()" style="background: linear-gradient(135deg, #a855f7, #7e22ce); color: #fff; font-weight: 700; border: none; padding: 8px 16px; box-shadow: 0 2px 8px rgba(168,85,247,0.3);">
+                            <i class="fa-solid fa-plus"></i> Cadastrar Novo Pedido
+                        </button>
+                        <button id="btn-sincronizar-pedidos-omie-aba2" class="btn btn-sm" onclick="sincronizarPedidosFaturadosOmie()" style="background: rgba(168, 85, 247, 0.2); border: 1px solid #a855f7; color: #d8b4fe; font-weight: 600; padding: 8px 14px;" title="Buscar novos pedidos faturados no Omie ERP com combos de assinatura (000223, PRD00379, PRD00574)">
+                            <i class="fa-solid fa-cloud-arrow-down"></i> Sincronizar Pedidos Omie
+                        </button>
+                        <button class="btn btn-sm btn-secondary" onclick="carregarPedidosProximoEnvio()">
+                            <i class="fa-solid fa-rotate"></i> Atualizar Lista
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Banner Informativo -->
+                <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95)); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 12px; padding: 18px 24px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                            <span style="font-size: 1.4rem;">🛒</span>
+                            <h2 style="font-size: 1.25rem; font-weight: 700; color: #f8fafc; margin: 0;">2. Pedidos Novos de Assinatura (Próximo Envio)</h2>
+                            <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); font-size: 0.75rem; padding: 4px 8px; border-radius: 6px;">Turso DB Integrado</span>
+                        </div>
+                        <p style="margin: 0; font-size: 0.85rem; color: #cbd5e1;">
+                            Assinantes cadastrados ou importados automaticamente dos <strong>Pedidos de Venda Faturados no Omie ERP</strong> contendo os combos <strong style="color: #38bdf8;">000223</strong>, <strong style="color: #38bdf8;">PRD00379</strong> ou <strong style="color: #38bdf8;">PRD00574</strong>.
+                            Os dados são salvos com segurança no <strong>Turso Cloud</strong> para alimentar o próximo lote de remessas e etiquetas de envio.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Métricas Consolidadas -->
+                <div class="metrics-grid" style="margin-bottom: 20px;">
+                    <div class="metric-card" style="border-left: 4px solid #a855f7;">
+                        <div class="metric-icon"><i class="fa-solid fa-cart-shopping" style="color: #a855f7;"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-val" id="metric-ped-tot-count">0</span>
+                            <span class="metric-lbl">Total de Pedidos no Próximo Envio</span>
+                        </div>
+                    </div>
+                    <div class="metric-card" style="border-left: 4px solid #34d399;">
+                        <div class="metric-icon"><i class="fa-solid fa-boxes-stacked" style="color: #34d399;"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-val" id="metric-ped-tot-exemplares">0 un</span>
+                            <span class="metric-lbl">Total de Assinaturas (Exemplares)</span>
+                        </div>
+                    </div>
+                    <div class="metric-card" style="border-left: 4px solid #38bdf8;">
+                        <div class="metric-icon"><i class="fa-solid fa-money-bill-wave" style="color: #38bdf8;"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-val" id="metric-ped-tot-valor" style="color: #38bdf8;">R$ 0,00</span>
+                            <span class="metric-lbl">Valor Total Faturado</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Barra de Busca Rápida -->
+                <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 12px 18px; margin-bottom: 18px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 260px; position: relative;">
+                        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; top: 12px; color: #94a3b8;"></i>
+                        <input type="text" id="filtro-pedidos-proximo-envio" class="form-control" style="padding-left: 38px;" placeholder="Buscar por Nome do Assinante, Pedido Omie, SKU ou CPF/CNPJ..." oninput="filtrarTabelaPedidosProximoEnvio()">
+                    </div>
+                    <span id="label-contagem-pedidos-filtrados" style="font-size: 0.85rem; color: #94a3b8; font-weight: 600;"></span>
+                </div>
+
+                <!-- Tabela de Pedidos Novos -->
+                <div class="card" style="background: #0d1524; border: 1px solid #1e2c45; padding: 20px; border-radius: var(--radius-lg);">
+                    <div class="table-wrapper" style="max-height: 520px; overflow-y: auto;">
+                        <table class="drp-table" id="tabela-pedidos-proximo-envio-aba2">
+                            <thead>
+                                <tr>
+                                    <th>Pedido Omie</th>
+                                    <th>Assinante / Cliente</th>
+                                    <th>CPF / CNPJ</th>
+                                    <th>Endereço / Cidade / UF</th>
+                                    <th>CEP</th>
+                                    <th>Combo / SKU</th>
+                                    <th style="text-align: center;">Qtd Assinaturas</th>
+                                    <th>Período Previsto</th>
+                                    <th>Data Cadastro</th>
+                                    <th style="text-align: center;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-pedidos-proximo-envio-aba2">
+                                <tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 25px;">Nenhum pedido de venda registrado para o próximo envio ainda.</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- Modal Leitor de Código de Barras via Câmera Mobile -->
+    <div id="modal-leitor-camera-evento" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 480px; width: 92%;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #0284c7, #0ea5e9); color: #fff;">
+                <h3 style="margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-camera"></i> Leitor de Código de Barras (Câmera)
+                </h3>
+                <button class="modal-close" onclick="fecharLeitorCameraEvento()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 16px; text-align: center;">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+                    Aponte a câmera do celular para o código de barras (EAN-13 / Code-128) do livro ou produto.
+                </p>
+                <div style="position: relative; width: 100%; height: 280px; background: #000; border-radius: 10px; overflow: hidden; margin-bottom: 12px; border: 2px solid #0284c7;">
+                    <video id="video-camera-scanner" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover;"></video>
+                    <!-- Linha laser animada -->
+                    <div style="position: absolute; top: 50%; left: 8%; width: 84%; height: 2px; background: #ef4444; box-shadow: 0 0 10px #ef4444; transform: translateY(-50%);"></div>
+                    <div style="position: absolute; top: 18%; left: 12%; width: 76%; height: 64%; border: 2px dashed rgba(56, 189, 248, 0.8); border-radius: 8px; pointer-events: none;"></div>
+                </div>
+                <div id="camera-scan-status" style="font-size: 0.85rem; font-weight: 600; color: #38bdf8; min-height: 24px;">
+                    Iniciando câmera traseira...
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                <button class="btn btn-secondary" onclick="fecharLeitorCameraEvento()">Fechar</button>
+                <button id="btn-camera-torch" class="btn btn-secondary" onclick="toggleLanternaCamera()" style="display: none;">
+                    <i class="fa-solid fa-bolt"></i> Lanterna
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Modal Transferência de Depósito -->
@@ -2397,10 +2533,10 @@
                 <div class="form-group">
                     <label for="select-tipo-sync"><i class="fa-solid fa-filter"></i> Opção de Atualização</label>
                     <select id="select-tipo-sync" class="form-control">
-                        <option value="TUDO" selected>⚡ 1. Sincronizar Tudo (Estoques + Vendas Matriz e CD_SP)</option>
-                        <option value="ESTOQUE_CD">📦 2. Puxar apenas Estoque Novo do CD_SP</option>
-                        <option value="ESTOQUE_MATRIZ">🏭 3. Puxar apenas Estoque Novo da Matriz</option>
-                        <option value="AMBOS_ESTOQUES">📦🏭 4. Puxar Ambos os Estoques (Matriz + CD_SP)</option>
+                        <option value="AMBOS_ESTOQUES" selected>⚡ 1. Atualizar Apenas Estoques (Matriz + CD_SP) [Rápido ~2s - Recomendado]</option>
+                        <option value="ESTOQUE_MATRIZ">🏭 2. Puxar apenas Estoque Novo da Matriz</option>
+                        <option value="ESTOQUE_CD">📦 3. Puxar apenas Estoque Novo do CD_SP</option>
+                        <option value="TUDO">🔄 4. Sincronizar Tudo (Catálogo Completo + Estoques + Vendas) [Demorado / Servidor Local]</option>
                         <option value="VENDAS_CD">🛒 5. Puxar apenas Vendas de SP (Sul/Sudeste)</option>
                         <option value="VENDAS_MATRIZ">🌐 6. Puxar apenas Vendas Gerais (Nacional)</option>
                         <option value="AMBAS_VENDAS">🛒🌐 7. Puxar Ambas as Vendas (Matriz + CD_SP)</option>

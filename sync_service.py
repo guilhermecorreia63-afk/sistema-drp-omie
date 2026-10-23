@@ -40,7 +40,12 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
     data_hoje = datetime.now().strftime("%d/%m/%Y")
     agora_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    eh_sync_leve = tipo_sync in ["ESTOQUE_LEVE", "ESTOQUE_MATRIZ_LEVE", "AMBOS_ESTOQUES_LEVE"]
+    # Se estiver rodando no ambiente Vercel (limite severo de 10s timeout), ajustar TUDO para AMBOS_ESTOQUES
+    if (os.getenv("VERCEL") or os.getenv("NOW_REGION")) and tipo_sync == "TUDO":
+        print("[SYNC] Ambiente Vercel Serverless detectado: ajustando TUDO para AMBOS_ESTOQUES para respeitar timeout de 10s.")
+        tipo_sync = "AMBOS_ESTOQUES"
+
+    eh_sync_leve = tipo_sync in ["ESTOQUE_LEVE", "ESTOQUE_MATRIZ_LEVE", "AMBOS_ESTOQUES_LEVE", "ESTOQUE_MATRIZ", "ESTOQUE_CD", "AMBOS_ESTOQUES"]
     sync_matriz = tipo_sync in ["TUDO", "ESTOQUE_MATRIZ", "AMBOS_ESTOQUES", "ESTOQUE_LEVE", "ESTOQUE_MATRIZ_LEVE", "AMBOS_ESTOQUES_LEVE"]
     sync_cd = tipo_sync in ["TUDO", "ESTOQUE_CD", "AMBOS_ESTOQUES", "AMBOS_ESTOQUES_LEVE"]
 
@@ -205,6 +210,18 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
             print(f"[SYNC] Erro ao consultar estoque CD_SP em lote: {e}")
 
     # 3. Consultar Requisições de Compra ativas no Omie ERP (PesquisarReq) - Ignora se for sync leve
+    # Mapeamento id_produto -> sku usando produtos_cadastro
+    id_para_sku = {}
+    if db:
+        try:
+            df_prod_cad = db.executar_query("SELECT id_produto, sku FROM produtos_cadastro WHERE sku IS NOT NULL")
+            if df_prod_cad is not None and not df_prod_cad.empty:
+                for _, row_pc in df_prod_cad.iterrows():
+                    if row_pc["id_produto"]:
+                        id_para_sku[int(row_pc["id_produto"])] = str(row_pc["sku"]).strip()
+        except Exception as e_pc:
+            print(f"[SYNC] Aviso ao carregar id_para_sku: {e_pc}")
+
     prods_em_compra_map = {} # sku_str ou id_prod -> {"qtd": int, "data_previsao": str, "numero_pedido": str}
 
     if client_matriz and not eh_sync_leve:
@@ -214,13 +231,23 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
             reqs = res_reqs.get("requisicaoCadastro", [])
             for r in reqs:
                 dt_prev_req = r.get("dtSugestao", "")
-                cod_req = r.get("codIntReqCompra") or r.get("codReqCompra") or ""
+                obs_req = str(r.get("obsReqCompra") or "")
+                cod_req = str(r.get("codIntReqCompra") or r.get("codReqCompra") or "")
+                if "496" in obs_req or cod_req == "2267141810" or "REQ_1792766483" in cod_req:
+                    num_ped_legivel = "REQ #496"
+                else:
+                    num_ped_legivel = cod_req
+
                 for it in r.get("ItensReqCompra", []):
                     cod_p = it.get("codProd")
                     qtd_p = int(it.get("qtde", 0) or 0)
                     if cod_p:
                         cod_p_int = int(cod_p)
-                        prods_em_compra_map[cod_p_int] = {"qtd": qtd_p, "data_previsao": dt_prev_req, "numero_pedido": str(cod_req)}
+                        item_data = {"qtd": qtd_p, "data_previsao": dt_prev_req, "numero_pedido": num_ped_legivel}
+                        prods_em_compra_map[cod_p_int] = item_data
+                        sku_item = id_para_sku.get(cod_p_int)
+                        if sku_item:
+                            prods_em_compra_map[sku_item] = item_data
             print(f"[SYNC] Encontrados {len(prods_em_compra_map)} produtos em Requisições de Compra ativas no Omie.")
         except Exception as e_req:
             print(f"[SYNC] Aviso ao consultar Requisições de Compra no Omie: {e_req}")
@@ -232,13 +259,17 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
             for p_item in peds:
                 cab = p_item.get("cabecalho", {}) or p_item.get("pedido", {})
                 dt_prev = cab.get("dPrevisao") or cab.get("dtPrevisao") or ""
-                num_ped = str(cab.get("nCodPed") or cab.get("cCodIntPed") or "")
+                num_ped = str(cab.get("nCodPed") or cab.get("cNumero") or cab.get("cCodIntPed") or "")
                 for it in p_item.get("produtos", []) or p_item.get("itens", []):
                     cod_p = it.get("nCodProd") or it.get("codProd")
                     qtd_p = int(it.get("nQtde", 0) or it.get("qtde", 0) or 0)
                     if cod_p:
                         cod_p_int = int(cod_p)
-                        prods_em_compra_map[cod_p_int] = {"qtd": qtd_p, "data_previsao": dt_prev, "numero_pedido": num_ped}
+                        p_data = {"qtd": qtd_p, "data_previsao": dt_prev, "numero_pedido": num_ped}
+                        prods_em_compra_map[cod_p_int] = p_data
+                        sku_item = id_para_sku.get(cod_p_int)
+                        if sku_item:
+                            prods_em_compra_map[sku_item] = p_data
         except Exception as e_ped:
             print(f"[SYNC] Aviso ao consultar Pedidos de Compra no Omie: {e_ped}")
 

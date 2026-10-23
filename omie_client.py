@@ -49,13 +49,21 @@ class OmieClient:
                     time.sleep(2.0 * tentativa)
                     continue
 
-                if resp.status_code == 200:
-                    return resp.json()
-
                 try:
-                    return resp.json()
+                    data = resp.json()
                 except Exception:
-                    return {"cCodStatus": str(resp.status_code), "faultstring": resp.text}
+                    data = {"cCodStatus": str(resp.status_code), "faultstring": resp.text}
+
+                fault = str(data.get("faultstring") or "")
+                if "Consumo redundante" in fault and tentativa < retries:
+                    import re
+                    m = re.search(r'(\d+)\s*segundos', fault)
+                    wait_s = int(m.group(1)) + 2 if m else 10
+                    print(f"[OMIE REDUNDANT] Aguardando {wait_s}s antes da tentativa {tentativa + 1}...")
+                    time.sleep(wait_s)
+                    continue
+
+                return data
 
             except requests.exceptions.RequestException as e:
                 if tentativa == retries:

@@ -307,3 +307,206 @@ class PedidosAssinaturasService:
         except Exception as e:
             print(f"[ASSINATURAS] Exceção ao lançar pedido Omie: {e}")
             return {"success": False, "message": f"Falha na comunicação com Omie ERP: {str(e)}"}
+
+    def sincronizar_pedidos_faturados_omie(self, dias_retroativos: int = 0, dias_atras: int = None, numero_pedido_especifico: str = None, max_paginas: int = 3) -> Dict[str, Any]:
+        """
+        Consulta pedidos faturados / concluídos no Omie ERP que contenham os combos de assinatura:
+        - 000223 (Kit Pão da Vida Padrão, ID 1863902383)
+        - PRD00379 (Assinatura Pão da Vida 1, ID 2027435776)
+        - PRD00574 (Assinatura Pão da Vida 2, ID 2148782047)
+        Extrai os dados do assinante e endereço de entrega e persiste diretamente no Turso Cloud DB.
+        Por padrão busca APENAS a partir de hoje (dias_retroativos = 0) para evitar duplicidade.
+        Permite também buscar um pedido específico diretamente pelo número (ex: 18022).
+        """
+        from datetime import timedelta
+        dias = dias_atras if dias_atras is not None else dias_retroativos
+        data_inicio = (datetime.now() - timedelta(days=dias)).strftime("%d/%m/%Y")
+        
+        combos_map = {
+            "000223": {"sku": "000223", "id": 1863902383, "nome": "Kit Assinatura Pão da Vida (Padrão)"},
+            "PRD00379": {"sku": "PRD00379", "id": 2027435776, "nome": "Assinatura Pão da Vida 1"},
+            "PRD00574": {"sku": "PRD00574", "id": 2148782047, "nome": "Assinatura Pão da Vida 2"},
+            1863902383: {"sku": "000223", "id": 1863902383, "nome": "Kit Assinatura Pão da Vida (Padrão)"},
+            2027435776: {"sku": "PRD00379", "id": 2027435776, "nome": "Assinatura Pão da Vida 1"},
+            2148782047: {"sku": "PRD00574", "id": 2148782047, "nome": "Assinatura Pão da Vida 2"}
+        }
+
+        pedidos_importados = []
+        total_analisados = 0
+        agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        try:
+            # Caso 1: Pedido específico informado (ex: 18022)
+            if numero_pedido_especifico:
+                num_alvo = str(numero_pedido_especifico).strip()
+                res = self.client.executar("produtos/pedido/", "ConsultarPedido", [{"numero_pedido": num_alvo}])
+                pv = res.get("pedido_venda_produto")
+                if not pv:
+                    return {"success": False, "message": f"Pedido #{num_alvo} não encontrado no Omie ERP."}
+                lista_batches = [[pv]]
+            else:
+                lista_batches = []
+                for pag in range(1, max_paginas + 1):
+                    payload = {
+                        "pagina": pag,
+                        "registros_por_pagina": 50,
+                        "apenas_importado_api": "N",
+                        "filtrar_por_data_de": data_inicio
+                    }
+                    res = self.client.executar("produtos/pedido/", "ListarPedidos", [payload])
+                    lista_ped = res.get("pedido_venda_produto", [])
+                    if not lista_ped:
+                        break
+                    lista_batches.append(lista_ped)
+                    tot_pags = int(res.get("total_de_paginas") or 1)
+                    if pag >= tot_pags:
+                        break
+
+            for batch in lista_batches:
+                total_analisados += len(batch)
+                for p in batch:
+                    cab = p.get("cabecalho", {})
+                    num_ped = str(cab.get("numero_pedido") or "")
+                    cod_ped = int(cab.get("codigo_pedido") or 0)
+                    cod_cli = int(cab.get("codigo_cliente") or 0)
+                    etapa = str(cab.get("etapa") or "")
+
+                    # Verificar se contém combo de assinatura
+                    itens = p.get("itens", []) or p.get("det", [])
+                    qtd_assinaturas = 0
+                    combo_identificado = "000223"
+                    val_tot_itens = 0.0
+
+                    for it in itens:
+                        prod = it.get("produto") if isinstance(it.get("produto"), dict) else it
+                        sku_item = str(prod.get("codigo_produto_integracao") or prod.get("codigo") or "").strip()
+                        cid_item = prod.get("codigo_produto")
+                        q_item = int(prod.get("quantidade") or 0)
+                        v_unit = float(prod.get("valor_unitario") or 0.0)
+
+                        if sku_item in combos_map:
+                            qtd_assinaturas += q_item
+                            combo_identificado = combos_map[sku_item]["sku"]
+                            val_tot_itens += (q_item * v_unit)
+                        elif cid_item in combos_map:
+                            qtd_assinaturas += q_item
+                            combo_identificado = combos_map[cid_item]["sku"]
+                            val_tot_itens += (q_item * v_unit)
+
+                    if qtd_assinaturas <= 0:
+                        continue
+
+                    # Extrair informações do cliente / endereço
+                    info = p.get("informacoes_adicionais", {})
+                    outros = info.get("outros_detalhes", {}) or {}
+                    
+                    cli_nome = str(outros.get("cNomeOd") or "").strip()
+                    cpf_cnpj = str(outros.get("cCnpjCpfOd") or "").strip()
+                    rua = str(outros.get("cEnderecoOd") or "").strip()
+                    num = str(outros.get("cNumeroOd") or "").strip()
+                    comp = str(outros.get("cComplementoOd") or "").strip()
+                    bairro = str(outros.get("cBairroOd") or "").strip()
+                    cid = str(outros.get("cCidadeOd") or "").strip()
+                    uf = str(outros.get("cEstadoOd") or "").strip()
+                    cep = str(outros.get("cCEPOd") or "").strip()
+
+                    # Fallback para ConsultarCliente caso outros_detalhes esteja vazio
+                    if not cli_nome and cod_cli > 0:
+                        try:
+                            cli_res = self.client.executar("geral/clientes/", "ConsultarCliente", [{"codigo_cliente_omie": cod_cli}])
+                            cli_nome = cli_res.get("nome_fantasia") or cli_res.get("razao_social") or ""
+                            cpf_cnpj = cli_res.get("cnpj_cpf") or ""
+                            rua = cli_res.get("endereco") or ""
+                            num = cli_res.get("endereco_numero") or ""
+                            comp = cli_res.get("complemento") or ""
+                            bairro = cli_res.get("bairro") or ""
+                            cid = cli_res.get("cidade") or ""
+                            uf = cli_res.get("estado") or ""
+                            cep = cli_res.get("cep") or ""
+                        except Exception:
+                            pass
+
+                    # Valor total do pedido
+                    total_ped = p.get("total_pedido", {})
+                    val_total = float(total_ped.get("valor_total_pedido") or cab.get("valor_total_pedido") or val_tot_itens)
+                    periodo_envio = f"LOTE_{datetime.now().strftime('%m/%Y')}"
+                    obs = f"Importado automaticamente do Omie (Pedido #{num_ped} - Etapa {etapa})"
+
+                    # Upsert no Turso DB
+                    check_df = db.executar_query("SELECT id FROM assinaturas_pedidos_proximo_envio WHERE codigo_pedido_omie = :cod_ped OR numero_pedido = :num_ped", {
+                        "cod_ped": cod_ped,
+                        "num_ped": num_ped
+                    })
+
+                    if check_df is not None and not check_df.empty:
+                        existente_id = int(check_df.iloc[0]["id"])
+                        sql_upd = """
+                            UPDATE assinaturas_pedidos_proximo_envio SET
+                                cliente_nome = :nome,
+                                cpf_cnpj = :cpf,
+                                rua = :rua,
+                                numero = :num,
+                                complemento = :comp,
+                                bairro = :bairro,
+                                cidade = :cid,
+                                uf = :uf,
+                                cep = :cep,
+                                quantidade_assinaturas = :qtd,
+                                sku_produto = :sku,
+                                valor_total = :v_tot,
+                                observacao = :obs
+                            WHERE id = :id
+                        """
+                        db.executar_query(sql_upd, {
+                            "nome": cli_nome, "cpf": cpf_cnpj, "rua": rua, "num": num,
+                            "comp": comp, "bairro": bairro, "cid": cid, "uf": uf, "cep": cep,
+                            "qtd": qtd_assinaturas, "sku": combo_identificado,
+                            "v_tot": val_total, "obs": obs, "id": existente_id
+                        }, is_select=False)
+                    else:
+                        sql_ins = """
+                            INSERT INTO assinaturas_pedidos_proximo_envio (
+                                numero_pedido, codigo_pedido_omie, codigo_cliente_omie, cliente_nome, cpf_cnpj,
+                                rua, numero, complemento, bairro, cidade, uf, cep,
+                                quantidade_assinaturas, periodo_envio, observacao, criado_em,
+                                departamento, codigo_departamento, codigo_cenario_impostos, forma_pagamento_codigo,
+                                forma_envio, valor_frete, valor_total, sku_produto, origem_cadastro
+                            ) VALUES (
+                                :num_ped, :cod_ped, :cod_cli, :nome, :cpf,
+                                :rua, :num, :comp, :bairro, :cid, :uf, :cep,
+                                :qtd, :periodo, :obs, :agora,
+                                'Comercial', '1807684664', 1800980891, '000',
+                                'CORREIOS', 0.0, :v_tot, :sku, 'IMPORTADO_FATURADO_OMIE'
+                            )
+                        """
+                        db.executar_query(sql_ins, {
+                            "num_ped": num_ped, "cod_ped": cod_ped, "cod_cli": cod_cli,
+                            "nome": cli_nome, "cpf": cpf_cnpj, "rua": rua, "num": num,
+                            "comp": comp, "bairro": bairro, "cid": cid, "uf": uf, "cep": cep,
+                            "qtd": qtd_assinaturas, "periodo": periodo_envio, "obs": obs,
+                            "agora": agora, "v_tot": val_total, "sku": combo_identificado
+                        }, is_select=False)
+
+                    pedidos_importados.append({
+                        "numero_pedido": num_ped,
+                        "codigo_pedido_omie": cod_ped,
+                        "cliente_nome": cli_nome,
+                        "sku_produto": combo_identificado,
+                        "quantidade": qtd_assinaturas,
+                        "valor_total": val_total
+                    })
+
+
+
+            return {
+                "success": True,
+                "importados_count": len(pedidos_importados),
+                "total_analisados": total_analisados,
+                "pedidos": pedidos_importados,
+                "message": f"{len(pedidos_importados)} pedido(s) de assinatura identificados e sincronizados com sucesso no Turso DB!"
+            }
+
+        except Exception as e:
+            print(f"[ASSINATURAS] Erro na sincronização de pedidos faturados Omie: {e}")
+            return {"success": False, "message": f"Erro ao sincronizar pedidos Omie: {str(e)}"}
+

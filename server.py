@@ -84,6 +84,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_consignacao_disparar_alertas_prazos()
         elif url_path == '/api/assinaturas/pedidos_proximo_envio':
             self.handle_api_assinaturas_listar_pedidos_proximo_envio()
+        elif url_path == '/api/assinaturas/sincronizar_pedidos_omie':
+            self.handle_api_assinaturas_sincronizar_pedidos_omie()
         elif url_path == '/api/assinaturas/metadados':
             self.handle_api_assinaturas_metadados()
         elif url_path == '/api/assinaturas/buscar_clientes':
@@ -183,6 +185,10 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_consignacao_disparar_alertas_prazos()
         elif url_path == '/api/assinaturas/cadastrar_pedido_proximo_envio':
             self.handle_api_assinaturas_cadastrar_pedido_proximo_envio()
+        elif url_path == '/api/assinaturas/sincronizar_pedidos_omie':
+            self.handle_api_assinaturas_sincronizar_pedidos_omie()
+        elif url_path == '/api/assinaturas/excluir_pedido_proximo_envio':
+            self.handle_api_assinaturas_excluir_pedido_proximo_envio()
         elif url_path == '/api/assinaturas/lancar_pedido_venda_omie':
             self.handle_api_assinaturas_lancar_pedido_venda_omie()
         elif url_path == '/api/assinaturas/sincronizar':
@@ -1201,6 +1207,14 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
             print(f"[CRON API] Disparo e-mail finalizado: ok={ok_email}, msg={msg_email}", flush=True)
 
+            # C. Sincronização automática dos novos pedidos de assinatura faturados no Omie ERP para o Turso DB
+            try:
+                if servico_pedidos_assinaturas:
+                    res_ass = servico_pedidos_assinaturas.sincronizar_pedidos_faturados_omie(dias_atras=30)
+                    print(f"[CRON API] Sync pedidos faturados assinaturas: {res_ass.get('message')}", flush=True)
+            except Exception as e_ass:
+                print(f"[CRON API] Aviso sync assinaturas cron: {e_ass}", flush=True)
+
             # C. Atualiza lock com SUCCESS
             try:
                 with open(lock_path, 'w', encoding='utf-8') as f:
@@ -1297,6 +1311,18 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             from omie_client import OmieClient
             client_matriz = OmieClient("MATRIZ")
 
+            # Mapeamento id_produto -> sku usando produtos_cadastro
+            id_para_sku = {}
+            if db:
+                try:
+                    df_prod_cad = db.executar_query("SELECT id_produto, sku FROM produtos_cadastro WHERE sku IS NOT NULL")
+                    if df_prod_cad is not None and not df_prod_cad.empty:
+                        for _, row_pc in df_prod_cad.iterrows():
+                            if row_pc["id_produto"]:
+                                id_para_sku[int(row_pc["id_produto"])] = str(row_pc["sku"]).strip()
+                except Exception as e_pc:
+                    print(f"[API SERVER] Aviso ao carregar id_para_sku: {e_pc}", flush=True)
+
             # 1. Consulta requisições de compra ativas no Omie ERP (PesquisarReq - leva <1s!)
             prods_em_compra_map = {}
             try:
@@ -1304,14 +1330,47 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 reqs = res_reqs.get("requisicaoCadastro", [])
                 for r in reqs:
                     dt_prev_req = r.get("dtSugestao", "")
+                    obs_req = str(r.get("obsReqCompra") or "")
                     cod_req = str(r.get("codIntReqCompra") or r.get("codReqCompra") or "")
+                    # Identificar visualmente se é a Requisição 496 da interface
+                    if "496" in obs_req or cod_req == "2267141810" or "REQ_1792766483" in cod_req:
+                        num_ped_legivel = "REQ #496"
+                    else:
+                        num_ped_legivel = cod_req
+
                     for it in r.get("ItensReqCompra", []):
                         cod_p = it.get("codProd")
                         qtd_p = int(it.get("qtde", 0) or 0)
                         if cod_p:
-                            prods_em_compra_map[int(cod_p)] = {"qtd": qtd_p, "data_previsao": dt_prev_req, "numero_pedido": cod_req}
+                            cod_p_int = int(cod_p)
+                            item_data = {"qtd": qtd_p, "data_previsao": dt_prev_req, "numero_pedido": num_ped_legivel}
+                            prods_em_compra_map[cod_p_int] = item_data
+                            sku_item = id_para_sku.get(cod_p_int)
+                            if sku_item:
+                                prods_em_compra_map[sku_item] = item_data
             except Exception as e_req:
                 print(f"[API SERVER] Aviso PesquisarReq: {e_req}", flush=True)
+
+            # Também consulta Pedidos de Compra ativos no Omie ERP (PesquisarPedCompra)
+            try:
+                res_ped = client_matriz.executar("produtos/pedidocompra/", "PesquisarPedCompra", [{"nPagina": 1}])
+                peds = res_ped.get("pedidosCadastro", []) or res_ped.get("pedidoCadastro", [])
+                for p_item in peds:
+                    cab = p_item.get("cabecalho", {}) or p_item.get("pedido", {})
+                    dt_prev = cab.get("dPrevisao") or cab.get("dtPrevisao") or ""
+                    num_ped = str(cab.get("nCodPed") or cab.get("cNumero") or cab.get("cCodIntPed") or "")
+                    for it in p_item.get("produtos", []) or p_item.get("itens", []):
+                        cod_p = it.get("nCodProd") or it.get("codProd")
+                        qtd_p = int(it.get("nQtde", 0) or it.get("qtde", 0) or 0)
+                        if cod_p:
+                            cod_p_int = int(cod_p)
+                            p_data = {"qtd": qtd_p, "data_previsao": dt_prev, "numero_pedido": num_ped}
+                            prods_em_compra_map[cod_p_int] = p_data
+                            sku_item = id_para_sku.get(cod_p_int)
+                            if sku_item:
+                                prods_em_compra_map[sku_item] = p_data
+            except Exception as e_ped:
+                print(f"[API SERVER] Aviso ao consultar Pedidos de Compra no Omie: {e_ped}", flush=True)
 
             # 2. Carrega produtos e atualiza status de produção
             produtos = db.carregar_produtos_cache() if db else []
@@ -1351,21 +1410,22 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                             db.salvar_status_producao(sku, False, data_previsao="", quantidade_producao=0, numero_pedido="", fornecedor="")
                     continue
 
-                match = prods_em_compra_map.get(id_prod) or prods_em_compra_map.get(sku)
+                match = prods_em_compra_map.get(sku) or prods_em_compra_map.get(id_prod)
 
                 if match:
-                    if not p.get("em_producao"):
-                        p["em_producao"] = True
-                        p["qtd_producao"] = match["qtd"]
-                        p["quantidade_producao"] = match["qtd"]
-                        p["data_previsao"] = match["data_previsao"]
-                        p["numero_pedido"] = match["numero_pedido"]
-                        atualizados += 1
+                    p["em_producao"] = True
+                    p["qtd_producao"] = match["qtd"]
+                    p["quantidade_producao"] = match["qtd"]
+                    p["data_previsao"] = match["data_previsao"]
+                    p["numero_pedido"] = match["numero_pedido"]
+                    atualizados += 1
+                    if db:
+                        db.salvar_status_producao(sku, True, data_previsao=match["data_previsao"], quantidade_producao=match["qtd"], numero_pedido=match["numero_pedido"])
                 else:
                     num_ped_str = str(p.get("numero_pedido") or "")
-                    # Limpa apenas se era uma Requisição de Compra temporária (ex: REQ_... ou ID de requisição Omie >= 9 dígitos)
+                    # Limpa apenas se era uma Requisição de Compra temporária (ex: REQ_..., REQ #... ou ID de requisição Omie >= 9 dígitos)
                     # Não limpa Pedidos de Compra (#477, #478, #481, LOYOLA...) nem itens manuais!
-                    if p.get("em_producao") and (num_ped_str.startswith("REQ_") or (num_ped_str.isdigit() and len(num_ped_str) >= 9)):
+                    if p.get("em_producao") and (num_ped_str.startswith("REQ_") or num_ped_str.startswith("REQ #") or (num_ped_str.isdigit() and len(num_ped_str) >= 9)):
                         p["em_producao"] = False
                         p["qtd_producao"] = 0
                         p["quantidade_producao"] = 0
@@ -1376,27 +1436,23 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                         if db:
                             db.salvar_status_producao(sku, False, data_previsao="", quantidade_producao=0, numero_pedido="", fornecedor="")
 
-            if db and atualizados > 0:
-                is_serverless = bool(os.getenv('VERCEL') or os.getenv('AWS_LAMBDA_FUNCTION_NAME'))
-                if not is_serverless:
+            # Persiste no Banco de Dados Turso e no JSON local
+            if db:
+                try:
                     db.salvar_produtos_cache(produtos)
-                else:
-                    # No ambiente Vercel Serverless, atualiza o cache pontual dos alterados sem estourar tempo limite
-                    for p in produtos:
-                        sku = str(p.get("sku", "")).strip()
-                        if sku in prods_em_compra_map or (not p.get("em_producao") and not p.get("numero_pedido")):
-                            try:
-                                db.executar_query(
-                                    "UPDATE drp_produtos_cache SET dados_json = ?, ultima_atualizacao = datetime('now') WHERE sku = ?",
-                                    (json.dumps(p, ensure_ascii=False), sku),
-                                    is_select=False
-                                )
-                            except Exception:
-                                pass
+                except Exception as ex_cache:
+                    print(f"[API SERVER] Erro ao salvar produtos cache no Turso: {ex_cache}", flush=True)
+
+            caminho_json = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "produtos_turso.json")
+            try:
+                with open(caminho_json, "w", encoding="utf-8") as f:
+                    json.dump(produtos, f, ensure_ascii=False, indent=2)
+            except Exception as ex_json:
+                print(f"[API SERVER] Erro ao salvar produtos_turso.json: {ex_json}", flush=True)
 
             self._send_json({
                 "success": True,
-                "message": f"Requisições de Compra atualizadas com sucesso diretamente da Omie! ({len(prods_em_compra_map)} itens ativos em compra)",
+                "message": f"Requisições de Compra atualizadas com sucesso diretamente da Omie! ({len(prods_em_compra_map)} itens mapeados)",
                 "count": len(prods_em_compra_map)
             })
         except Exception as e:
@@ -2682,6 +2738,31 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._send_json({"success": True, "message": f"Assinatura do pedido #{num_pedido or cliente_nome} salva para o {periodo}!"})
         except Exception as e:
             print(f"[API ASSINATURAS] Erro ao cadastrar pedido proximo envio: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_assinaturas_sincronizar_pedidos_omie(self):
+        try:
+            body = self._read_body()
+            dias_atras = int(body.get("dias_atras") if body.get("dias_atras") is not None else 0)
+            num_pedido = body.get("numero_pedido")
+            res = servico_pedidos_assinaturas.sincronizar_pedidos_faturados_omie(dias_atras=dias_atras, numero_pedido_especifico=num_pedido)
+            self._send_json(res)
+        except Exception as e:
+            print(f"[API ASSINATURAS] Erro ao sincronizar pedidos Omie: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+
+    def handle_api_assinaturas_excluir_pedido_proximo_envio(self):
+        try:
+            body = self._read_body()
+            pedido_id = int(body.get("id") or 0)
+            if not pedido_id:
+                self._send_json({"success": False, "message": "ID não informado"}, status=400)
+                return
+            db.executar_query("DELETE FROM assinaturas_pedidos_proximo_envio WHERE id = :id", {"id": pedido_id}, is_select=False)
+            self._send_json({"success": True, "message": f"Registro #{pedido_id} excluído com sucesso."})
+        except Exception as e:
+            print(f"[API ASSINATURAS] Erro ao excluir pedido proximo envio: {e}")
             self._send_json({"success": False, "message": str(e)}, status=500)
 
     def handle_api_assinaturas_lancar_pedido_venda_omie(self):
