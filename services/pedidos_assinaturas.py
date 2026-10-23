@@ -429,7 +429,18 @@ class PedidosAssinaturasService:
                     # Valor total do pedido
                     total_ped = p.get("total_pedido", {})
                     val_total = float(total_ped.get("valor_total_pedido") or cab.get("valor_total_pedido") or val_tot_itens)
-                    periodo_envio = f"LOTE_{datetime.now().strftime('%m/%Y')}"
+
+                    if "PRD00379" in combo_identificado:
+                        periodo_envio = "LOTE_04/2027 (Abril)"
+                        exemplares_iniciais = 3 * qtd_assinaturas
+                    elif "000223" in combo_identificado:
+                        periodo_envio = "LOTE_01/2027 (Jan-Mar)"
+                        exemplares_iniciais = 1 * qtd_assinaturas
+                    else:
+                        periodo_envio = "LOTE_01/2027 (Jan-Mar)"
+                        exemplares_iniciais = 0
+
+                    total_contratado = 12 * qtd_assinaturas
                     obs = f"Importado automaticamente do Omie (Pedido #{num_ped} - Etapa {etapa})"
 
                     # Upsert no Turso DB
@@ -454,14 +465,20 @@ class PedidosAssinaturasService:
                                 quantidade_assinaturas = :qtd,
                                 sku_produto = :sku,
                                 valor_total = :v_tot,
-                                observacao = :obs
+                                observacao = :obs,
+                                periodo_envio = :periodo,
+                                exemplares_entregues = :entregues,
+                                total_exemplares_contratados = :tot_cont,
+                                status_assinatura = 'ATIVO'
                             WHERE id = :id
                         """
                         db.executar_query(sql_upd, {
                             "nome": cli_nome, "cpf": cpf_cnpj, "rua": rua, "num": num,
                             "comp": comp, "bairro": bairro, "cid": cid, "uf": uf, "cep": cep,
                             "qtd": qtd_assinaturas, "sku": combo_identificado,
-                            "v_tot": val_total, "obs": obs, "id": existente_id
+                            "v_tot": val_total, "obs": obs, "periodo": periodo_envio,
+                            "entregues": exemplares_iniciais, "tot_cont": total_contratado,
+                            "id": existente_id
                         }, is_select=False)
                     else:
                         sql_ins = """
@@ -470,13 +487,15 @@ class PedidosAssinaturasService:
                                 rua, numero, complemento, bairro, cidade, uf, cep,
                                 quantidade_assinaturas, periodo_envio, observacao, criado_em,
                                 departamento, codigo_departamento, codigo_cenario_impostos, forma_pagamento_codigo,
-                                forma_envio, valor_frete, valor_total, sku_produto, origem_cadastro
+                                forma_envio, valor_frete, valor_total, sku_produto, origem_cadastro,
+                                exemplares_entregues, total_exemplares_contratados, status_assinatura
                             ) VALUES (
                                 :num_ped, :cod_ped, :cod_cli, :nome, :cpf,
                                 :rua, :num, :comp, :bairro, :cid, :uf, :cep,
                                 :qtd, :periodo, :obs, :agora,
                                 'Comercial', '1807684664', 1800980891, '000',
-                                'CORREIOS', 0.0, :v_tot, :sku, 'IMPORTADO_FATURADO_OMIE'
+                                'CORREIOS', 0.0, :v_tot, :sku, 'IMPORTADO_FATURADO_OMIE',
+                                :entregues, :tot_cont, 'ATIVO'
                             )
                         """
                         db.executar_query(sql_ins, {
@@ -484,7 +503,8 @@ class PedidosAssinaturasService:
                             "nome": cli_nome, "cpf": cpf_cnpj, "rua": rua, "num": num,
                             "comp": comp, "bairro": bairro, "cid": cid, "uf": uf, "cep": cep,
                             "qtd": qtd_assinaturas, "periodo": periodo_envio, "obs": obs,
-                            "agora": agora, "v_tot": val_total, "sku": combo_identificado
+                            "agora": agora, "v_tot": val_total, "sku": combo_identificado,
+                            "entregues": exemplares_iniciais, "tot_cont": total_contratado
                         }, is_select=False)
 
                     pedidos_importados.append({

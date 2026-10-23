@@ -7809,7 +7809,12 @@ function renderizarTabelaAssinaturas(clientes) {
         acaoCol += btnCiclos;
 
         const badgeRen = c.is_renovacao ? '<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; font-size: 0.65rem; margin-left: 5px;">Renovação</span>' : '';
-        const badgeObs = c.observacao_especial ? `<span class="badge" style="background: rgba(234, 179, 8, 0.2); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.4); font-size: 0.65rem; margin-left: 5px;" title="${c.observacao_especial}">⚠️ Enviar 1 und Dez/26 junto</span>` : '';
+        let badgeObs = '';
+        if (c.qtd_dez26_extra > 0) {
+            badgeObs = `<span class="badge" style="background: rgba(234, 179, 8, 0.2); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.4); font-size: 0.65rem; margin-left: 5px;" title="${c.observacao_especial}">⚠️ Enviar 1 und Dez/26 junto</span>`;
+        } else if (c.origem_pedido_omie) {
+            badgeObs = `<span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.65rem; margin-left: 5px;">Pedido Omie #${c.origem_pedido_omie}</span>`;
+        }
         const totExemplaresHtml = c.qtd_dez26_extra ? `<span title="3 exemplares de 2027 + 1 de Dezembro/2026">${c.total_exemplares_envio} <small style="color:#facc15; font-size:0.7rem;">(+1 Dez)</small></span>` : c.total_exemplares;
 
         html += `
@@ -8100,20 +8105,60 @@ function abrirCaixinhaCiclos(c) {
     const modal = document.getElementById('modal-caixinha-ciclos');
     if (!modal) return;
 
-    const ciclos = c.ciclos_info || {
-        total_contratado: 12,
-        ja_recebidos: 1,
-        neste_lote: c.total_exemplares || c.quantidade_assinaturas * 3 || 3,
-        restantes_futuros: Math.max(0, 12 - ((c.total_exemplares || 3) + 1)),
-        origem: c.origem_pedido_omie ? `Pedido Omie #${c.origem_pedido_omie}` : (c.numero_pedido ? `Pedido Omie #${c.numero_pedido}` : 'Base Assinantes'),
-        etapas: [
-            { ciclo: "Dezembro/2026", status: "ENVIADO", badge: "success", obs: "Exemplar de boas-vindas enviado", qtd: 1 },
-            { ciclo: "Jan, Fev, Mar/2027 (Lote Atual)", status: "NESTE_LOTE", badge: "primary", obs: "INCLUÍDO NESTE LOTE (3 exemplares)", qtd: c.total_exemplares || 3 },
-            { ciclo: "Lote 2º Trimestre (Abr, Mai, Jun/2027)", status: "PENDENTE", badge: "secondary", obs: "Aguardando chegada do lote futuro", qtd: 3 },
-            { ciclo: "Lote 3º Trimestre (Jul, Ago, Set/2027)", status: "PENDENTE", badge: "secondary", obs: "Aguardando chegada do lote futuro", qtd: 3 },
-            { ciclo: "Lote 4º Trimestre (Out, Nov/2027)", status: "PENDENTE", badge: "secondary", obs: "Conclusão do contrato anual", qtd: 2 }
-        ]
-    };
+    const skuP = String(c.sku_produto || '').toUpperCase();
+    const qtdAss = parseInt(c.quantidade_assinaturas || 1, 10);
+    const totalContratado = (c.total_exemplares_contratados || 12) * qtdAss;
+    const numPed = c.numero_pedido || c.codigo_pedido_omie || c.origem_pedido_omie || '';
+
+    let ciclos = c.ciclos_info;
+    if (!ciclos) {
+        if (skuP.includes('PRD00379')) {
+            const jaRec = 3 * qtdAss;
+            ciclos = {
+                total_contratado: totalContratado,
+                ja_recebidos: jaRec,
+                neste_lote: 0,
+                restantes_futuros: Math.max(0, totalContratado - jaRec),
+                origem: numPed ? `Pedido Omie #${numPed} (Combo PRD00379)` : 'Combo PRD00379',
+                etapas: [
+                    { ciclo: "Jan, Fev, Mar/2027", status: "ENVIADO", badge: "success", obs: `Enviado no Pedido Omie #${numPed} em 23/10/2026`, qtd: 3 * qtdAss },
+                    { ciclo: "Lote 2 (Abr, Mai, Jun/2027)", status: "PENDENTE", badge: "secondary", obs: "Aguardando 2º Lote Trimestral", qtd: 3 * qtdAss },
+                    { ciclo: "Lote 3 (Jul a Dez/2027 - 6 meses)", status: "PENDENTE", badge: "secondary", obs: "Envio Semestral Consolidado (fechamento)", qtd: 6 * qtdAss }
+                ]
+            };
+        } else if (skuP.includes('000223') || numPed === '17386') {
+            const jaRec = 1 * qtdAss;
+            const neste = 3 * qtdAss;
+            ciclos = {
+                total_contratado: totalContratado,
+                ja_recebidos: jaRec,
+                neste_lote: neste,
+                restantes_futuros: Math.max(0, totalContratado - (jaRec + neste)),
+                origem: numPed ? `Pedido Omie #${numPed} (Combo 000223)` : 'Combo 000223',
+                etapas: [
+                    { ciclo: "Dezembro/2026", status: "ENVIADO", badge: "success", obs: `Enviado no Pedido Omie #${numPed} em 23/10/2026`, qtd: 1 * qtdAss },
+                    { ciclo: "Jan, Fev, Mar/2027 (Lote 1)", status: "NESTE_LOTE", badge: "primary", obs: "INCLUÍDO NO LOTE ATUAL (Aguardando Despacho)", qtd: 3 * qtdAss },
+                    { ciclo: "Lote 2 (Abr, Mai, Jun/2027)", status: "PENDENTE", badge: "secondary", obs: "Aguardando 2º Lote Trimestral", qtd: 3 * qtdAss },
+                    { ciclo: "Lote 3 (Jul a Nov/2027 - 5 meses)", status: "PENDENTE", badge: "secondary", obs: "Envio Semestral Consolidado (fechamento)", qtd: 5 * qtdAss }
+                ]
+            };
+        } else {
+            const jaRec = c.exemplares_entregues || 0;
+            const neste = c.total_exemplares || (3 * qtdAss);
+            ciclos = {
+                total_contratado: totalContratado,
+                ja_recebidos: jaRec,
+                neste_lote: neste,
+                restantes_futuros: Math.max(0, totalContratado - (jaRec + neste)),
+                origem: numPed ? `Pedido Omie #${numPed}` : 'Base Assinantes Planilha',
+                etapas: [
+                    { ciclo: "Jan, Fev, Mar/2027 (Lote 1)", status: "NESTE_LOTE", badge: "primary", obs: "INCLUÍDO NESTE LOTE ATUAL", qtd: neste },
+                    { ciclo: "Lote 2 (Abr, Mai, Jun/2027)", status: "PENDENTE", badge: "secondary", obs: "Aguardando 2º Lote Trimestral", qtd: 3 * qtdAss },
+                    { ciclo: "Lote 3 (Jul a Dez/2027 - 6 meses)", status: "PENDENTE", badge: "secondary", obs: "Envio Semestral Consolidado (fechamento)", qtd: 6 * qtdAss }
+                ]
+            };
+        }
+    }
 
     document.getElementById('caixinha-cliente-nome').innerText = c.cliente || c.cliente_nome || 'Assinante';
     document.getElementById('caixinha-origem-badge').innerText = ciclos.origem || 'Base Assinante';
@@ -8539,7 +8584,7 @@ window.pedidosProximoEnvioCache = [];
 
 function renderLinhasPedidosProximoEnvio(pedidos) {
     if (!pedidos || pedidos.length === 0) {
-        return `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 25px;">Nenhum pedido de venda registrado para o próximo envio ainda.</td></tr>`;
+        return `<tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 25px;">Nenhum pedido de venda registrado para o próximo envio ainda.</td></tr>`;
     }
     return pedidos.map(p => {
         const endereco = `${p.rua || ''}, ${p.numero || ''} ${p.complemento || ''} - ${p.bairro || ''}`;
@@ -8548,6 +8593,15 @@ function renderLinhasPedidosProximoEnvio(pedidos) {
         const skuCombo = p.sku_produto || '000223';
         const numPed = p.numero_pedido || p.codigo_pedido_omie || '--';
         const pedId = p.id || 0;
+        const qtdAss = parseInt(p.quantidade_assinaturas || 1, 10);
+
+        const entregues = p.ciclos_info?.ja_recebidos ?? (p.exemplares_entregues != null ? p.exemplares_entregues : (skuCombo === 'PRD00379' ? 3 * qtdAss : 1 * qtdAss));
+        const restantes = p.ciclos_info?.restantes_futuros ?? Math.max(0, (12 * qtdAss) - entregues);
+        const statusStr = p.status_assinatura || (entregues >= 12 * qtdAss ? 'CONCLUIDO' : 'ATIVO');
+
+        const badgeStatus = statusStr === 'CONCLUIDO'
+            ? `<span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.3); font-size: 0.72rem;"><i class="fa-solid fa-flag-checkered"></i> Vencido / Concluído</span>`
+            : `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); font-size: 0.72rem;"><i class="fa-solid fa-circle-check"></i> Ativo</span>`;
 
         return `
             <tr>
@@ -8563,9 +8617,14 @@ function renderLinhasPedidosProximoEnvio(pedidos) {
                 </td>
                 <td style="font-weight: 600; color: #fbbf24;">${p.cep || '--'}</td>
                 <td><span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 0.75rem;">${skuCombo}</span></td>
-                <td style="text-align: center; font-weight: 700; color: #34d399;">${p.quantidade_assinaturas || 1} un</td>
+                <td style="text-align: center; font-weight: 700; color: #34d399;">${qtdAss} un</td>
+                <td style="text-align: center; font-size: 0.82rem;">
+                    <span style="color: #34d399; font-weight: 600;">${entregues} entregues</span>
+                    <span style="color: #64748b;"> / </span>
+                    <span style="color: #fbbf24; font-weight: 600;">${restantes} rest.</span>
+                </td>
                 <td><span class="badge" style="background: rgba(168, 85, 247, 0.2); color: #c084fc;">${p.periodo_envio || 'Próximo Lote'}</span></td>
-                <td style="color: #94a3b8; font-size: 0.85rem;">${dataFmt}</td>
+                <td style="text-align: center;">${badgeStatus}</td>
                 <td style="text-align: center; white-space: nowrap;">
                     <button class="btn btn-xs" data-cli="${encodeURIComponent(JSON.stringify(p))}" onclick="abrirCaixinhaCiclosElemento(this)" style="background: rgba(168, 85, 247, 0.15); border: 1px solid #a855f7; color: #d8b4fe; border-radius: 4px; padding: 4px 8px; font-size: 0.72rem; font-weight: 600; cursor: pointer; margin-right: 4px;" title="Ver controle de ciclos e exemplares restantes">
                         <i class="fa-solid fa-box-archive"></i> Ciclos
@@ -8578,6 +8637,35 @@ function renderLinhasPedidosProximoEnvio(pedidos) {
         `;
     }).join('');
 }
+
+async function concluirLoteAssinaturas() {
+    if (!confirm('Deseja realmente CONCLUIR E BAIXAR o Lote 1 (Jan, Fev e Mar/2027)?\n\n- Todos os assinantes atendidos neste lote terão 3 exemplares marcados como entregues.\n- Assinantes que atingirem 12 exemplares serão marcados como VENCIDOS / CONCLUÍDOS.\n- Os assinantes com exemplares restantes avançarão automaticamente para o Lote 2 (Abril/2027).')) {
+        return;
+    }
+
+    try {
+        const resp = await fetch('/api/assinaturas/concluir_lote', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome_lote: 'Lote 1 (Jan, Fev e Mar/2027)' })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.success) {
+            alert(`✅ ${data.message}`);
+            if (typeof carregarDadosAssinaturas === 'function') {
+                carregarDadosAssinaturas(true);
+            }
+            if (typeof carregarPedidosProximoEnvio === 'function') {
+                carregarPedidosProximoEnvio();
+            }
+        } else {
+            alert(`❌ Erro ao concluir lote: ${data.message || 'Falha desconhecida'}`);
+        }
+    } catch (e) {
+        alert(`❌ Erro de comunicação com o servidor: ${e.message}`);
+    }
+}
+window.concluirLoteAssinaturas = concluirLoteAssinaturas;
 
 async function carregarPedidosProximoEnvio() {
     const tbody1 = document.getElementById('tbody-pedidos-proximo-envio');

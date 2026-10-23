@@ -235,14 +235,34 @@ def mesclar_pedidos_turso_nas_assinaturas(clientes_processados):
             if cli_nome.upper() in nomes_existentes:
                 continue
 
-            # Regra de Lote:
-            # - Pedido 18028: enviou Jan/Fev/Mar no próprio pedido faturado -> NÃO entra na remessa do Lote Jan/Mar atual (já enviado)
-            # - Pedido 18022: enviou Dez/2026 inicial -> DEVE ENTRAR NO LOTE ATUAL com 3 exemplares (Jan, Fev, Mar)
-            if num_ped == "18028" or "18028" in num_ped:
+            # Regra de Elegibilidade do Lote Atual (Jan a Mar/2027):
+            # - Combo PRD00379: faturou e enviou Jan/Fev/Mar/2027 diretamente no pedido Omie faturado.
+            #   Logo, o cliente JÁ RECEBEU Jan, Fev e Mar! NÃO entra no Lote 1 para evitar envio em duplicidade!
+            #   Seu próximo envio é o Lote 2 (Abril/2027) com 9 exemplares restantes.
+            # - Combo 000223: faturou Dez/2026 no pedido inicial.
+            #   DEVE ENTRAR NO LOTE ATUAL para receber os 3 exemplares de Jan, Fev e Mar/2027.
+            #   Como Dezembro já foi enviado na venda, qtd_dez26_extra = 0 (sem badge de enviar dez/26 junto).
+            sku_p = str(r.get("sku_produto") or "").strip().upper()
+            if "PRD00379" in sku_p:
                 continue
 
             total_exemplares_cliente = qtd_ass * 3
             peso_kg = round(total_exemplares_cliente * 0.100, 3)
+
+            # Ciclos flexíveis respeitando envio trimestral e semestral consolidado (6 meses)
+            ciclos_info = {
+                "total_contratado": 12 * qtd_ass,
+                "ja_recebidos": 1 * qtd_ass,
+                "neste_lote": 3 * qtd_ass,
+                "restantes_futuros": 8 * qtd_ass,
+                "origem": f"Pedido Omie #{num_ped} (Combo {sku_p or '000223'})",
+                "etapas": [
+                    {"ciclo": "Dezembro/2026", "status": "ENVIADO", "badge": "success", "obs": f"Enviado no Pedido Omie #{num_ped}", "qtd": qtd_ass * 1},
+                    {"ciclo": "Jan, Fev, Mar/2027 (Lote 1)", "status": "NESTE_LOTE", "badge": "primary", "obs": "INCLUSO NESTE LOTE ATUAL (1 Jan + 1 Fev + 1 Mar)", "qtd": qtd_ass * 3},
+                    {"ciclo": "Abr, Mai, Jun/2027 (Lote 2)", "status": "PENDENTE", "badge": "secondary", "obs": "Aguardando 2º Lote Trimestral", "qtd": qtd_ass * 3},
+                    {"ciclo": "Jul a Nov/2027 (Lote 3 - 5 meses)", "status": "PENDENTE", "badge": "secondary", "obs": "Envio Semestral Consolidado (fechamento)", "qtd": qtd_ass * 5}
+                ]
+            }
 
             item = {
                 "linha_planilha": f"OMIE_{num_ped or r.get('id')}",
@@ -272,20 +292,7 @@ def mesclar_pedidos_turso_nas_assinaturas(clientes_processados):
                 "is_renovacao": False,
                 "data_registro_base": str(r.get("criado_em") or "")[:10],
                 "origem_pedido_omie": num_ped,
-                "ciclos_info": {
-                    "total_contratado": 12,
-                    "ja_recebidos": 1,
-                    "neste_lote": 3,
-                    "restantes_futuros": 8,
-                    "origem": f"Pedido Omie #{num_ped}",
-                    "etapas": [
-                        {"ciclo": "Dezembro/2026", "status": "ENVIADO", "badge": "success", "obs": f"Enviado no Pedido Omie #{num_ped} em 23/10/2026", "qtd": qtd_ass * 1},
-                        {"ciclo": "Jan, Fev, Mar/2027 (Lote Atual)", "status": "NESTE_LOTE", "badge": "primary", "obs": "INCLUSO NESTE LOTE TRIMESTRAL (1 Jan + 1 Fev + 1 Mar)", "qtd": qtd_ass * 3},
-                        {"ciclo": "Abr, Mai, Jun/2027", "status": "PENDENTE", "badge": "secondary", "obs": "Aguardando 2º Lote Trimestral", "qtd": qtd_ass * 3},
-                        {"ciclo": "Jul, Ago, Set/2027", "status": "PENDENTE", "badge": "secondary", "obs": "Aguardando 3º Lote Trimestral", "qtd": qtd_ass * 3},
-                        {"ciclo": "Out, Nov/2027", "status": "PENDENTE", "badge": "secondary", "obs": "Fechamento do contrato anual", "qtd": qtd_ass * 2}
-                    ]
-                }
+                "ciclos_info": ciclos_info
             }
             clientes_processados.append(item)
             nomes_existentes.add(cli_nome.upper())

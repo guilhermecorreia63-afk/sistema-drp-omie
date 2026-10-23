@@ -197,6 +197,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_assinaturas_gerar_remessa_baixa()
         elif url_path == '/api/assinaturas/gerar_remessa_paroquia':
             self.handle_api_assinaturas_gerar_remessa_paroquia()
+        elif url_path == '/api/assinaturas/concluir_lote':
+            self.handle_api_assinaturas_concluir_lote()
         else:
             self.send_error(404, f"Endpoint não encontrado: {self.path}")
 
@@ -2668,10 +2670,114 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             rows = []
             if df is not None and not df.empty:
                 for _, r in df.iterrows():
-                    rows.append(dict(r))
+                    d = dict(r)
+                    sku_p = str(d.get("sku_produto") or "").strip().upper()
+                    qtd_ass = int(d.get("quantidade_assinaturas") or 1)
+                    num_ped = str(d.get("numero_pedido") or d.get("codigo_pedido_omie") or "")
+                    total_contratado = int(d.get("total_exemplares_contratados") or 12) * qtd_ass
+                    entregues_por_ass = int(d.get("exemplares_entregues") or 0)
+
+                    if "PRD00379" in sku_p:
+                        # Combo PRD00379: Jan, Fev e Mar/2027 já foram enviados no faturamento do pedido Omie
+                        ciclos_entregues = entregues_por_ass if entregues_por_ass > 0 else 3
+                        ja_rec_tot = ciclos_entregues * qtd_ass
+                        restantes_tot = max(0, total_contratado - ja_rec_tot)
+                        d["ciclos_info"] = {
+                            "total_contratado": total_contratado,
+                            "ja_recebidos": ja_rec_tot,
+                            "neste_lote": 0,
+                            "restantes_futuros": restantes_tot,
+                            "origem": f"Pedido Omie #{num_ped} (Combo PRD00379)",
+                            "etapas": [
+                                {"ciclo": "Jan, Fev, Mar/2027", "status": "ENVIADO", "badge": "success", "obs": f"Enviado no Pedido Omie #{num_ped} em 23/10/2026", "qtd": 3 * qtd_ass},
+                                {"ciclo": "Lote 2 (Abr, Mai, Jun/2027)", "status": "PENDENTE", "badge": "secondary", "obs": "Aguardando 2º Lote Trimestral", "qtd": 3 * qtd_ass},
+                                {"ciclo": "Lote 3 (Jul a Dez/2027 - 6 meses)", "status": "PENDENTE", "badge": "secondary", "obs": "Envio Semestral Consolidado (fechamento)", "qtd": 6 * qtd_ass}
+                            ]
+                        }
+                    elif "000223" in sku_p:
+                        # Combo 000223: Dezembro/2026 já enviado na venda
+                        ciclos_entregues = entregues_por_ass if entregues_por_ass > 0 else 1
+                        ja_rec_tot = ciclos_entregues * qtd_ass
+                        neste_tot = 3 * qtd_ass
+                        restantes_tot = max(0, total_contratado - (ja_rec_tot + neste_tot))
+                        d["ciclos_info"] = {
+                            "total_contratado": total_contratado,
+                            "ja_recebidos": ja_rec_tot,
+                            "neste_lote": neste_tot,
+                            "restantes_futuros": restantes_tot,
+                            "origem": f"Pedido Omie #{num_ped} (Combo 000223)",
+                            "etapas": [
+                                {"ciclo": "Dezembro/2026", "status": "ENVIADO", "badge": "success", "obs": f"Enviado no Pedido Omie #{num_ped} em 23/10/2026", "qtd": 1 * qtd_ass},
+                                {"ciclo": "Jan, Fev, Mar/2027 (Lote 1)", "status": "NESTE_LOTE", "badge": "primary", "obs": "INCLUSO NO LOTE ATUAL (Aguardando Despacho)", "qtd": 3 * qtd_ass},
+                                {"ciclo": "Lote 2 (Abr, Mai, Jun/2027)", "status": "PENDENTE", "badge": "secondary", "obs": "Aguardando 2º Lote Trimestral", "qtd": 3 * qtd_ass},
+                                {"ciclo": "Lote 3 (Jul a Nov/2027 - 5 meses)", "status": "PENDENTE", "badge": "secondary", "obs": "Envio Semestral Consolidado (fechamento)", "qtd": 5 * qtd_ass}
+                            ]
+                        }
+                    else:
+                        ja_rec_tot = entregues_por_ass * qtd_ass
+                        neste_tot = 3 * qtd_ass
+                        restantes_tot = max(0, total_contratado - (ja_rec_tot + neste_tot))
+                        d["ciclos_info"] = {
+                            "total_contratado": total_contratado,
+                            "ja_recebidos": ja_rec_tot,
+                            "neste_lote": neste_tot,
+                            "restantes_futuros": restantes_tot,
+                            "origem": f"Pedido Omie #{num_ped}",
+                            "etapas": [
+                                {"ciclo": "Jan, Fev, Mar/2027 (Lote 1)", "status": "NESTE_LOTE", "badge": "primary", "obs": "Lote Atual", "qtd": neste_tot},
+                                {"ciclo": "Lote 2 (Abr, Mai, Jun/2027)", "status": "PENDENTE", "badge": "secondary", "obs": "Próximo Lote", "qtd": 3 * qtd_ass},
+                                {"ciclo": "Lote 3 (Jul a Dez/2027 - 6 meses)", "status": "PENDENTE", "badge": "secondary", "obs": "Envio Semestral Consolidado", "qtd": 6 * qtd_ass}
+                            ]
+                        }
+                    rows.append(d)
             self._send_json({"success": True, "pedidos": rows})
         except Exception as e:
             print(f"[API ASSINATURAS] Erro ao listar pedidos proximo envio: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_assinaturas_concluir_lote(self):
+        try:
+            body = self._read_body()
+            nome_lote = body.get("nome_lote") or "Lote 1 (Jan, Fev e Mar/2027)"
+            agora_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            # 1. Atualizar registros em assinaturas_pedidos_proximo_envio que estavam no lote 1
+            # (Ex: SKU 000223 como Rosângela, avançando seus exemplares e status)
+            sql_upd = """
+                UPDATE assinaturas_pedidos_proximo_envio
+                SET 
+                    exemplares_entregues = COALESCE(exemplares_entregues, 0) + 3,
+                    ultimo_lote_enviado = :lote_info,
+                    periodo_envio = 'LOTE_04/2027 (Abril)',
+                    status_assinatura = CASE 
+                        WHEN (COALESCE(exemplares_entregues, 0) + 3) >= COALESCE(total_exemplares_contratados, 12) THEN 'CONCLUIDO'
+                        ELSE 'ATIVO'
+                    END
+                WHERE sku_produto = '000223' OR periodo_envio LIKE '%LOTE_01%' OR periodo_envio LIKE '%Jan-Mar%'
+            """
+            db.executar_query(sql_upd, {"lote_info": f"{nome_lote} em {agora_str}"}, is_select=False)
+
+            # 2. Registrar no histórico de lotes
+            db.executar_query("""
+                CREATE TABLE IF NOT EXISTS assinaturas_lotes_historico (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nome_lote TEXT,
+                    data_conclusao TEXT,
+                    observacoes TEXT
+                )
+            """, is_select=False)
+
+            db.executar_query("""
+                INSERT INTO assinaturas_lotes_historico (nome_lote, data_conclusao, observacoes)
+                VALUES (:nome, :dt, :obs)
+            """, {"nome": nome_lote, "dt": agora_str, "obs": "Lote concluído. Assinantes com 12 exemplares finalizados e os demais avançados para o Lote de Abril/2027."}, is_select=False)
+
+            self._send_json({
+                "success": True,
+                "message": f"{nome_lote} finalizado com sucesso! As liturgias entregues foram marcadas, os ciclos foram avançados para Abril/2027 e as assinaturas completas foram concluídas."
+            })
+        except Exception as e:
+            print(f"[API ASSINATURAS] Erro ao concluir lote: {e}")
             self._send_json({"success": False, "message": str(e)}, status=500)
 
     def handle_api_assinaturas_cadastrar_pedido_proximo_envio(self):

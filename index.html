@@ -1801,6 +1801,9 @@
                             <button class="btn btn-primary" id="btn-gerar-baixa-grupo" onclick="abrirModalConfirmarBaixa()" style="background: linear-gradient(135deg, #10b981, #059669); border: none; font-weight: bold; display: none; padding: 8px 16px;">
                                 <i class="fa-solid fa-paper-plane"></i> Gerar Baixa no Omie 🚀
                             </button>
+                            <button class="btn" id="btn-concluir-lote-1" onclick="concluirLoteAssinaturas()" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; border: none; font-weight: bold; padding: 8px 16px; border-radius: 6px; box-shadow: 0 2px 8px rgba(139,92,246,0.3); cursor: pointer;" title="Finalizar e baixar o Lote 1 (Jan-Mar/2027), avançando todos os ciclos dos assinantes atendidos para o Lote 2 (Abril/2027)">
+                                <i class="fa-solid fa-circle-check"></i> Finalizar Lote 1 (Jan-Mar/27)
+                            </button>
                         </div>
                     </div>
 
@@ -1841,50 +1844,6 @@
                     </table>
                 </div>
 
-                <!-- PASSO 2: PEDIDOS DE VENDA NOVOS (PRÓXIMO LOTE / ENVIO) -->
-                <div class="card" style="background: #0d1524; border: 1px solid #1e2c45; padding: 22px; border-radius: var(--radius-lg); margin-top: 25px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
-                        <div>
-                            <h3 style="font-size: 1.1rem; color: #ffffff; margin: 0 0 4px 0; display: flex; align-items: center; gap: 10px;">
-                                <i class="fa-solid fa-cart-plus" style="color: #a855f7;"></i> Passo 2: Pedidos de Venda Novos (Próximo Envio / Lote)
-                            </h3>
-                            <small style="color: var(--text-muted); font-size: 0.85rem;">
-                                Quando um novo assinante entrar por Pedido de Venda no Omie, guarde seus dados aqui para alimentar e gerar as remessas do próximo ciclo.
-                            </small>
-                        </div>
-                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                            <button class="btn btn-sm" onclick="abrirModalCadastrarPedidoAssinatura()" style="background: linear-gradient(135deg, #a855f7, #7e22ce); color: #fff; font-weight: 700; border: none; padding: 8px 16px;">
-                                <i class="fa-solid fa-plus"></i> Cadastrar Novo Pedido de Venda
-                            </button>
-                            <button id="btn-sincronizar-pedidos-omie" class="btn btn-sm" onclick="sincronizarPedidosFaturadosOmie()" style="background: rgba(168, 85, 247, 0.2); border: 1px solid #a855f7; color: #d8b4fe; font-weight: 600;" title="Consultar pedidos faturados no Omie ERP com os combos 000223, PRD00379 ou PRD00574">
-                                <i class="fa-solid fa-cloud-arrow-down"></i> Sincronizar Pedidos Omie
-                            </button>
-                            <button class="btn btn-sm btn-secondary" onclick="carregarPedidosProximoEnvio()">
-                                <i class="fa-solid fa-rotate"></i> Atualizar Lista
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="table-wrapper" style="max-height: 320px; overflow-y: auto;">
-                        <table class="drp-table">
-                            <thead>
-                                <tr>
-                                    <th>Pedido Omie</th>
-                                    <th>Assinante / Cliente</th>
-                                    <th>CPF / CNPJ</th>
-                                    <th>Endereço / Cidade / UF</th>
-                                    <th>CEP</th>
-                                    <th style="text-align: center;">Qtd Assinaturas</th>
-                                    <th>Período Previsto</th>
-                                    <th>Data Cadastro</th>
-                                    <th style="text-align: center;">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tbody-pedidos-proximo-envio">
-                                <tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 20px;">Nenhum pedido de venda registrado para o próximo envio ainda.</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
                 </div>
             </section>
 
@@ -1971,14 +1930,15 @@
                                     <th>Endereço / Cidade / UF</th>
                                     <th>CEP</th>
                                     <th>Combo / SKU</th>
-                                    <th style="text-align: center;">Qtd Assinaturas</th>
+                                    <th style="text-align: center;">Assinaturas</th>
+                                    <th style="text-align: center;">Entregues / Restantes</th>
                                     <th>Período Previsto</th>
-                                    <th>Data Cadastro</th>
+                                    <th style="text-align: center;">Status</th>
                                     <th style="text-align: center;">Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="tbody-pedidos-proximo-envio-aba2">
-                                <tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 25px;">Nenhum pedido de venda registrado para o próximo envio ainda.</td></tr>
+                                <tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 25px;">Nenhum pedido de venda registrado para o próximo envio ainda.</td></tr>
                             </tbody>
                         </table>
                     </div>
