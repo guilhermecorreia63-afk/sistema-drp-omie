@@ -1413,11 +1413,13 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             body = {}
 
         itens = body.get('itens', [])
-        cod_categ = body.get('codCateg', '2.04.06')
+        cod_categ = str(body.get('codCateg') or '2.01.01').strip()
+        if cod_categ == '2.04.06': # Correção de legado (custas cartoriais -> compras para revenda)
+            cod_categ = '2.01.01'
         dt_sugestao = body.get('dtSugestao', datetime.now().strftime("%d/%m/%Y"))
-        obs = body.get('obsReqCompra', 'Requisição de Compra gerada pelo DRP Omie ERP')
+        obs = body.get('obsReqCompra', 'Requisição de Compra gerada pelo DRP Omie ERP (Compras de Mercadorias para Revenda)')
 
-        print(f"[API SERVER] Recebida solicitação de Requisição de Compra no Omie para {len(itens)} itens.")
+        print(f"[API SERVER] Recebida solicitação de Requisição de Compra no Omie para {len(itens)} itens. Categoria: {cod_categ}")
 
         try:
             from omie_client import OmieClient
@@ -1426,6 +1428,7 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             # Carrega mapeamento de produtos
             produtos_json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'produtos_turso.json')
             sku_map = {}
+            sku_obj_map = {}
             if os.path.exists(produtos_json_path):
                 with open(produtos_json_path, 'r', encoding='utf-8') as f:
                     prods = json.load(f)
@@ -1433,6 +1436,7 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                         s = str(p.get('sku', '')).strip()
                         if s:
                             sku_map[s] = p.get('id_produto')
+                            sku_obj_map[s] = p
 
             itens_req = []
             nao_encontrados = []
@@ -1440,7 +1444,34 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             for item in itens:
                 sku = str(item.get('sku') or item.get('codigo_produto') or item.get('codigo_item_integracao') or '').strip()
                 qtd = float(item.get('quantidade') or item.get('qtde') or 1)
-                preco = float(item.get('valor_unitario') or item.get('precoUnit') or 10.0)
+                preco = float(item.get('valor_unitario') or item.get('precoUnit') or 0.0)
+
+                # Se preço não foi passado ou é default 10.0, calcular pela tabela de ícones/cruz com 20% desconto
+                p_info = sku_obj_map.get(sku, {})
+                nome_p = str(item.get('nome') or p_info.get('nome') or p_info.get('descricao') or '').upper()
+                fam_p = str(p_info.get('familia') or '').upper()
+                is_icone = 'ICONE' in fam_p or 'ÍCONE' in fam_p or 'ICONE' in nome_p or 'ÍCONE' in nome_p
+
+                if (preco <= 0 or preco == 10.0) and is_icone:
+                    import re
+                    if 'DUAS FACE' in nome_p or '2 FACE' in nome_p or 'DUPLA FACE' in nome_p:
+                        preco = 30.40 # 38.00 - 20%
+                    elif 'CRUZ' in nome_p:
+                        if re.search(r'\bA7\b', nome_p): preco = 5.60 # 7.00 - 20%
+                        elif re.search(r'\bA6\b', nome_p): preco = 9.60 # 12.00 - 20%
+                        elif re.search(r'\bA5\b', nome_p): preco = 14.40 # 18.00 - 20%
+                        elif re.search(r'\bA4\b', nome_p): preco = 30.40 # 38.00 - 20%
+                        elif re.search(r'\bA3\b', nome_p): preco = 48.00 # 60.00 - 20%
+                        else: preco = 9.60
+                    elif 'GOLD' not in nome_p:
+                        if re.search(r'\bA7\b', nome_p): preco = 5.60 # 7.00 - 20%
+                        elif re.search(r'\bA6\b', nome_p): preco = 9.60 # 12.00 - 20%
+                        elif re.search(r'\bA5\b', nome_p): preco = 12.80 # 16.00 - 20%
+                        elif re.search(r'\bA4\b', nome_p): preco = 28.00 # 35.00 - 20%
+                        elif re.search(r'\bA3\b', nome_p): preco = 44.00 # 55.00 - 20%
+                        else: preco = 9.60
+                elif preco <= 0:
+                    preco = float(p_info.get('preco_custo') or p_info.get('valor_unitario') or 10.0)
 
                 cod_prod = None
 
@@ -1471,7 +1502,7 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                     itens_req.append({
                         "codProd": cod_prod,
                         "qtde": qtd,
-                        "precoUnit": preco
+                        "precoUnit": round(preco, 2)
                     })
                 else:
                     nao_encontrados.append(sku)
