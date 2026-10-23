@@ -7798,6 +7798,16 @@ function renderizarTabelaAssinaturas(clientes) {
             acaoCol = `<span style="font-size: 0.75rem; color: #cbd5e1; background: rgba(255,255,255,0.06); padding: 3px 8px; border-radius: 4px; display: inline-block;">${infoLog}</span>`;
         }
 
+        const restantesFuturos = c.ciclos_info?.restantes_futuros ?? 8;
+        const btnCiclos = `
+            <div style="margin-top: 4px;">
+                <button type="button" class="btn-caixinha-ciclos" data-cli="${encodeURIComponent(JSON.stringify(c))}" onclick="abrirCaixinhaCiclosElemento(this)" style="background: rgba(168, 85, 247, 0.15); border: 1px solid #a855f7; color: #d8b4fe; border-radius: 4px; padding: 2px 7px; font-size: 0.7rem; font-weight: 600; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;" title="Clique para ver o controle de exemplares e ciclos restantes">
+                    <i class="fa-solid fa-box-archive"></i> Ciclos (${restantesFuturos} rest.)
+                </button>
+            </div>
+        `;
+        acaoCol += btnCiclos;
+
         const badgeRen = c.is_renovacao ? '<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; font-size: 0.65rem; margin-left: 5px;">Renovação</span>' : '';
         const badgeObs = c.observacao_especial ? `<span class="badge" style="background: rgba(234, 179, 8, 0.2); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.4); font-size: 0.65rem; margin-left: 5px;" title="${c.observacao_especial}">⚠️ Enviar 1 und Dez/26 junto</span>` : '';
         const totExemplaresHtml = c.qtd_dez26_extra ? `<span title="3 exemplares de 2027 + 1 de Dezembro/2026">${c.total_exemplares_envio} <small style="color:#facc15; font-size:0.7rem;">(+1 Dez)</small></span>` : c.total_exemplares;
@@ -8074,6 +8084,101 @@ window.baixarPdfRelatorio = baixarPdfRelatorio;
 window.baixarPdfRelatorioAtivo = baixarPdfRelatorioAtivo;
 window.baixarPdfRomaneioLinha = baixarPdfRomaneioLinha;
 window.baixarPdfRomaneioParoquiaSelecionada = baixarPdfRomaneioParoquiaSelecionada;
+
+function abrirCaixinhaCiclosElemento(btn) {
+    if (!btn || !btn.dataset.cli) return;
+    try {
+        const c = JSON.parse(decodeURIComponent(btn.dataset.cli));
+        abrirCaixinhaCiclos(c);
+    } catch (e) {
+        console.error('Erro ao abrir caixinha de ciclos:', e);
+    }
+}
+
+function abrirCaixinhaCiclos(c) {
+    if (!c) return;
+    const modal = document.getElementById('modal-caixinha-ciclos');
+    if (!modal) return;
+
+    const ciclos = c.ciclos_info || {
+        total_contratado: 12,
+        ja_recebidos: 1,
+        neste_lote: c.total_exemplares || c.quantidade_assinaturas * 3 || 3,
+        restantes_futuros: Math.max(0, 12 - ((c.total_exemplares || 3) + 1)),
+        origem: c.origem_pedido_omie ? `Pedido Omie #${c.origem_pedido_omie}` : (c.numero_pedido ? `Pedido Omie #${c.numero_pedido}` : 'Base Assinantes'),
+        etapas: [
+            { ciclo: "Dezembro/2026", status: "ENVIADO", badge: "success", obs: "Exemplar de boas-vindas enviado", qtd: 1 },
+            { ciclo: "Jan, Fev, Mar/2027 (Lote Atual)", status: "NESTE_LOTE", badge: "primary", obs: "INCLUÍDO NESTE LOTE (3 exemplares)", qtd: c.total_exemplares || 3 },
+            { ciclo: "Lote 2º Trimestre (Abr, Mai, Jun/2027)", status: "PENDENTE", badge: "secondary", obs: "Aguardando chegada do lote futuro", qtd: 3 },
+            { ciclo: "Lote 3º Trimestre (Jul, Ago, Set/2027)", status: "PENDENTE", badge: "secondary", obs: "Aguardando chegada do lote futuro", qtd: 3 },
+            { ciclo: "Lote 4º Trimestre (Out, Nov/2027)", status: "PENDENTE", badge: "secondary", obs: "Conclusão do contrato anual", qtd: 2 }
+        ]
+    };
+
+    document.getElementById('caixinha-cliente-nome').innerText = c.cliente || c.cliente_nome || 'Assinante';
+    document.getElementById('caixinha-origem-badge').innerText = ciclos.origem || 'Base Assinante';
+    document.getElementById('caixinha-endereco').innerText = `${c.cidade || ''} / ${c.uf || ''} - CEP: ${c.cep || ''}`;
+    
+    document.getElementById('caixinha-qtd-entregues').innerText = `${ciclos.ja_recebidos} un`;
+    document.getElementById('caixinha-qtd-neste-lote').innerText = `${ciclos.neste_lote} un`;
+    document.getElementById('caixinha-qtd-restantes').innerText = `${ciclos.restantes_futuros} un`;
+
+    const progressoTotal = ciclos.ja_recebidos + ciclos.neste_lote;
+    const perc = Math.min(100, Math.round((progressoTotal / ciclos.total_contratado) * 100));
+    document.getElementById('caixinha-progresso-lbl').innerText = `${progressoTotal} de ${ciclos.total_contratado} exemplares (${perc}%)`;
+    document.getElementById('caixinha-progresso-bar').style.width = `${perc}%`;
+
+    const timelineDiv = document.getElementById('caixinha-timeline-lista');
+    if (timelineDiv) {
+        let tHtml = '';
+        (ciclos.etapas || []).forEach(st => {
+            let icon = '<i class="fa-solid fa-clock" style="color: #94a3b8;"></i>';
+            let bg = 'rgba(30, 41, 59, 0.6)';
+            let borderColor = '#334155';
+            let badgeHtml = '<span class="badge" style="background:#334155; color:#94a3b8;">Aguardando</span>';
+
+            if (st.status === 'ENVIADO') {
+                icon = '<i class="fa-solid fa-circle-check" style="color: #34d399;"></i>';
+                bg = 'rgba(16, 185, 129, 0.1)';
+                borderColor = 'rgba(16, 185, 129, 0.3)';
+                badgeHtml = '<span class="badge" style="background:#10b981; color:#fff;">✓ Enviado</span>';
+            } else if (st.status === 'NESTE_LOTE') {
+                icon = '<i class="fa-solid fa-bolt" style="color: #c084fc;"></i>';
+                bg = 'rgba(168, 85, 247, 0.15)';
+                borderColor = '#a855f7';
+                badgeHtml = '<span class="badge" style="background:#a855f7; color:#fff;">⚡ Neste Lote</span>';
+            }
+
+            tHtml += `
+                <div style="background: ${bg}; border: 1px solid ${borderColor}; border-radius: 6px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        ${icon}
+                        <div>
+                            <div style="font-size: 0.85rem; font-weight: 700; color: #f8fafc;">${st.ciclo}</div>
+                            <div style="font-size: 0.75rem; color: #94a3b8;">${st.obs}</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 0.85rem; font-weight: 700; color: #f8fafc;">${st.qtd} un</span>
+                        ${badgeHtml}
+                    </div>
+                </div>
+            `;
+        });
+        timelineDiv.innerHTML = tHtml;
+    }
+
+    modal.classList.add('active');
+}
+
+function fecharCaixinhaCiclos() {
+    const modal = document.getElementById('modal-caixinha-ciclos');
+    if (modal) modal.classList.remove('active');
+}
+
+window.abrirCaixinhaCiclosElemento = abrirCaixinhaCiclosElemento;
+window.abrirCaixinhaCiclos = abrirCaixinhaCiclos;
+window.fecharCaixinhaCiclos = fecharCaixinhaCiclos;
 window.abrirModuloEventosMobile = function() {
     window.navegarParaAba('tab-consignacao');
     if (typeof trocarSubAbaConsignacao === 'function') {
@@ -8461,7 +8566,10 @@ function renderLinhasPedidosProximoEnvio(pedidos) {
                 <td style="text-align: center; font-weight: 700; color: #34d399;">${p.quantidade_assinaturas || 1} un</td>
                 <td><span class="badge" style="background: rgba(168, 85, 247, 0.2); color: #c084fc;">${p.periodo_envio || 'Próximo Lote'}</span></td>
                 <td style="color: #94a3b8; font-size: 0.85rem;">${dataFmt}</td>
-                <td style="text-align: center;">
+                <td style="text-align: center; white-space: nowrap;">
+                    <button class="btn btn-xs" data-cli="${encodeURIComponent(JSON.stringify(p))}" onclick="abrirCaixinhaCiclosElemento(this)" style="background: rgba(168, 85, 247, 0.15); border: 1px solid #a855f7; color: #d8b4fe; border-radius: 4px; padding: 4px 8px; font-size: 0.72rem; font-weight: 600; cursor: pointer; margin-right: 4px;" title="Ver controle de ciclos e exemplares restantes">
+                        <i class="fa-solid fa-box-archive"></i> Ciclos
+                    </button>
                     <button class="btn btn-sm btn-secondary" onclick="excluirPedidoProximoEnvio(${pedId})" style="color: #f87171; border: 1px solid rgba(239,68,68,0.3); padding: 4px 8px;" title="Remover pedido deste ciclo">
                         <i class="fa-solid fa-trash-can"></i>
                     </button>

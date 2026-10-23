@@ -198,6 +198,103 @@ def obter_caminho_planilha():
         return LOCAL_SHEET_FALLBACK
     return CACHE_SHEET_LIVE
 
+def mesclar_pedidos_turso_nas_assinaturas(clientes_processados):
+    """
+    Mescla pedidos faturados de assinaturas gravados no Turso DB
+    (tabela assinaturas_pedidos_proximo_envio) ao Lote Trimestral atual.
+    Garante que clientes como Marielli Araújo (#18022) recebam os 3 exemplares
+    de Jan, Fev e Mar/2027, e gera os metadados de ciclos restantes para a caixinha de controle.
+    """
+    try:
+        import database as db
+        df_turso = db.executar_query("SELECT * FROM assinaturas_pedidos_proximo_envio ORDER BY id ASC")
+        if df_turso is None or df_turso.empty:
+            return clientes_processados
+
+        import re
+        cpfs_existentes = {re.sub(r'\D', '', str(c.get("cpf_cnpj") or "")) for c in clientes_processados if c.get("cpf_cnpj")}
+        nomes_existentes = {str(c.get("cliente") or "").strip().upper() for c in clientes_processados}
+
+        for _, r in df_turso.iterrows():
+            num_ped = str(r.get("numero_pedido") or "").strip()
+            cli_nome = str(r.get("cliente_nome") or "").strip()
+            cpf_raw = str(r.get("cpf_cnpj") or "").strip()
+            cpf_clean = re.sub(r'\D', '', cpf_raw)
+            qtd_ass = int(r.get("quantidade_assinaturas") or 1)
+            cidade = str(r.get("cidade") or "").strip()
+            uf = str(r.get("uf") or "").strip().upper()
+            cep_clean = limpar_cep(r.get("cep"))
+            rua = str(r.get("rua") or "").strip()
+            num = str(r.get("numero") or "").strip()
+            comp = str(r.get("complemento") or "").strip()
+            bairro = str(r.get("bairro") or "").strip()
+
+            # Evitar duplicar se o assinante já estiver na lista da planilha por CPF ou Nome idêntico
+            if cpf_clean and cpf_clean in cpfs_existentes:
+                continue
+            if cli_nome.upper() in nomes_existentes:
+                continue
+
+            # Regra de Lote:
+            # - Pedido 18028: enviou Jan/Fev/Mar no próprio pedido faturado -> NÃO entra na remessa do Lote Jan/Mar atual (já enviado)
+            # - Pedido 18022: enviou Dez/2026 inicial -> DEVE ENTRAR NO LOTE ATUAL com 3 exemplares (Jan, Fev, Mar)
+            if num_ped == "18028" or "18028" in num_ped:
+                continue
+
+            total_exemplares_cliente = qtd_ass * 3
+            peso_kg = round(total_exemplares_cliente * 0.100, 3)
+
+            item = {
+                "linha_planilha": f"OMIE_{num_ped or r.get('id')}",
+                "codigo_cliente": r.get("codigo_cliente_omie") or f"OM_{num_ped}",
+                "cliente": cli_nome,
+                "cpf_cnpj": cpf_raw,
+                "rua": rua,
+                "numero": num,
+                "complemento": comp,
+                "bairro": bairro,
+                "cidade": cidade,
+                "uf": uf,
+                "cep": formatar_cep(cep_clean),
+                "cep_limpo": cep_clean,
+                "quantidade_assinaturas": qtd_ass,
+                "jan27": True,
+                "fev27": True,
+                "mar27": True,
+                "qtd_jan27": qtd_ass,
+                "qtd_fev27": qtd_ass,
+                "qtd_mar27": qtd_ass,
+                "total_exemplares": total_exemplares_cliente,
+                "total_exemplares_envio": total_exemplares_cliente,
+                "qtd_dez26_extra": 0,
+                "observacao_especial": f"Origem: Pedido Omie #{num_ped} (Faturado)",
+                "peso_kg": peso_kg,
+                "is_renovacao": False,
+                "data_registro_base": str(r.get("criado_em") or "")[:10],
+                "origem_pedido_omie": num_ped,
+                "ciclos_info": {
+                    "total_contratado": 12,
+                    "ja_recebidos": 1,
+                    "neste_lote": 3,
+                    "restantes_futuros": 8,
+                    "origem": f"Pedido Omie #{num_ped}",
+                    "etapas": [
+                        {"ciclo": "Dezembro/2026", "status": "ENVIADO", "badge": "success", "obs": f"Enviado no Pedido Omie #{num_ped} em 23/10/2026", "qtd": qtd_ass * 1},
+                        {"ciclo": "Jan, Fev, Mar/2027 (Lote Atual)", "status": "NESTE_LOTE", "badge": "primary", "obs": "INCLUSO NESTE LOTE TRIMESTRAL (1 Jan + 1 Fev + 1 Mar)", "qtd": qtd_ass * 3},
+                        {"ciclo": "Abr, Mai, Jun/2027", "status": "PENDENTE", "badge": "secondary", "obs": "Aguardando 2º Lote Trimestral", "qtd": qtd_ass * 3},
+                        {"ciclo": "Jul, Ago, Set/2027", "status": "PENDENTE", "badge": "secondary", "obs": "Aguardando 3º Lote Trimestral", "qtd": qtd_ass * 3},
+                        {"ciclo": "Out, Nov/2027", "status": "PENDENTE", "badge": "secondary", "obs": "Fechamento do contrato anual", "qtd": qtd_ass * 2}
+                    ]
+                }
+            }
+            clientes_processados.append(item)
+            nomes_existentes.add(cli_nome.upper())
+
+    except Exception as e:
+        logger.warning(f"Erro ao mesclar pedidos Turso nas assinaturas: {e}")
+
+    return clientes_processados
+
 def processar_assinaturas_pdv(forcar_download=False):
     """
     Lê a planilha e calcula elegibilidade para Jan/27, Fev/27, Mar/27
@@ -352,9 +449,24 @@ def processar_assinaturas_pdv(forcar_download=False):
             "observacao_especial": obs_especial,
             "peso_kg": peso_total_cliente_kg,
             "is_renovacao": is_renovacao,
-            "data_registro_base": dt_base.strftime("%d/%m/%Y") if dt_base else "-"
+            "data_registro_base": dt_base.strftime("%d/%m/%Y") if dt_base else "-",
+            "ciclos_info": {
+                "total_contratado": 12,
+                "ja_recebidos": 1,
+                "neste_lote": total_exemplares_cliente,
+                "restantes_futuros": max(0, 12 - (total_exemplares_cliente + 1)),
+                "origem": "Base de Assinaturas (Planilha/Turso)",
+                "etapas": [
+                    {"ciclo": "Dezembro/2026", "status": "ENVIADO", "badge": "success", "obs": "Exemplar anterior enviado", "qtd": qtd_val},
+                    {"ciclo": "Jan, Fev, Mar/2027 (Lote Atual)", "status": "NESTE_LOTE", "badge": "primary", "obs": f"{meses_cont} exemplar(es) incluídos no lote", "qtd": total_exemplares_cliente},
+                    {"ciclo": "Lotes Futuros 2027", "status": "PENDENTE", "badge": "secondary", "obs": f"{max(0, 12 - (total_exemplares_cliente + 1))} exemplar(es) nos próximos trimestres", "qtd": max(0, 12 - (total_exemplares_cliente + 1))}
+                ]
+            }
         }
         clientes_processados.append(item)
+
+    # Mesclar pedidos de venda novos faturados no Omie registrados no Turso DB
+    clientes_processados = mesclar_pedidos_turso_nas_assinaturas(clientes_processados)
 
     # Classificar os 5 grupos
     g1_paroquias_ce = []

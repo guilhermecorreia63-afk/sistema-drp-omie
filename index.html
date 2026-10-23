@@ -2555,6 +2555,73 @@
         </div>
     </div>
 
+    <!-- Modal Caixinha de Ciclos & Exemplares Restantes do Assinante -->
+    <div id="modal-caixinha-ciclos" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 620px; width: 95%;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #7e22ce, #a855f7); color: #fff;">
+                <h3 style="margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-box-archive"></i> <span id="caixinha-cliente-nome">Controle de Exemplares do Assinante</span>
+                </h3>
+                <button class="modal-close" onclick="fecharCaixinhaCiclos()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <!-- Header informativo do cliente -->
+                <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                    <div>
+                        <div id="caixinha-origem-badge" class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; font-size: 0.75rem; padding: 3px 8px; margin-bottom: 4px;">
+                            Pedido Omie #18022
+                        </div>
+                        <div id="caixinha-endereco" style="font-size: 0.8rem; color: #cbd5e1;">Fortaleza / CE</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-size: 0.75rem; color: #94a3b8;">Plano Anual:</span>
+                        <div style="font-size: 1rem; font-weight: 700; color: #f8fafc;">12 Exemplares</div>
+                    </div>
+                </div>
+
+                <!-- 3 Cards de Resumo -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px;">
+                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 10px 14px; text-align: center;">
+                        <span style="font-size: 0.72rem; color: #34d399; font-weight: 600; text-transform: uppercase;">1. Já Entregues</span>
+                        <div id="caixinha-qtd-entregues" style="font-size: 1.3rem; font-weight: 800; color: #34d399;">1 un</div>
+                    </div>
+                    <div style="background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 8px; padding: 10px 14px; text-align: center;">
+                        <span style="font-size: 0.72rem; color: #d8b4fe; font-weight: 600; text-transform: uppercase;">2. Neste Lote</span>
+                        <div id="caixinha-qtd-neste-lote" style="font-size: 1.3rem; font-weight: 800; color: #c084fc;">3 un</div>
+                    </div>
+                    <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 10px 14px; text-align: center;">
+                        <span style="font-size: 0.72rem; color: #fbbf24; font-weight: 600; text-transform: uppercase;">3. Restantes Futuros</span>
+                        <div id="caixinha-qtd-restantes" style="font-size: 1.3rem; font-weight: 800; color: #fbbf24;">8 un</div>
+                    </div>
+                </div>
+
+                <!-- Barra de Progresso do Contrato -->
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: #94a3b8; margin-bottom: 5px;">
+                        <span>Progresso da Assinatura:</span>
+                        <span id="caixinha-progresso-lbl" style="font-weight: 700; color: #f8fafc;">4 de 12 exemplares (33%)</span>
+                    </div>
+                    <div style="height: 10px; background: #1e293b; border-radius: 6px; overflow: hidden; border: 1px solid #334155;">
+                        <div id="caixinha-progresso-bar" style="height: 100%; width: 33%; background: linear-gradient(90deg, #10b981, #a855f7); border-radius: 6px; transition: width 0.3s ease;"></div>
+                    </div>
+                </div>
+
+                <!-- Timeline Detalhada dos Ciclos -->
+                <div>
+                    <h4 style="font-size: 0.88rem; color: #94a3b8; text-transform: uppercase; margin: 0 0 10px 0; font-weight: 700;">
+                        <i class="fa-solid fa-list-check"></i> Cronograma de Remessas e Exemplares
+                    </h4>
+                    <div id="caixinha-timeline-lista" style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto;">
+                        <!-- Preenchido via JS -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="fecharCaixinhaCiclos()">Fechar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Gerar / Mesclar Remessa -->
     <div id="modal-gerar-remessa" class="modal-backdrop">
         <div class="modal-box" style="max-width: 500px;">
