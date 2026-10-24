@@ -8584,12 +8584,11 @@ window.pedidosProximoEnvioCache = [];
 
 function renderLinhasPedidosProximoEnvio(pedidos) {
     if (!pedidos || pedidos.length === 0) {
-        return `<tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 25px;">Nenhum pedido de venda registrado para o próximo envio ainda.</td></tr>`;
+        return `<tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 35px; font-size: 0.95rem;">Nenhum pedido de venda registrado para o próximo envio ainda.</td></tr>`;
     }
     return pedidos.map(p => {
         const endereco = `${p.rua || ''}, ${p.numero || ''} ${p.complemento || ''} - ${p.bairro || ''}`;
         const cidadeUf = `${p.cidade || ''} / ${p.uf || ''}`;
-        const dataFmt = p.criado_em ? p.criado_em.substring(0, 10).split('-').reverse().join('/') : '--';
         const skuCombo = p.sku_produto || '000223';
         const numPed = p.numero_pedido || p.codigo_pedido_omie || '--';
         const pedId = p.id || 0;
@@ -8600,32 +8599,32 @@ function renderLinhasPedidosProximoEnvio(pedidos) {
         const statusStr = p.status_assinatura || (entregues >= 12 * qtdAss ? 'CONCLUIDO' : 'ATIVO');
 
         const badgeStatus = statusStr === 'CONCLUIDO'
-            ? `<span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.3); font-size: 0.72rem;"><i class="fa-solid fa-flag-checkered"></i> Vencido / Concluído</span>`
-            : `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); font-size: 0.72rem;"><i class="fa-solid fa-circle-check"></i> Ativo</span>`;
+            ? `<span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.3); font-size: 0.72rem; white-space: nowrap;"><i class="fa-solid fa-flag-checkered"></i> Vencido</span>`
+            : `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); font-size: 0.72rem; white-space: nowrap;"><i class="fa-solid fa-circle-check"></i> Ativo</span>`;
 
         return `
-            <tr>
-                <td style="font-weight: 700; color: #a855f7;">#${numPed}</td>
-                <td>
-                    <div style="font-weight: 600; color: #f8fafc;">${p.cliente_nome || '--'}</div>
-                    <small style="color: #64748b;">${p.observacao || ''}</small>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                <td style="font-weight: 700; color: #c084fc; white-space: nowrap; padding: 10px 12px;">#${numPed}</td>
+                <td style="padding: 10px 12px; max-width: 260px;">
+                    <div style="font-weight: 600; color: #f8fafc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p.cliente_nome || '--'}</div>
+                    <small style="color: #64748b; font-size: 0.75rem;">${p.observacao || ''}</small>
                 </td>
-                <td style="color: #cbd5e1; font-size: 0.85rem;">${p.cpf_cnpj || '--'}</td>
-                <td>
-                    <div style="font-size: 0.85rem;">${endereco}</div>
-                    <small style="color: #94a3b8;">${cidadeUf}</small>
+                <td style="color: #cbd5e1; font-size: 0.82rem; white-space: nowrap; padding: 10px 12px;">${p.cpf_cnpj || '--'}</td>
+                <td style="padding: 10px 12px; max-width: 280px;">
+                    <div style="font-size: 0.82rem; color: #cbd5e1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${endereco}</div>
+                    <small style="color: #94a3b8; font-size: 0.75rem;">${cidadeUf}</small>
                 </td>
-                <td style="font-weight: 600; color: #fbbf24;">${p.cep || '--'}</td>
-                <td><span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 0.75rem;">${skuCombo}</span></td>
-                <td style="text-align: center; font-weight: 700; color: #34d399;">${qtdAss} un</td>
-                <td style="text-align: center; font-size: 0.82rem;">
-                    <span style="color: #34d399; font-weight: 600;">${entregues} entregues</span>
+                <td style="font-weight: 600; color: #fbbf24; white-space: nowrap; padding: 10px 12px; font-size: 0.85rem;">${p.cep || '--'}</td>
+                <td style="white-space: nowrap; padding: 10px 12px;"><span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; font-size: 0.75rem;">${skuCombo}</span></td>
+                <td style="text-align: center; font-weight: 700; color: #34d399; white-space: nowrap; padding: 10px 12px;">${qtdAss} un</td>
+                <td style="text-align: center; font-size: 0.82rem; white-space: nowrap; padding: 10px 12px;">
+                    <span style="color: #34d399; font-weight: 600;">${entregues} entr.</span>
                     <span style="color: #64748b;"> / </span>
                     <span style="color: #fbbf24; font-weight: 600;">${restantes} rest.</span>
                 </td>
-                <td><span class="badge" style="background: rgba(168, 85, 247, 0.2); color: #c084fc;">${p.periodo_envio || 'Próximo Lote'}</span></td>
-                <td style="text-align: center;">${badgeStatus}</td>
-                <td style="text-align: center; white-space: nowrap;">
+                <td style="text-align: center; white-space: nowrap; padding: 10px 12px;"><span class="badge" style="background: rgba(168, 85, 247, 0.2); color: #c084fc; font-size: 0.72rem;">${p.periodo_envio || 'Próximo Lote'}</span></td>
+                <td style="text-align: center; white-space: nowrap; padding: 10px 12px;">${badgeStatus}</td>
+                <td style="text-align: center; white-space: nowrap; padding: 10px 12px;">
                     <button class="btn btn-xs" data-cli="${encodeURIComponent(JSON.stringify(p))}" onclick="abrirCaixinhaCiclosElemento(this)" style="background: rgba(168, 85, 247, 0.15); border: 1px solid #a855f7; color: #d8b4fe; border-radius: 4px; padding: 4px 8px; font-size: 0.72rem; font-weight: 600; cursor: pointer; margin-right: 4px;" title="Ver controle de ciclos e exemplares restantes">
                         <i class="fa-solid fa-box-archive"></i> Ciclos
                     </button>
@@ -8639,7 +8638,13 @@ function renderLinhasPedidosProximoEnvio(pedidos) {
 }
 
 async function concluirLoteAssinaturas() {
-    if (!confirm('Deseja realmente CONCLUIR E BAIXAR o Lote 1 (Jan, Fev e Mar/2027)?\n\n- Todos os assinantes atendidos neste lote terão 3 exemplares marcados como entregues.\n- Assinantes que atingirem 12 exemplares serão marcados como VENCIDOS / CONCLUÍDOS.\n- Os assinantes com exemplares restantes avançarão automaticamente para o Lote 2 (Abril/2027).')) {
+    const confirmMsg = 'Deseja realmente Finalizar o Lote 1 (Jan, Fev e Mar/2027)?\n\n' +
+        '• Cada assinante terá contabilizado estritamente os exemplares devidos até o limite de sua assinatura (assinantes que iniciaram em fev/26 encerram em jan/27, mar/26 encerram em fev/27, etc.).\n' +
+        '• Assinantes que atingirem 12/12 exemplares serão marcados como Vencidos/Concluídos.\n' +
+        '• Os assinantes com ciclos futuros avançarão para os próximos lotes.\n\n' +
+        'Confirma a finalização deste lote?';
+
+    if (!confirm(confirmMsg)) {
         return;
     }
 
@@ -9385,3 +9390,342 @@ window.cotarFreteFrenetLancamento = cotarFreteFrenetLancamento;
 window.aplicarFreteCotado = aplicarFreteCotado;
 window.executarLancamentoPedidoVendaOmie = executarLancamentoPedidoVendaOmie;
 
+// =========================================================================
+// ASSINATURAS: SUB-ABAS, RASTREIOS CORREIOS & CONFIGURAÇÃO DE NOVOS LOTES
+// =========================================================================
+
+function trocarSubAbaPasso2(subaba) {
+    const btnAssinantes = document.getElementById('btn-subaba-passo2-assinantes');
+    const btnRastreio = document.getElementById('btn-subaba-passo2-rastreio');
+    const painelAssinantes = document.getElementById('painel-passo2-assinantes');
+    const painelRastreio = document.getElementById('painel-passo2-rastreio');
+
+    if (subaba === 'rastreio') {
+        if (painelAssinantes) painelAssinantes.style.display = 'none';
+        if (painelRastreio) painelRastreio.style.display = 'block';
+
+        if (btnRastreio) {
+            btnRastreio.style.background = 'linear-gradient(135deg, #0284c7, #2563eb)';
+            btnRastreio.style.color = '#fff';
+            btnRastreio.style.border = 'none';
+        }
+        if (btnAssinantes) {
+            btnAssinantes.style.background = 'transparent';
+            btnAssinantes.style.color = 'var(--text-muted)';
+            btnAssinantes.style.border = 'none';
+        }
+
+        carregarRastreiosAssinaturas();
+    } else {
+        if (painelAssinantes) painelAssinantes.style.display = 'block';
+        if (painelRastreio) painelRastreio.style.display = 'none';
+
+        if (btnAssinantes) {
+            btnAssinantes.style.background = 'linear-gradient(135deg, #a855f7, #6366f1)';
+            btnAssinantes.style.color = '#fff';
+            btnAssinantes.style.border = 'none';
+        }
+        if (btnRastreio) {
+            btnRastreio.style.background = 'transparent';
+            btnRastreio.style.color = 'var(--text-muted)';
+            btnRastreio.style.border = 'none';
+        }
+
+        carregarPedidosProximoEnvio();
+    }
+}
+
+window.rastreiosAssinaturasCache = [];
+
+async function carregarRastreiosAssinaturas() {
+    const tbody = document.getElementById('tbody-assinaturas-rastreios');
+    try {
+        const resp = await fetch('/api/assinaturas/rastreios');
+        const data = await resp.json();
+
+        if (!resp.ok || !data.success) {
+            if (tbody) tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #f87171; padding: 25px;">⚠️ Falha ao carregar rastreios: ${data.message || ''}</td></tr>`;
+            return;
+        }
+
+        const rastreios = data.rastreios || [];
+        window.rastreiosAssinaturasCache = rastreios;
+
+        // Atualizar métricas
+        const elTot = document.getElementById('metric-rastreios-tot');
+        const elTrans = document.getElementById('metric-rastreios-transito');
+        const elEntreg = document.getElementById('metric-rastreios-entregues');
+
+        let emTransito = 0;
+        let entregues = 0;
+
+        rastreios.forEach(r => {
+            const st = (r.status_rastreio || '').toUpperCase();
+            if (st.includes('ENTREG')) entregues++;
+            else emTransito++;
+        });
+
+        if (elTot) elTot.innerText = rastreios.length;
+        if (elTrans) elTrans.innerText = emTransito;
+        if (elEntreg) elEntreg.innerText = entregues;
+
+        renderizarTabelaRastreios(rastreios);
+    } catch (e) {
+        console.error('Erro ao buscar rastreios:', e);
+        if (tbody) tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #f87171; padding: 25px;">⚠️ Erro de conexão com o servidor.</td></tr>`;
+    }
+}
+
+function renderizarTabelaRastreios(lista) {
+    const tbody = document.getElementById('tbody-assinaturas-rastreios');
+    if (!tbody) return;
+
+    if (!lista || lista.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 35px; font-size: 0.95rem;">Nenhum código de rastreio registrado ainda. Clique em "Cadastrar Rastreio" acima para vincular os códigos das etiquetas geradas.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = lista.map(r => {
+        const cod = (r.codigo_rastreio || '').trim().toUpperCase();
+        const linkCorreios = `https://rastreamento.correios.com.br/app/index.php?codigo=${cod}`;
+        const dtFmt = r.data_postagem ? r.data_postagem.split('-').reverse().join('/') : '--';
+        const st = (r.status_rastreio || 'Postado').toUpperCase();
+
+        let badgeStatus = `<span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); font-size: 0.72rem; white-space: nowrap;"><i class="fa-solid fa-truck-fast"></i> Em Trânsito</span>`;
+        if (st.includes('ENTREG')) {
+            badgeStatus = `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); font-size: 0.72rem; white-space: nowrap;"><i class="fa-solid fa-circle-check"></i> Entregue</span>`;
+        } else if (st.includes('POST')) {
+            badgeStatus = `<span class="badge" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); font-size: 0.72rem; white-space: nowrap;"><i class="fa-solid fa-box"></i> Postado</span>`;
+        }
+
+        return `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                <td style="font-weight: 700; font-family: monospace; font-size: 0.9rem; color: #38bdf8; white-space: nowrap; padding: 10px 12px;">
+                    ${cod}
+                </td>
+                <td style="font-weight: 600; color: #f8fafc; padding: 10px 12px;">
+                    ${r.cliente_nome || '--'}
+                </td>
+                <td style="color: #c084fc; font-weight: 600; white-space: nowrap; padding: 10px 12px;">
+                    ${r.numero_pedido ? '#' + r.numero_pedido : '--'}
+                </td>
+                <td style="color: #cbd5e1; font-size: 0.85rem; padding: 10px 12px;">
+                    ${r.cidade_uf || '--'}
+                </td>
+                <td style="white-space: nowrap; padding: 10px 12px;">
+                    <span class="badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; font-size: 0.72rem;">${r.lote_referencia || 'Lote 1'}</span>
+                </td>
+                <td style="white-space: nowrap; color: #94a3b8; font-size: 0.82rem; padding: 10px 12px;">
+                    ${dtFmt}
+                </td>
+                <td style="text-align: center; white-space: nowrap; padding: 10px 12px;">
+                    ${badgeStatus}
+                </td>
+                <td style="text-align: center; white-space: nowrap; padding: 10px 12px;">
+                    <a href="${linkCorreios}" target="_blank" rel="noopener noreferrer" class="btn btn-xs" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; border-radius: 4px; padding: 4px 8px; font-size: 0.72rem; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; font-weight: 600;" title="Rastrear no portal oficial dos Correios">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Rastrear
+                    </a>
+                    <button class="btn btn-xs" onclick="excluirRastreioAssinatura(${r.id})" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239,68,68,0.3); color: #f87171; border-radius: 4px; padding: 4px 8px; font-size: 0.72rem; margin-left: 4px;" title="Remover rastreio">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function filtrarTabelaRastreiosAssinaturas() {
+    const q = (document.getElementById('filtro-assinaturas-rastreios')?.value || '').toLowerCase().trim();
+    const todos = window.rastreiosAssinaturasCache || [];
+
+    if (!q) {
+        renderizarTabelaRastreios(todos);
+        return;
+    }
+
+    const filtrados = todos.filter(r => {
+        const c = String(r.codigo_rastreio || '').toLowerCase();
+        const n = String(r.cliente_nome || '').toLowerCase();
+        const p = String(r.numero_pedido || '').toLowerCase();
+        const cid = String(r.cidade_uf || '').toLowerCase();
+        return c.includes(q) || n.includes(q) || p.includes(q) || cid.includes(q);
+    });
+
+    renderizarTabelaRastreios(filtrados);
+}
+
+function abrirModalCadastrarRastreio() {
+    const m = document.getElementById('modal-cadastrar-rastreio');
+    if (m) m.style.display = 'flex';
+}
+
+function fecharModalCadastrarRastreio() {
+    const m = document.getElementById('modal-cadastrar-rastreio');
+    if (m) m.style.display = 'none';
+}
+
+async function salvarNovoRastreioAssinatura() {
+    const cod = document.getElementById('rastreio-novo-codigo')?.value.trim();
+    const nome = document.getElementById('rastreio-novo-cliente')?.value.trim();
+    const ped = document.getElementById('rastreio-novo-pedido')?.value.trim();
+    const cid = document.getElementById('rastreio-novo-cidade')?.value.trim();
+    const lote = document.getElementById('rastreio-novo-lote')?.value.trim();
+    const data = document.getElementById('rastreio-novo-data')?.value.trim();
+
+    if (!cod || !nome) {
+        alert('Por favor, informe ao menos o Código de Rastreio e o Nome do Assinante.');
+        return;
+    }
+
+    try {
+        const resp = await fetch('/api/assinaturas/salvar_rastreio', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                codigo_rastreio: cod,
+                cliente_nome: nome,
+                numero_pedido: ped,
+                cidade_uf: cid,
+                lote_referencia: lote,
+                data_postagem: data,
+                status_rastreio: 'Postado'
+            })
+        });
+
+        const resData = await resp.json();
+        if (resp.ok && resData.success) {
+            alert('✅ Rastreio cadastrado com sucesso!');
+            fecharModalCadastrarRastreio();
+            const elCod = document.getElementById('rastreio-novo-codigo');
+            const elNome = document.getElementById('rastreio-novo-cliente');
+            const elPed = document.getElementById('rastreio-novo-pedido');
+            const elCid = document.getElementById('rastreio-novo-cidade');
+            if (elCod) elCod.value = '';
+            if (elNome) elNome.value = '';
+            if (elPed) elPed.value = '';
+            if (elCid) elCid.value = '';
+            carregarRastreiosAssinaturas();
+        } else {
+            alert('❌ Erro ao salvar: ' + (resData.message || 'Falha ao salvar rastreio'));
+        }
+    } catch (e) {
+        alert('❌ Erro de conexão ao salvar rastreio: ' + e.message);
+    }
+}
+
+async function excluirRastreioAssinatura(id) {
+    if (!id) return;
+    if (!confirm('Deseja realmente remover este registro de rastreio?')) return;
+
+    try {
+        const resp = await fetch('/api/assinaturas/excluir_rastreio', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+        });
+        const resData = await resp.json();
+        if (resp.ok && resData.success) {
+            carregarRastreiosAssinaturas();
+        } else {
+            alert('❌ Erro ao remover: ' + (resData.message || 'Falha'));
+        }
+    } catch (e) {
+        alert('❌ Erro de comunicação: ' + e.message);
+    }
+}
+
+// Modal de Configurar Novo Lote de Envio (Avançar ciclos)
+function abrirModalConfigurarNovoLote() {
+    const m = document.getElementById('modal-configurar-novo-lote');
+    if (m) m.style.display = 'flex';
+}
+
+function fecharModalConfigurarNovoLote() {
+    const m = document.getElementById('modal-configurar-novo-lote');
+    if (m) m.style.display = 'none';
+}
+
+function aoMudarPresetNovoLote() {
+    const sel = document.getElementById('select-preset-novo-lote')?.value;
+    const nomeInp = document.getElementById('input-nome-novo-lote');
+    const todosBoxes = document.querySelectorAll('.cb-mes-novo-lote');
+
+    todosBoxes.forEach(b => b.checked = false);
+
+    if (sel === 'lote2_trimestral') {
+        if (nomeInp) nomeInp.value = 'Lote 2 (Abr, Mai e Jun/2027)';
+        [4, 5, 6].forEach(m => {
+            const b = document.querySelector(`.cb-mes-novo-lote[value="${m}"]`);
+            if (b) b.checked = true;
+        });
+    } else if (sel === 'lote3_semestral') {
+        if (nomeInp) nomeInp.value = 'Lote 3 (Jul a Dez/2027 - 6 Meses)';
+        [7, 8, 9, 10, 11, 12].forEach(m => {
+            const b = document.querySelector(`.cb-mes-novo-lote[value="${m}"]`);
+            if (b) b.checked = true;
+        });
+    } else if (sel === 'lote1_trimestral') {
+        if (nomeInp) nomeInp.value = 'Lote 1 (Jan, Fev e Mar/2027)';
+        [1, 2, 3].forEach(m => {
+            const b = document.querySelector(`.cb-mes-novo-lote[value="${m}"]`);
+            if (b) b.checked = true;
+        });
+    }
+}
+
+async function executarAtivacaoNovoLote() {
+    const nome = document.getElementById('input-nome-novo-lote')?.value.trim() || 'Novo Lote';
+    const checkedBoxes = Array.from(document.querySelectorAll('.cb-mes-novo-lote:checked'));
+    const meses = checkedBoxes.map(b => parseInt(b.value, 10)).sort((a,b) => a - b);
+
+    if (meses.length === 0) {
+        alert('Por favor, selecione ao menos um mês para compor o lote de envio.');
+        return;
+    }
+
+    const confirmMsg = `Deseja ATIVAR e PREPARAR o envio do:\n\n📦 ${nome}\nMeses a Enviar: ${meses.join(', ')}\n\nIsso carregará todos os assinantes elegíveis para esses meses diretamente no PASSO 1 (Lote & Remessa) para emissão de romaneio, etiquetas Correios e remessas Omie!`;
+    if (!confirm(confirmMsg)) return;
+
+    try {
+        const resp = await fetch('/api/assinaturas/configurar_lote_ativo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                nome_lote: nome,
+                meses: meses,
+                ano: 2027
+            })
+        });
+
+        const data = await resp.json();
+        if (resp.ok && data.success) {
+            alert(`✅ ${data.message || 'Lote ativado com sucesso!'}`);
+            fecharModalConfigurarNovoLote();
+
+            // Navega para o Passo 1
+            if (typeof window.navegarParaAba === 'function') {
+                window.navegarParaAba('tab-assinaturas');
+            }
+            if (typeof carregarAssinaturasPDV === 'function') {
+                carregarAssinaturasPDV(true);
+            }
+        } else {
+            alert('❌ Erro ao configurar lote: ' + (data.message || 'Falha ao salvar configuração.'));
+        }
+    } catch (e) {
+        alert('❌ Erro de conexão com o servidor: ' + e.message);
+    }
+}
+
+// Exportar globalmente
+window.trocarSubAbaPasso2 = trocarSubAbaPasso2;
+window.carregarRastreiosAssinaturas = carregarRastreiosAssinaturas;
+window.filtrarTabelaRastreiosAssinaturas = filtrarTabelaRastreiosAssinaturas;
+window.abrirModalCadastrarRastreio = abrirModalCadastrarRastreio;
+window.fecharModalCadastrarRastreio = fecharModalCadastrarRastreio;
+window.salvarNovoRastreioAssinatura = salvarNovoRastreioAssinatura;
+window.excluirRastreioAssinatura = excluirRastreioAssinatura;
+window.abrirModalConfigurarNovoLote = abrirModalConfigurarNovoLote;
+window.fecharModalConfigurarNovoLote = fecharModalConfigurarNovoLote;
+window.aoMudarPresetNovoLote = aoMudarPresetNovoLote;
+window.executarAtivacaoNovoLote = executarAtivacaoNovoLote;

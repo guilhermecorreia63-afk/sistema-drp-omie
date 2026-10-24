@@ -430,6 +430,46 @@ def processar_assinaturas_pdv(forcar_download=False):
         total_exemplares_cliente = qtd_val * meses_cont
         peso_total_cliente_kg = round((total_exemplares_cliente + qtd_dez26_extra) * 0.100, 3)
 
+        # Cálculo exato de ciclos baseado no mês de início (12 exemplares anuais)
+        pos_jan = ex_jan if dt_base else 1
+        ja_recebidos_antes = max(0, (pos_jan - 1)) if pos_jan > 1 else 0
+        total_apos_lote = ja_recebidos_antes + meses_cont
+        restantes_apos_lote = max(0, 12 - total_apos_lote)
+        status_apos_lote = "CONCLUIDO" if total_apos_lote >= 12 else "ATIVO"
+
+        etapas_cliente = []
+        if ja_recebidos_antes > 0:
+            etapas_cliente.append({
+                "ciclo": "Exemplares Anteriores (2026)",
+                "status": "ENVIADO",
+                "badge": "success",
+                "obs": f"{ja_recebidos_antes} exemplar(es) já recebidos desde {dt_base.strftime('%m/%Y') if dt_base else 'o início'}",
+                "qtd": ja_recebidos_antes * qtd_val
+            })
+        etapas_cliente.append({
+            "ciclo": "Lote 1 (Jan, Fev e Mar/2027)",
+            "status": "NESTE_LOTE",
+            "badge": "primary",
+            "obs": f"{meses_cont} exemplar(es) incluídos neste lote ({'Jan ' if jan else ''}{'Fev ' if fev else ''}{'Mar' if mar else ''})",
+            "qtd": total_exemplares_cliente
+        })
+        if restantes_apos_lote > 0:
+            etapas_cliente.append({
+                "ciclo": "Próximos Lotes (Abril em diante)",
+                "status": "PENDENTE",
+                "badge": "secondary",
+                "obs": f"{restantes_apos_lote} exemplar(es) restantes para conclusão",
+                "qtd": restantes_apos_lote * qtd_val
+            })
+        else:
+            etapas_cliente.append({
+                "ciclo": "Conclusão do Contrato Anual",
+                "status": "CONCLUIDO",
+                "badge": "success",
+                "obs": "12 exemplares completados com sucesso neste lote!",
+                "qtd": 0
+            })
+
         item = {
             "linha_planilha": idx,
             "codigo_cliente": cod,
@@ -457,17 +497,16 @@ def processar_assinaturas_pdv(forcar_download=False):
             "peso_kg": peso_total_cliente_kg,
             "is_renovacao": is_renovacao,
             "data_registro_base": dt_base.strftime("%d/%m/%Y") if dt_base else "-",
+            "status_assinatura": status_apos_lote,
             "ciclos_info": {
-                "total_contratado": 12,
-                "ja_recebidos": 1,
+                "total_contratado": 12 * qtd_val,
+                "ja_recebidos": ja_recebidos_antes * qtd_val,
                 "neste_lote": total_exemplares_cliente,
-                "restantes_futuros": max(0, 12 - (total_exemplares_cliente + 1)),
-                "origem": "Base de Assinaturas (Planilha/Turso)",
-                "etapas": [
-                    {"ciclo": "Dezembro/2026", "status": "ENVIADO", "badge": "success", "obs": "Exemplar anterior enviado", "qtd": qtd_val},
-                    {"ciclo": "Jan, Fev, Mar/2027 (Lote Atual)", "status": "NESTE_LOTE", "badge": "primary", "obs": f"{meses_cont} exemplar(es) incluídos no lote", "qtd": total_exemplares_cliente},
-                    {"ciclo": "Lotes Futuros 2027", "status": "PENDENTE", "badge": "secondary", "obs": f"{max(0, 12 - (total_exemplares_cliente + 1))} exemplar(es) nos próximos trimestres", "qtd": max(0, 12 - (total_exemplares_cliente + 1))}
-                ]
+                "restantes_futuros": restantes_apos_lote * qtd_val,
+                "status_apos_lote": status_apos_lote,
+                "meses_cont": meses_cont,
+                "origem": "Base de Assinantes (Planilha/Turso)",
+                "etapas": etapas_cliente
             }
         }
         clientes_processados.append(item)

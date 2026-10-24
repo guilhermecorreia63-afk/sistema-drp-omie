@@ -110,6 +110,10 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_assinaturas_exportar_correios()
         elif url_path == '/api/assinaturas/relatorio_pdf':
             self.handle_api_assinaturas_relatorio_pdf()
+        elif url_path == '/api/assinaturas/rastreios':
+            self.handle_api_assinaturas_listar_rastreios()
+        elif url_path == '/api/assinaturas/lote_ativo':
+            self.handle_api_assinaturas_obter_lote_ativo()
         else:
             super().do_GET()
 
@@ -199,6 +203,12 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_assinaturas_gerar_remessa_paroquia()
         elif url_path == '/api/assinaturas/concluir_lote':
             self.handle_api_assinaturas_concluir_lote()
+        elif url_path == '/api/assinaturas/salvar_rastreio':
+            self.handle_api_assinaturas_salvar_rastreio()
+        elif url_path == '/api/assinaturas/excluir_rastreio':
+            self.handle_api_assinaturas_excluir_rastreio()
+        elif url_path == '/api/assinaturas/configurar_lote_ativo':
+            self.handle_api_assinaturas_configurar_lote_ativo()
         else:
             self.send_error(404, f"Endpoint não encontrado: {self.path}")
 
@@ -2774,10 +2784,130 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
             self._send_json({
                 "success": True,
-                "message": f"{nome_lote} finalizado com sucesso! As liturgias entregues foram marcadas, os ciclos foram avançados para Abril/2027 e as assinaturas completas foram concluídas."
+                "message": f"{nome_lote} finalizado com sucesso! As liturgias entregues foram computadas, os ciclos foram avançados e assinantes com contratos encerrados foram marcados como concluídos."
             })
         except Exception as e:
             print(f"[API ASSINATURAS] Erro ao concluir lote: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_assinaturas_listar_rastreios(self):
+        try:
+            sql = "SELECT * FROM assinaturas_rastreios ORDER BY id DESC LIMIT 200"
+            df = db.executar_query(sql)
+            rows = []
+            if df is not None and not df.empty:
+                for _, r in df.iterrows():
+                    rows.append(dict(r))
+            self._send_json({"success": True, "rastreios": rows})
+        except Exception as e:
+            print(f"[API RASTREIO] Erro ao listar rastreios: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_assinaturas_salvar_rastreio(self):
+        try:
+            body = self._read_body()
+            cod_rastreio = str(body.get("codigo_rastreio") or "").strip().upper()
+            cli_nome = str(body.get("cliente_nome") or "").strip()
+            num_ped = str(body.get("numero_pedido") or "").strip()
+            cid_uf = str(body.get("cidade_uf") or "").strip()
+            lote = str(body.get("lote_referencia") or "Lote 1 (Jan-Mar/2027)").strip()
+            dt_postagem = str(body.get("data_postagem") or datetime.now().strftime("%d/%m/%Y")).strip()
+            status_r = str(body.get("status_rastreio") or "Em Trânsito").strip()
+            agora_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            if not cod_rastreio:
+                self._send_json({"success": False, "message": "Código de rastreio é obrigatório."}, status=400)
+                return
+
+            rid = body.get("id")
+            if rid:
+                sql_upd = """
+                    UPDATE assinaturas_rastreios SET
+                        codigo_rastreio = :cod, cliente_nome = :nome, numero_pedido = :ped,
+                        cidade_uf = :cid, lote_referencia = :lote, data_postagem = :dt,
+                        status_rastreio = :st
+                    WHERE id = :id
+                """
+                db.executar_query(sql_upd, {
+                    "cod": cod_rastreio, "nome": cli_nome, "ped": num_ped, "cid": cid_uf,
+                    "lote": lote, "dt": dt_postagem, "st": status_r, "id": int(rid)
+                }, is_select=False)
+            else:
+                sql_ins = """
+                    INSERT INTO assinaturas_rastreios (
+                        codigo_rastreio, cliente_nome, numero_pedido, cidade_uf,
+                        lote_referencia, data_postagem, status_rastreio, criado_em
+                    ) VALUES (
+                        :cod, :nome, :ped, :cid, :lote, :dt, :st, :criado
+                    )
+                """
+                db.executar_query(sql_ins, {
+                    "cod": cod_rastreio, "nome": cli_nome, "ped": num_ped, "cid": cid_uf,
+                    "lote": lote, "dt": dt_postagem, "st": status_r, "criado": agora_str
+                }, is_select=False)
+
+            self._send_json({"success": True, "message": f"Código de rastreio {cod_rastreio} salvo com sucesso!"})
+        except Exception as e:
+            print(f"[API RASTREIO] Erro ao salvar rastreio: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_assinaturas_excluir_rastreio(self):
+        try:
+            body = self._read_body()
+            rid = body.get("id")
+            if not rid:
+                self._send_json({"success": False, "message": "ID não informado."}, status=400)
+                return
+            db.executar_query("DELETE FROM assinaturas_rastreios WHERE id = :id", {"id": int(rid)}, is_select=False)
+            self._send_json({"success": True, "message": "Registro de rastreio removido com sucesso."})
+        except Exception as e:
+            print(f"[API RASTREIO] Erro ao excluir rastreio: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_assinaturas_obter_lote_ativo(self):
+        try:
+            import json
+            df = db.executar_query("SELECT valor FROM assinaturas_lotes_config WHERE chave = 'lote_ativo'")
+            if df is not None and not df.empty:
+                cfg = json.loads(df.iloc[0]["valor"])
+            else:
+                cfg = {
+                    "id": "LOTE_1_JAN_MAR_2027",
+                    "nome": "Lote 1 (Jan, Fev e Mar/2027)",
+                    "ano": 2027,
+                    "meses": [1, 2, 3],
+                    "meses_nomes": ["Jan/27", "Fev/27", "Mar/27"]
+                }
+            self._send_json({"success": True, "lote_ativo": cfg})
+        except Exception as e:
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_assinaturas_configurar_lote_ativo(self):
+        try:
+            body = self._read_body()
+            import json
+            nome = str(body.get("nome") or "Lote de Expedição").strip()
+            meses = body.get("meses") or [1, 2, 3]
+            ano = int(body.get("ano") or 2027)
+            nomes_meses_map = {1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun", 7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez"}
+            meses_nomes = [f"{nomes_meses_map.get(int(m), str(m))}/{str(ano)[2:]}" for m in meses]
+
+            cfg = {
+                "id": f"LOTE_{'_'.join(str(m) for m in meses)}_{ano}",
+                "nome": nome,
+                "ano": ano,
+                "meses": [int(m) for m in meses],
+                "meses_nomes": meses_nomes
+            }
+            agora_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            db.executar_query("""
+                INSERT INTO assinaturas_lotes_config (chave, valor, atualizado_em)
+                VALUES ('lote_ativo', :val, :dt)
+                ON CONFLICT(chave) DO UPDATE SET valor = :val, atualizado_em = :dt
+            """, {"val": json.dumps(cfg), "dt": agora_str}, is_select=False)
+
+            self._send_json({"success": True, "lote_ativo": cfg, "message": f"{nome} ativado com sucesso para expedição!"})
+        except Exception as e:
             self._send_json({"success": False, "message": str(e)}, status=500)
 
     def handle_api_assinaturas_cadastrar_pedido_proximo_envio(self):

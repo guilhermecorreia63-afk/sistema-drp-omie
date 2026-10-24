@@ -1802,7 +1802,7 @@
                                 <i class="fa-solid fa-paper-plane"></i> Gerar Baixa no Omie 🚀
                             </button>
                             <button class="btn" id="btn-concluir-lote-1" onclick="concluirLoteAssinaturas()" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; border: none; font-weight: bold; padding: 8px 16px; border-radius: 6px; box-shadow: 0 2px 8px rgba(139,92,246,0.3); cursor: pointer;" title="Finalizar e baixar o Lote 1 (Jan-Mar/2027), avançando todos os ciclos dos assinantes atendidos para o Lote 2 (Abril/2027)">
-                                <i class="fa-solid fa-circle-check"></i> Finalizar Lote 1 (Jan-Mar/27)
+                                <i class="fa-solid fa-circle-check"></i> Finalizar Lote 1
                             </button>
                         </div>
                     </div>
@@ -1847,7 +1847,7 @@
                 </div>
             </section>
 
-            <!-- ABA DEDICADA: PEDIDOS NOVOS DE ASSINATURA (PRÓXIMO ENVIO) -->
+            <!-- ABA DEDICADA: GESTÃO DE ASSINANTES, PRÓXIMOS CICLOS & RASTREIO (PASSO 2) -->
             <section id="tab-assinaturas-pedidos" class="tab-content">
                 <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                     <button class="btn btn-secondary" onclick="navegarParaAba('tab-hub')" style="display: flex; align-items: center; gap: 8px;">
@@ -1857,6 +1857,9 @@
                         <span class="badge" style="background: rgba(168, 85, 247, 0.15); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.3); font-size: 0.82rem; padding: 6px 14px;">
                             <i class="fa-solid fa-database"></i> Banco de Dados Turso Cloud (Real-time)
                         </span>
+                        <button class="btn btn-sm" onclick="abrirModalConfigurarNovoLote()" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); color: #fff; font-weight: 700; border: none; padding: 8px 16px; box-shadow: 0 2px 8px rgba(14,165,233,0.3); cursor: pointer;" title="Configurar e enviar o próximo lote (ex: Lote 2 Abr-Jun ou Lote 3 Jul-Dez) para expedição no Passo 1">
+                            <i class="fa-solid fa-rocket"></i> Preparar Novo Lote de Envio
+                        </button>
                         <button class="btn btn-sm" onclick="abrirModalCadastrarPedidoAssinatura()" style="background: linear-gradient(135deg, #a855f7, #7e22ce); color: #fff; font-weight: 700; border: none; padding: 8px 16px; box-shadow: 0 2px 8px rgba(168,85,247,0.3);">
                             <i class="fa-solid fa-plus"></i> Cadastrar Novo Pedido
                         </button>
@@ -1869,78 +1872,172 @@
                     </div>
                 </div>
 
-                <!-- Banner Informativo -->
-                <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95)); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 12px; padding: 18px 24px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
-                    <div>
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
-                            <span style="font-size: 1.4rem;">🛒</span>
-                            <h2 style="font-size: 1.25rem; font-weight: 700; color: #f8fafc; margin: 0;">2. Pedidos Novos de Assinatura (Próximo Envio)</h2>
-                            <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); font-size: 0.75rem; padding: 4px 8px; border-radius: 6px;">Turso DB Integrado</span>
+                <!-- SUB-NAVEGAÇÃO: 1. ASSINANTES & PRÓXIMOS ENVIOS | 2. RASTREIO CORREIOS -->
+                <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 10px; padding: 6px; margin-bottom: 20px; display: flex; gap: 8px;">
+                    <button id="btn-subaba-passo2-assinantes" class="btn-subaba-passo2 active" onclick="trocarSubAbaPasso2('assinantes')" style="flex: 1; padding: 10px 16px; border-radius: 8px; border: none; background: #a855f7; color: #ffffff; font-size: 0.88rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <i class="fa-solid fa-users"></i> 1. Gestão de Assinantes & Próximos Ciclos
+                    </button>
+                    <button id="btn-subaba-passo2-rastreio" class="btn-subaba-passo2" onclick="trocarSubAbaPasso2('rastreio')" style="flex: 1; padding: 10px 16px; border-radius: 8px; border: none; background: transparent; color: #94a3b8; font-size: 0.88rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <i class="fa-solid fa-truck-fast" style="color: #38bdf8;"></i> 2. Rastreio & Histórico de Postagens
+                    </button>
+                </div>
+
+                <!-- SUB-ABA 1: ASSINANTES & PRÓXIMOS ENVIOS -->
+                <div id="painel-passo2-assinantes">
+                    <!-- Banner Informativo -->
+                    <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95)); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 12px; padding: 18px 24px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                                <span style="font-size: 1.4rem;">🛒</span>
+                                <h2 style="font-size: 1.25rem; font-weight: 700; color: #f8fafc; margin: 0;">Gestão de Assinantes & Próximos Ciclos</h2>
+                                <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); font-size: 0.75rem; padding: 4px 8px; border-radius: 6px;">Turso DB Integrado</span>
+                            </div>
+                            <p style="margin: 0; font-size: 0.85rem; color: #cbd5e1;">
+                                Assinantes ativos do contrato de <strong>12 exemplares</strong> (pedidos faturados no Omie e base de assinantes).
+                                Acompanhe os exemplares já entregues, saldo restante e utilize o botão <strong>Preparar Novo Lote</strong> para carregar o próximo lote de envio na Aba 1.
+                            </p>
                         </div>
-                        <p style="margin: 0; font-size: 0.85rem; color: #cbd5e1;">
-                            Assinantes cadastrados ou importados automaticamente dos <strong>Pedidos de Venda Faturados no Omie ERP</strong> contendo os combos <strong style="color: #38bdf8;">000223</strong>, <strong style="color: #38bdf8;">PRD00379</strong> ou <strong style="color: #38bdf8;">PRD00574</strong>.
-                            Os dados são salvos com segurança no <strong>Turso Cloud</strong> para alimentar o próximo lote de remessas e etiquetas de envio.
-                        </p>
+                    </div>
+
+                    <!-- Métricas Consolidadas -->
+                    <div class="metrics-grid" style="margin-bottom: 20px;">
+                        <div class="metric-card" style="border-left: 4px solid #a855f7;">
+                            <div class="metric-icon"><i class="fa-solid fa-cart-shopping" style="color: #a855f7;"></i></div>
+                            <div class="metric-data">
+                                <span class="metric-val" id="metric-ped-tot-count">0</span>
+                                <span class="metric-lbl">Total de Pedidos no Próximo Envio</span>
+                            </div>
+                        </div>
+                        <div class="metric-card" style="border-left: 4px solid #34d399;">
+                            <div class="metric-icon"><i class="fa-solid fa-boxes-stacked" style="color: #34d399;"></i></div>
+                            <div class="metric-data">
+                                <span class="metric-val" id="metric-ped-tot-exemplares">0 un</span>
+                                <span class="metric-lbl">Total de Assinaturas (Exemplares)</span>
+                            </div>
+                        </div>
+                        <div class="metric-card" style="border-left: 4px solid #38bdf8;">
+                            <div class="metric-icon"><i class="fa-solid fa-money-bill-wave" style="color: #38bdf8;"></i></div>
+                            <div class="metric-data">
+                                <span class="metric-val" id="metric-ped-tot-valor" style="color: #38bdf8;">R$ 0,00</span>
+                                <span class="metric-lbl">Valor Total Faturado</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Barra de Busca Rápida -->
+                    <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 12px 18px; margin-bottom: 18px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 260px; position: relative;">
+                            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; top: 12px; color: #94a3b8;"></i>
+                            <input type="text" id="filtro-pedidos-proximo-envio" class="form-control" style="padding-left: 38px;" placeholder="Buscar por Nome do Assinante, Pedido Omie, SKU ou CPF/CNPJ..." oninput="filtrarTabelaPedidosProximoEnvio()">
+                        </div>
+                        <span id="label-contagem-pedidos-filtrados" style="font-size: 0.85rem; color: #94a3b8; font-weight: 600;"></span>
+                    </div>
+
+                    <!-- Tabela de Pedidos Novos com Rolagem Horizontal Suave e Cabeçalho Fixo -->
+                    <div class="card" style="background: #0d1524; border: 1px solid #1e2c45; padding: 16px; border-radius: var(--radius-lg);">
+                        <div class="table-wrapper" style="box-shadow: 0 4px 15px rgba(0,0,0,0.25); border-radius: 8px; max-height: calc(100vh - 380px); min-height: 420px; overflow-y: auto; overflow-x: auto; position: relative; border: 1px solid #334155;">
+                            <table class="drp-table" id="tabela-pedidos-proximo-envio-aba2" style="width: 100%; min-width: 1220px; border-collapse: separate; border-spacing: 0;">
+                                <thead style="position: sticky; top: 0; z-index: 10; background: #0f172a; box-shadow: 0 2px 6px rgba(0,0,0,0.5);">
+                                    <tr>
+                                        <th width="95" style="background: #0f172a;">Pedido</th>
+                                        <th style="background: #0f172a; min-width: 220px;">Assinante / Cliente</th>
+                                        <th width="125" style="background: #0f172a;">CPF / CNPJ</th>
+                                        <th style="background: #0f172a; min-width: 240px;">Endereço Completo</th>
+                                        <th width="90" style="background: #0f172a;">CEP</th>
+                                        <th width="105" style="background: #0f172a;">Combo / SKU</th>
+                                        <th width="75" style="text-align: center; background: #0f172a;">Assin.</th>
+                                        <th width="160" style="text-align: center; background: #0f172a;">Entregues / Rest.</th>
+                                        <th width="140" style="background: #0f172a;">Período Previsto</th>
+                                        <th width="120" style="text-align: center; background: #0f172a;">Status</th>
+                                        <th width="120" style="text-align: center; background: #0f172a;">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-pedidos-proximo-envio-aba2">
+                                    <tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 30px;">Nenhum pedido de venda registrado para o próximo envio ainda.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Métricas Consolidadas -->
-                <div class="metrics-grid" style="margin-bottom: 20px;">
-                    <div class="metric-card" style="border-left: 4px solid #a855f7;">
-                        <div class="metric-icon"><i class="fa-solid fa-cart-shopping" style="color: #a855f7;"></i></div>
-                        <div class="metric-data">
-                            <span class="metric-val" id="metric-ped-tot-count">0</span>
-                            <span class="metric-lbl">Total de Pedidos no Próximo Envio</span>
+                <!-- SUB-ABA 2: RASTREIO & HISTÓRICO DE POSTAGENS -->
+                <div id="painel-passo2-rastreio" style="display: none;">
+                    <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95)); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 18px 24px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                                <span style="font-size: 1.4rem;">🚚</span>
+                                <h2 style="font-size: 1.25rem; font-weight: 700; color: #f8fafc; margin: 0;">Rastreio e Histórico de Postagens</h2>
+                                <span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-size: 0.75rem; padding: 4px 8px; border-radius: 6px;">Correios / Transportadoras</span>
+                            </div>
+                            <p style="margin: 0; font-size: 0.85rem; color: #cbd5e1;">
+                                Códigos de rastreamento de etiquetas emitidas para os assinantes. Clique no código de rastreio para abrir a consulta direta no rastreador dos Correios.
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="btn btn-sm" onclick="abrirModalCadastrarRastreio()" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); color: #fff; font-weight: 700; border: none; padding: 8px 16px; box-shadow: 0 2px 8px rgba(14,165,233,0.3); cursor: pointer;">
+                                <i class="fa-solid fa-plus"></i> Novo Código de Rastreio
+                            </button>
+                            <button class="btn btn-sm btn-secondary" onclick="carregarRastreiosAssinaturas()">
+                                <i class="fa-solid fa-rotate"></i> Atualizar Rastreios
+                            </button>
                         </div>
                     </div>
-                    <div class="metric-card" style="border-left: 4px solid #34d399;">
-                        <div class="metric-icon"><i class="fa-solid fa-boxes-stacked" style="color: #34d399;"></i></div>
-                        <div class="metric-data">
-                            <span class="metric-val" id="metric-ped-tot-exemplares">0 un</span>
-                            <span class="metric-lbl">Total de Assinaturas (Exemplares)</span>
-                        </div>
-                    </div>
-                    <div class="metric-card" style="border-left: 4px solid #38bdf8;">
-                        <div class="metric-icon"><i class="fa-solid fa-money-bill-wave" style="color: #38bdf8;"></i></div>
-                        <div class="metric-data">
-                            <span class="metric-val" id="metric-ped-tot-valor" style="color: #38bdf8;">R$ 0,00</span>
-                            <span class="metric-lbl">Valor Total Faturado</span>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Barra de Busca Rápida -->
-                <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 12px 18px; margin-bottom: 18px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                    <div style="flex: 1; min-width: 260px; position: relative;">
-                        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; top: 12px; color: #94a3b8;"></i>
-                        <input type="text" id="filtro-pedidos-proximo-envio" class="form-control" style="padding-left: 38px;" placeholder="Buscar por Nome do Assinante, Pedido Omie, SKU ou CPF/CNPJ..." oninput="filtrarTabelaPedidosProximoEnvio()">
+                    <!-- Métricas de Rastreio -->
+                    <div class="metrics-grid" style="margin-bottom: 20px;">
+                        <div class="metric-card" style="border-left: 4px solid #38bdf8;">
+                            <div class="metric-icon"><i class="fa-solid fa-barcode" style="color: #38bdf8;"></i></div>
+                            <div class="metric-data">
+                                <span class="metric-val" id="metric-rastreio-tot-count">0</span>
+                                <span class="metric-lbl">Total de Rastreios Cadastrados</span>
+                            </div>
+                        </div>
+                        <div class="metric-card" style="border-left: 4px solid #fbbf24;">
+                            <div class="metric-icon"><i class="fa-solid fa-truck" style="color: #fbbf24;"></i></div>
+                            <div class="metric-data">
+                                <span class="metric-val" id="metric-rastreio-transito-count">0</span>
+                                <span class="metric-lbl">Objetos em Trânsito</span>
+                            </div>
+                        </div>
+                        <div class="metric-card" style="border-left: 4px solid #34d399;">
+                            <div class="metric-icon"><i class="fa-solid fa-box-open" style="color: #34d399;"></i></div>
+                            <div class="metric-data">
+                                <span class="metric-val" id="metric-rastreio-entregue-count">0</span>
+                                <span class="metric-lbl">Objetos Entregues</span>
+                            </div>
+                        </div>
                     </div>
-                    <span id="label-contagem-pedidos-filtrados" style="font-size: 0.85rem; color: #94a3b8; font-weight: 600;"></span>
-                </div>
 
-                <!-- Tabela de Pedidos Novos -->
-                <div class="card" style="background: #0d1524; border: 1px solid #1e2c45; padding: 20px; border-radius: var(--radius-lg);">
-                    <div class="table-wrapper" style="max-height: 520px; overflow-y: auto;">
-                        <table class="drp-table" id="tabela-pedidos-proximo-envio-aba2">
-                            <thead>
-                                <tr>
-                                    <th>Pedido Omie</th>
-                                    <th>Assinante / Cliente</th>
-                                    <th>CPF / CNPJ</th>
-                                    <th>Endereço / Cidade / UF</th>
-                                    <th>CEP</th>
-                                    <th>Combo / SKU</th>
-                                    <th style="text-align: center;">Assinaturas</th>
-                                    <th style="text-align: center;">Entregues / Restantes</th>
-                                    <th>Período Previsto</th>
-                                    <th style="text-align: center;">Status</th>
-                                    <th style="text-align: center;">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tbody-pedidos-proximo-envio-aba2">
-                                <tr><td colspan="11" style="text-align: center; color: var(--text-muted); padding: 25px;">Nenhum pedido de venda registrado para o próximo envio ainda.</td></tr>
-                            </tbody>
-                        </table>
+                    <!-- Barra de Busca de Rastreio -->
+                    <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 12px 18px; margin-bottom: 18px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 260px; position: relative;">
+                            <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; top: 12px; color: #94a3b8;"></i>
+                            <input type="text" id="filtro-rastreios-assinaturas" class="form-control" style="padding-left: 38px;" placeholder="Buscar por Código de Rastreio (Ex: AA123456789BR), Destinatário ou Pedido..." oninput="filtrarTabelaRastreiosAssinaturas()">
+                        </div>
+                        <span id="label-contagem-rastreios-filtrados" style="font-size: 0.85rem; color: #94a3b8; font-weight: 600;"></span>
+                    </div>
+
+                    <!-- Tabela de Rastreio -->
+                    <div class="card" style="background: #0d1524; border: 1px solid #1e2c45; padding: 16px; border-radius: var(--radius-lg);">
+                        <div class="table-wrapper" style="box-shadow: 0 4px 15px rgba(0,0,0,0.25); border-radius: 8px; max-height: calc(100vh - 380px); min-height: 420px; overflow-y: auto; overflow-x: auto; position: relative; border: 1px solid #334155;">
+                            <table class="drp-table" id="tabela-assinaturas-rastreios" style="width: 100%; min-width: 1050px; border-collapse: separate; border-spacing: 0;">
+                                <thead style="position: sticky; top: 0; z-index: 10; background: #0f172a; box-shadow: 0 2px 6px rgba(0,0,0,0.5);">
+                                    <tr>
+                                        <th width="160" style="background: #0f172a;">Código de Rastreio</th>
+                                        <th style="background: #0f172a; min-width: 220px;">Destinatário / Cliente</th>
+                                        <th width="100" style="background: #0f172a;">Pedido Omie</th>
+                                        <th width="180" style="background: #0f172a;">Cidade / UF</th>
+                                        <th width="170" style="background: #0f172a;">Lote de Referência</th>
+                                        <th width="115" style="text-align: center; background: #0f172a;">Postagem</th>
+                                        <th width="125" style="text-align: center; background: #0f172a;">Status</th>
+                                        <th width="100" style="text-align: center; background: #0f172a;">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-assinaturas-rastreios">
+                                    <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px;">Nenhum código de rastreamento registrado ainda.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -3117,7 +3214,142 @@
         </div>
     </div>
 
-    <script src="app.js?v=20261023_v5"></script>
+    <!-- Modal Configurar Novo Lote de Expedição (Passo 1) -->
+    <div id="modal-configurar-novo-lote" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 600px; width: 95%;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #0284c7, #0ea5e9); color: #fff;">
+                <h3 style="margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-rocket"></i> Configurar Novo Lote de Envio (Passo 1)
+                </h3>
+                <button class="modal-close" onclick="fecharModalConfigurarNovoLote()" style="color: #fff;">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <p style="font-size: 0.88rem; color: #cbd5e1; margin-top: 0; margin-bottom: 16px;">
+                    Selecione o período dos exemplares a enviar. O sistema filtrará automaticamente todos os assinantes ativos que possuem saldo restante e ativará o novo lote na <strong>Aba 1 (Expedição)</strong> para emissão de romaneio, etiquetas Correios e notas no Omie.
+                </p>
+
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label><b>Modelo / Sugestão de Lote:</b></label>
+                    <select id="sel-preset-novo-lote" class="form-control" onchange="aoMudarPresetNovoLote()" style="font-weight: 600;">
+                        <option value="LOTE_2">Lote 2: Abril, Maio e Junho/2027 (Trimestral - 3 meses)</option>
+                        <option value="LOTE_3">Lote 3: Julho a Dezembro/2027 (Semestral Consolidado - 6 meses)</option>
+                        <option value="LOTE_1">Lote 1: Janeiro, Fevereiro e Março/2027 (Voltar ao 1º Lote)</option>
+                        <option value="CUSTOM">Personalizado (Escolher meses manualmente)</option>
+                    </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label><b>Nome do Lote:</b></label>
+                    <input type="text" id="input-nome-novo-lote" class="form-control" value="Lote 2 (Abr, Mai e Jun/2027)" placeholder="Ex: Lote 2 (Abr, Mai e Jun/2027)">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label><b>Meses Inclusos nesta Remessa (2027):</b></label>
+                    <div id="grid-meses-novo-lote" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 8px;">
+                        <label style="background: rgba(30,41,59,0.7); padding: 8px; border-radius: 6px; border: 1px solid #334155; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" value="1" class="chk-mes-lote"> Jan/27
+                        </label>
+                        <label style="background: rgba(30,41,59,0.7); padding: 8px; border-radius: 6px; border: 1px solid #334155; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" value="2" class="chk-mes-lote"> Fev/27
+                        </label>
+                        <label style="background: rgba(30,41,59,0.7); padding: 8px; border-radius: 6px; border: 1px solid #334155; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" value="3" class="chk-mes-lote"> Mar/27
+                        </label>
+                        <label style="background: rgba(30,41,59,0.7); padding: 8px; border-radius: 6px; border: 1px solid #334155; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" value="4" class="chk-mes-lote" checked> Abr/27
+                        </label>
+                        <label style="background: rgba(30,41,59,0.7); padding: 8px; border-radius: 6px; border: 1px solid #334155; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" value="5" class="chk-mes-lote" checked> Mai/27
+                        </label>
+                        <label style="background: rgba(30,41,59,0.7); padding: 8px; border-radius: 6px; border: 1px solid #334155; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" value="6" class="chk-mes-lote" checked> Jun/27
+                        </label>
+                        <label style="background: rgba(30,41,59,0.7); padding: 8px; border-radius: 6px; border: 1px solid #334155; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" value="7" class="chk-mes-lote"> Jul/27
+                        </label>
+                        <label style="background: rgba(30,41,59,0.7); padding: 8px; border-radius: 6px; border: 1px solid #334155; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" value="8" class="chk-mes-lote"> Ago/27
+                        </label>
+                        <label style="background: rgba(30,41,59,0.7); padding: 8px; border-radius: 6px; border: 1px solid #334155; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" value="9" class="chk-mes-lote"> Set/27
+                        </label>
+                        <label style="background: rgba(30,41,59,0.7); padding: 8px; border-radius: 6px; border: 1px solid #334155; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" value="10" class="chk-mes-lote"> Out/27
+                        </label>
+                        <label style="background: rgba(30,41,59,0.7); padding: 8px; border-radius: 6px; border: 1px solid #334155; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" value="11" class="chk-mes-lote"> Nov/27
+                        </label>
+                        <label style="background: rgba(30,41,59,0.7); padding: 8px; border-radius: 6px; border: 1px solid #334155; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" value="12" class="chk-mes-lote"> Dez/27
+                        </label>
+                    </div>
+                </div>
+
+                <div id="status-configurar-novo-lote" style="display: none; padding: 10px; border-radius: 6px; font-size: 0.85rem; margin-top: 10px;"></div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #334155; padding-top: 12px;">
+                <button type="button" class="btn btn-secondary" onclick="fecharModalConfigurarNovoLote()">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="executarAtivacaoNovoLote()" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); border: none; font-weight: bold; padding: 10px 20px;">
+                    <i class="fa-solid fa-bolt"></i> Ativar e Levar para Expedição (Passo 1) 🚀
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Cadastrar Código de Rastreio -->
+    <div id="modal-cadastrar-rastreio" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 520px; width: 95%;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #0284c7, #0ea5e9); color: #fff;">
+                <h3 style="margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-truck-fast"></i> Novo Código de Rastreio
+                </h3>
+                <button class="modal-close" onclick="fecharModalCadastrarRastreio()" style="color: #fff;">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label><b>Código de Rastreio dos Correios:</b></label>
+                    <input type="text" id="rast-codigo" class="form-control" placeholder="Ex: AA123456789BR" style="font-family: monospace; font-weight: 700; text-transform: uppercase;">
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label><b>Nome do Assinante / Destinatário:</b></label>
+                    <input type="text" id="rast-cliente" class="form-control" placeholder="Ex: Maria dos Santos">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <div class="form-group">
+                        <label><b>Número do Pedido Omie:</b></label>
+                        <input type="text" id="rast-pedido" class="form-control" placeholder="Ex: 18022">
+                    </div>
+                    <div class="form-group">
+                        <label><b>Cidade / UF:</b></label>
+                        <input type="text" id="rast-cidade-uf" class="form-control" placeholder="Ex: Fortaleza / CE">
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <div class="form-group">
+                        <label><b>Lote de Referência:</b></label>
+                        <input type="text" id="rast-lote" class="form-control" value="Lote 1 (Jan-Mar/2027)">
+                    </div>
+                    <div class="form-group">
+                        <label><b>Status da Entrega:</b></label>
+                        <select id="rast-status" class="form-control">
+                            <option value="Em Trânsito">Em Trânsito</option>
+                            <option value="Postado">Postado</option>
+                            <option value="Entregue">Entregue</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="rast-form-status" style="display: none; padding: 10px; border-radius: 6px; font-size: 0.85rem;"></div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #334155; padding-top: 12px;">
+                <button type="button" class="btn btn-secondary" onclick="fecharModalCadastrarRastreio()">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="salvarNovoRastreioAssinatura()" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); border: none; font-weight: bold; padding: 10px 20px;">
+                    <i class="fa-solid fa-save"></i> Salvar Rastreio
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=20261024_v1"></script>
 </body>
 
 </html>
