@@ -446,10 +446,12 @@ class ConsignacaoService:
         if not codigo_acerto:
             codigo_acerto = f"AC-{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
-        cod_cli = dados_acerto.get("codigo_cliente_omie")
-        cli_nome = dados_acerto.get("cliente_nome")
-        cli_doc = dados_acerto.get("cliente_cnpj_cpf")
-        rems_json = json.dumps(dados_acerto.get("remessas_unificadas", []), ensure_ascii=False)
+        cli_obj = dados_acerto.get("cliente") or {}
+        cod_cli = dados_acerto.get("codigo_cliente_omie") or cli_obj.get("codigo_cliente")
+        cli_nome = dados_acerto.get("cliente_nome") or cli_obj.get("nome_fantasia") or cli_obj.get("razao_social")
+        cli_doc = dados_acerto.get("cliente_cnpj_cpf") or cli_obj.get("cnpj_cpf")
+        rems = dados_acerto.get("remessas_unificadas") or dados_acerto.get("remessas_selecionadas") or []
+        rems_json = json.dumps(rems, ensure_ascii=False)
         status = dados_acerto.get("status", "EM_CONFERENCIA")
         desc_pct = float(dados_acerto.get("desconto_padrao_pct", 30.0))
         
@@ -631,22 +633,58 @@ class ConsignacaoService:
             print(f"[CONSIGNACAO] Erro ao listar acertos: {e}")
             return []
 
+    def buscar_codigo_remessa(self, termo: str) -> Optional[int]:
+        """
+        Localiza o nCodRem no Omie a partir do número da remessa (cNumeroRemessa)
+        ou código interno (nCodRem).
+        """
+        termo_str = str(termo or "").strip()
+        if not termo_str:
+            return None
+
+        # 1. Se parecer com um nCodRem do Omie (>= 8 dígitos numéricos)
+        if termo_str.isdigit() and len(termo_str) >= 8:
+            try:
+                res = self.client.executar('produtos/remessa/', 'ConsultarRemessa', [{'nCodRem': int(termo_str)}])
+                if res and 'cabec' in res and 'faultstring' not in res:
+                    return int(res['cabec']['nCodRem'])
+            except Exception:
+                pass
+
+        # 2. Busca por cNumeroRemessa (ex: 1863, 1868)
+        try:
+            init_res = self.client.executar('produtos/remessa/', 'ListarRemessas', [{'nPagina': 1, 'nRegistrosPorPagina': 50}])
+            tot_pags = int(init_res.get('nTotalPaginas') or 1)
+
+            # Varre as páginas de trás para frente (remessas recentes estão nas últimas páginas)
+            for p in range(tot_pags, 0, -1):
+                res = self.client.executar('produtos/remessa/', 'ListarRemessas', [{'nPagina': p, 'nRegistrosPorPagina': 50}])
+                for r in res.get('remessas', []):
+                    cab = r.get('cabec', {})
+                    num_cad = str(cab.get('cNumeroRemessa', '')).strip()
+                    cod_cad = str(cab.get('nCodRem', '')).strip()
+                    if num_cad == termo_str or cod_cad == termo_str:
+                        return int(cab['nCodRem'])
+        except Exception as e:
+            print(f"[CONSIGNACAO] Erro ao buscar código da remessa {termo_str}: {e}")
+
+        return None
+
     def vincular_remessa_aberta(self, dados: Dict[str, Any]) -> Dict[str, Any]:
         """
         Vincula uma remessa existente no Omie para iniciar a contagem regressiva de 30 dias.
         """
         nCodRem = int(dados.get("nCodRem") or 0)
         num_rem_input = str(dados.get("numero_remessa") or "").strip()
-        dt_inicio = str(dados.get("data_inicio") or datetime.now().strftime("%Y-%m-%d")).strip()[:10]
+        dt_inicio = str(dados.get("data_inicio_prazo") or dados.get("data_inicio") or datetime.now().strftime("%Y-%m-%d")).strip()[:10]
+        if "/" in dt_inicio:
+            partes = dt_inicio.split("/")
+            if len(partes) == 3:
+                dt_inicio = f"{partes[2]}-{partes[1]}-{partes[0]}"
         dias_prazo = int(dados.get("dias_prazo") or 30)
 
         if not nCodRem and num_rem_input:
-            try:
-                res_busca = self.client.executar("produtos/remessa/", "ConsultarRemessa", [{"cNumeroRemessa": num_rem_input}])
-                if res_busca and "cabec" in res_busca:
-                    nCodRem = int(res_busca["cabec"].get("nCodRem") or 0)
-            except Exception as e_busca:
-                print(f"[CONSIGNACAO] Busca por cNumeroRemessa {num_rem_input} falhou: {e_busca}")
+            nCodRem = self.buscar_codigo_remessa(num_rem_input) or 0
 
         if not nCodRem:
             return {"success": False, "message": f"Remessa #{num_rem_input or nCodRem} não encontrada no Omie."}
@@ -678,22 +716,34 @@ class ConsignacaoService:
             except Exception:
                 pass
 
+        val_bruto = sum(float(it.get("qtd_enviada", 0)) * float(it.get("preco_unitario", 0)) for it in itens)
+        val_desc = val_bruto * 0.30
+        val_liq = val_bruto - val_desc
+        tot_env = sum(int(it.get("qtd_enviada", 0)) for it in itens)
+
         cod_acerto = f"AC-REM{num_rem}"
         payload_acerto = {
             "codigo_acerto": cod_acerto,
+            "codigo_cliente_omie": cod_cli,
+            "cliente_nome": cli_nome,
+            "cliente_cnpj_cpf": cli_doc,
             "cliente": {
                 "codigo_cliente": cod_cli,
                 "nome_fantasia": cli_nome,
                 "razao_social": cli_nome,
                 "cnpj_cpf": cli_doc
             },
-            "remessas_selecionadas": [{
+            "remessas_unificadas": [{
                 "nCodRem": nCodRem,
                 "numero_remessa": str(num_rem),
                 "data_previsao": cab.get("dPrevisao", ""),
-                "valor_total": sum(it.get("qtd_enviada", 0) * it.get("preco_unitario", 0) for it in itens),
+                "valor_total": val_bruto,
                 "faturada": "N"
             }],
+            "total_enviado": tot_env,
+            "valor_total_bruto": val_bruto,
+            "valor_total_desconto": val_desc,
+            "valor_total_liquido": val_liq,
             "itens": itens,
             "desconto_padrao_pct": 30.0,
             "condicao_comercial": "A_VISTA_AUTO",
