@@ -9748,6 +9748,39 @@ async function sincronizarRastreiosCorreios() {
     }
 }
 
+async function completarCPFsOmie() {
+    const btn = document.getElementById('btn-completar-cpfs');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Consultando Omie...';
+    }
+
+    try {
+        const resp = await fetch('/api/assinaturas/completar_cpfs_omie', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await resp.json();
+        if (resp.ok && data.sucesso) {
+            alert(`✅ ${data.mensagem}`);
+            if (typeof carregarPedidosProximoEnvio === 'function') {
+                await carregarPedidosProximoEnvio();
+            }
+        } else {
+            alert(`⚠️ Atenção: ${data.mensagem || 'Falha ao completar CPFs via Omie.'}`);
+        }
+    } catch (e) {
+        console.error('Erro ao completar CPFs via Omie:', e);
+        alert('❌ Erro de conexão com o servidor: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+}
+
 // Exportar globalmente
 window.trocarSubAbaPasso2 = trocarSubAbaPasso2;
 window.carregarRastreiosAssinaturas = carregarRastreiosAssinaturas;
@@ -9757,6 +9790,7 @@ window.fecharModalCadastrarRastreio = fecharModalCadastrarRastreio;
 window.salvarNovoRastreioAssinatura = salvarNovoRastreioAssinatura;
 window.excluirRastreioAssinatura = excluirRastreioAssinatura;
 window.sincronizarRastreiosCorreios = sincronizarRastreiosCorreios;
+window.completarCPFsOmie = completarCPFsOmie;
 window.abrirModalConfigurarNovoLote = abrirModalConfigurarNovoLote;
 window.fecharModalConfigurarNovoLote = fecharModalConfigurarNovoLote;
 window.aoMudarPresetNovoLote = aoMudarPresetNovoLote;

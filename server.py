@@ -211,6 +211,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_assinaturas_configurar_lote_ativo()
         elif url_path == '/api/assinaturas/sincronizar_rastreios_correios':
             self.handle_api_assinaturas_sincronizar_rastreios_correios()
+        elif url_path == '/api/assinaturas/completar_cpfs_omie':
+            self.handle_api_assinaturas_completar_cpfs_omie()
         else:
             self.send_error(404, f"Endpoint não encontrado: {self.path}")
 
@@ -2873,6 +2875,15 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._send_json(res)
         except Exception as e:
             print(f"[API RASTREIO CORREIOS] Erro ao sincronizar: {e}")
+            self._send_json({"sucesso": False, "mensagem": str(e)}, status=500)
+
+    def handle_api_assinaturas_completar_cpfs_omie(self):
+        try:
+            from services.completar_cpfs_service import executar_completar_cpfs
+            res = executar_completar_cpfs()
+            self._send_json(res)
+        except Exception as e:
+            print(f"[API COMPLETAR CPFS] Erro ao executar: {e}")
             self._send_json({"sucesso": False, "mensagem": str(e)}, status=500)
 
     def handle_api_assinaturas_obter_lote_ativo(self):
