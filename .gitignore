@@ -71,3 +71,7 @@ instrument.md
 *.swp
 *.swo
 ~*
+
+# Pastas locais / externas importadas temporariamente
+portifolio_guilherme/
+leitor-etiquetas-main/

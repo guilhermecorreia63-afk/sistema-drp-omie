@@ -9717,6 +9717,37 @@ async function executarAtivacaoNovoLote() {
     }
 }
 
+async function sincronizarRastreiosCorreios() {
+    const btn = document.getElementById('btn-sync-rastreios-correios');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sincronizando Correios...';
+    }
+
+    try {
+        const resp = await fetch('/api/assinaturas/sincronizar_rastreios_correios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await resp.json();
+        if (resp.ok && data.sucesso) {
+            alert(`✅ ${data.mensagem}`);
+            await carregarRastreiosAssinaturas();
+        } else {
+            alert(`⚠️ Atenção: ${data.mensagem || 'Falha ao sincronizar com Projeto Correios.'}`);
+        }
+    } catch (e) {
+        console.error('Erro ao sincronizar rastreios dos Correios:', e);
+        alert('❌ Erro de conexão com o servidor: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+    }
+}
+
 // Exportar globalmente
 window.trocarSubAbaPasso2 = trocarSubAbaPasso2;
 window.carregarRastreiosAssinaturas = carregarRastreiosAssinaturas;
@@ -9725,7 +9756,9 @@ window.abrirModalCadastrarRastreio = abrirModalCadastrarRastreio;
 window.fecharModalCadastrarRastreio = fecharModalCadastrarRastreio;
 window.salvarNovoRastreioAssinatura = salvarNovoRastreioAssinatura;
 window.excluirRastreioAssinatura = excluirRastreioAssinatura;
+window.sincronizarRastreiosCorreios = sincronizarRastreiosCorreios;
 window.abrirModalConfigurarNovoLote = abrirModalConfigurarNovoLote;
 window.fecharModalConfigurarNovoLote = fecharModalConfigurarNovoLote;
 window.aoMudarPresetNovoLote = aoMudarPresetNovoLote;
 window.executarAtivacaoNovoLote = executarAtivacaoNovoLote;
+

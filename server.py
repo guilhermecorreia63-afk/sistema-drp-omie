@@ -209,6 +209,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_assinaturas_excluir_rastreio()
         elif url_path == '/api/assinaturas/configurar_lote_ativo':
             self.handle_api_assinaturas_configurar_lote_ativo()
+        elif url_path == '/api/assinaturas/sincronizar_rastreios_correios':
+            self.handle_api_assinaturas_sincronizar_rastreios_correios()
         else:
             self.send_error(404, f"Endpoint não encontrado: {self.path}")
 
@@ -2863,6 +2865,15 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             print(f"[API RASTREIO] Erro ao excluir rastreio: {e}")
             self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_assinaturas_sincronizar_rastreios_correios(self):
+        try:
+            from services.rastreio_correios_service import sincronizar_rastreios_correios
+            res = sincronizar_rastreios_correios()
+            self._send_json(res)
+        except Exception as e:
+            print(f"[API RASTREIO CORREIOS] Erro ao sincronizar: {e}")
+            self._send_json({"sucesso": False, "mensagem": str(e)}, status=500)
 
     def handle_api_assinaturas_obter_lote_ativo(self):
         try:
