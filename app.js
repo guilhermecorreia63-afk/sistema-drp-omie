@@ -8546,16 +8546,101 @@ function adiantarContagemImediata() {
     iniciarConferenciaAcertoExistente(id, cliente, codigo);
 }
 
-function iniciarConferenciaAcertoExistente(id, cliente, codigo) {
-    const searchCliente = document.getElementById('consignacao-cliente-search');
-    if (searchCliente) {
-        searchCliente.value = cliente;
-        window.scrollTo({ top: 300, behavior: 'smooth' });
-        if (typeof buscarRemessasAbertasCliente === 'function') {
-            buscarRemessasAbertasCliente();
+function voltarParaEtapa1Consignacao() {
+    const p1 = document.getElementById('painel-consignacao-etapa1');
+    const p2 = document.getElementById('painel-consignacao-etapa2');
+    if (p1) p1.style.display = 'block';
+    if (p2) p2.style.display = 'none';
+    if (typeof atualizarStepperConsignacao === 'function') {
+        atualizarStepperConsignacao(1);
+    }
+    const hist = document.getElementById('painel-historico-acertos-consignacao');
+    if (hist) {
+        hist.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+async function iniciarConferenciaAcertoExistente(id, cliente, codigo) {
+    try {
+        // 1. Tenta carregar o acerto completo com seus itens do Turso DB
+        const param = id || codigo || '';
+        const resp = await fetch(`/api/consignacao/acerto?id=${encodeURIComponent(param)}`);
+        const data = await resp.json();
+
+        if (resp.ok && data.success && data.acerto && data.acerto.itens && data.acerto.itens.length > 0) {
+            const ac = data.acerto;
+
+            stateConsignacao.acertoId = ac.id;
+            stateConsignacao.codigoAcerto = ac.codigo_acerto;
+            stateConsignacao.clienteAtual = {
+                codigo_cliente: ac.codigo_cliente_omie,
+                nome_fantasia: ac.cliente_nome,
+                razao_social: ac.cliente_nome,
+                cnpj_cpf: ac.cliente_cnpj_cpf
+            };
+            stateConsignacao.remessasSelecionadas = ac.remessas_unificadas || [];
+            stateConsignacao.itensUnificados = ac.itens || [];
+            stateConsignacao.condicaoComercial = ac.condicao_comercial || 'A_VISTA_AUTO';
+            stateConsignacao.descontoPadraoPct = parseFloat(ac.desconto_padrao_pct || 30.0);
+            stateConsignacao.statusAcerto = 'EM_CONFERENCIA';
+
+            const selCond = document.getElementById('select-condicao-comercial-consignacao');
+            if (selCond) selCond.value = stateConsignacao.condicaoComercial;
+
+            const p1 = document.getElementById('painel-consignacao-etapa1');
+            const p2 = document.getElementById('painel-consignacao-etapa2');
+            if (p1) p1.style.display = 'none';
+            if (p2) p2.style.display = 'block';
+
+            if (typeof atualizarStepperConsignacao === 'function') {
+                atualizarStepperConsignacao(2);
+            }
+
+            const lblHeader = document.getElementById('lbl-consignacao-cliente-em-conferencia');
+            if (lblHeader) {
+                lblHeader.textContent = `Cliente: ${ac.cliente_nome} (${ac.codigo_acerto})`;
+            }
+
+            const badge = document.getElementById('badge-status-acerto');
+            if (badge) {
+                badge.style.background = 'rgba(56, 189, 248, 0.2)';
+                badge.style.color = '#38bdf8';
+                badge.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+                badge.innerHTML = `📝 Em Conferência Física — ${ac.cliente_nome} (${ac.codigo_acerto})`;
+            }
+
+            renderizarTabelaConsignacao();
+            recalcularTotaisConsignacao();
+
+            if (p2) p2.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            setTimeout(() => {
+                const inputBip = document.getElementById('input-leitor-bipagem-consignacao');
+                if (inputBip) inputBip.focus();
+            }, 250);
+
+            salvarRascunhoConsignacaoLocal();
+            return;
         }
-    } else {
-        alert(`Iniciando conferência física para ${cliente} (${codigo}).`);
+    } catch (e) {
+        console.warn('Erro ao carregar acerto existente:', e);
+    }
+
+    // Fallback: se não encontrou itens no DB, pesquisa a remessa/cliente no Omie
+    const inputBusca = document.getElementById('input-busca-cliente-consignacao');
+    const p1 = document.getElementById('painel-consignacao-etapa1');
+    const p2 = document.getElementById('painel-consignacao-etapa2');
+    if (p1) p1.style.display = 'block';
+    if (p2) p2.style.display = 'none';
+    if (typeof atualizarStepperConsignacao === 'function') {
+        atualizarStepperConsignacao(1);
+    }
+
+    if (inputBusca) {
+        const termoBusca = (codigo || '').replace('AC-REM', '').replace('AC-', '').trim() || cliente;
+        inputBusca.value = termoBusca;
+        inputBusca.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        buscarClientesConsignacao(termoBusca);
     }
 }
 
