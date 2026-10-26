@@ -7649,10 +7649,10 @@ async function carregarAssinaturasPDV(forcarDownload = false) {
     try {
         if (btnSync) {
             btnSync.disabled = true;
-            btnSync.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sincronizando Planilha...';
+            btnSync.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sincronizando Turso DB...';
         }
         if (badgeSync) {
-            badgeSync.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="color: #38bdf8;"></i> Lendo planilha e calculando ciclo de 12 exemplares...';
+            badgeSync.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="color: #38bdf8;"></i> Carregando base de assinantes e calculando ciclo de 12 exemplares...';
         }
 
         const endpoint = forcarDownload ? '/api/assinaturas/sincronizar' : '/api/assinaturas/dados';
@@ -7661,7 +7661,7 @@ async function carregarAssinaturasPDV(forcarDownload = false) {
         const dados = await resp.json();
 
         if (!dados.sucesso) {
-            throw new Error(dados.erro || 'Falha ao processar planilha de assinaturas.');
+            throw new Error(dados.erro || 'Falha ao processar base de assinaturas.');
         }
 
         window.dadosAssinaturas = dados;
@@ -7688,7 +7688,7 @@ async function carregarAssinaturasPDV(forcarDownload = false) {
         if (tsSync) tsSync.innerText = dados.ultima_atualizacao || new Date().toLocaleTimeString();
 
         if (badgeSync) {
-            badgeSync.innerHTML = '<i class="fa-solid fa-file-excel" style="color: #10b981;"></i> Google Sheets Conectado | Atualizado: <strong>' + (dados.ultima_atualizacao || 'Agora') + '</strong>';
+            badgeSync.innerHTML = '<i class="fa-solid fa-database" style="color: #38bdf8;"></i> Turso Cloud DB Conectado | Base Ativa: <strong>' + (dados.ultima_atualizacao || 'Agora') + '</strong>';
         }
 
         selecionarGrupoAssinaturas(window.grupoAtivoAssinaturas || 'paroquias_ce');
@@ -7702,7 +7702,7 @@ async function carregarAssinaturasPDV(forcarDownload = false) {
     } finally {
         if (btnSync) {
             btnSync.disabled = false;
-            btnSync.innerHTML = '<i class="fa-solid fa-rotate"></i> Sincronizar Google Sheets ao Vivo 🔄';
+            btnSync.innerHTML = '<i class="fa-solid fa-rotate"></i> Sincronizar Base de Assinantes (Turso DB) 🔄';
         }
     }
 }
