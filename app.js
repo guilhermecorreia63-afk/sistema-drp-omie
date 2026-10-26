@@ -9498,6 +9498,8 @@ function renderizarTabelaRastreios(lista) {
         let badgeStatus = `<span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); font-size: 0.72rem; white-space: nowrap;"><i class="fa-solid fa-truck-fast"></i> Em Trânsito</span>`;
         if (st.includes('ENTREG')) {
             badgeStatus = `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); font-size: 0.72rem; white-space: nowrap;"><i class="fa-solid fa-circle-check"></i> Entregue</span>`;
+        } else if (st.includes('AGUARDANDO')) {
+            badgeStatus = `<span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148,163,184,0.3); font-size: 0.72rem; white-space: nowrap;"><i class="fa-solid fa-hourglass-half"></i> Preparando</span>`;
         } else if (st.includes('POST') || st.includes('ETIQUETA')) {
             badgeStatus = `<span class="badge" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); font-size: 0.72rem; white-space: nowrap;"><i class="fa-solid fa-box"></i> Postado</span>`;
         }
@@ -9519,12 +9521,25 @@ function renderizarTabelaRastreios(lista) {
         const safeCid = (r.cidade_uf || '').replace(/'/g, "\\'");
         const safeCpf = (r.cpf_cnpj || '').replace(/'/g, "\\'");
 
+        let codDisplay = `
+            <a href="javascript:void(0)" onclick="abrirSubpastaRastreio('${cod}', '${safeNome}', '${safeLote}', '${safePed}', '${safeCid}', '${safeCpf}')" style="color: #38bdf8; text-decoration: underline; display: inline-flex; align-items: center; gap: 5px;" title="Clique para abrir a subpasta oficial com a linha do tempo">
+                <i class="fa-solid fa-box-archive" style="font-size: 0.8rem;"></i> ${cod}
+            </a>
+        `;
+        if (cod.startsWith('AGUARDANDO_')) {
+            codDisplay = `
+                <a href="javascript:void(0)" onclick="abrirSubpastaRastreio('${cod}', '${safeNome}', '${safeLote}', '${safePed}', '${safeCid}', '${safeCpf}')" style="text-decoration: none;">
+                    <span class="badge" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; cursor: pointer;" title="Pedido faturado aguardando emissão da etiqueta">
+                        <i class="fa-solid fa-clock"></i> Aguardando Envio
+                    </span>
+                </a>
+            `;
+        }
+
         return `
             <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
                 <td style="font-weight: 700; font-family: monospace; font-size: 0.9rem; white-space: nowrap; padding: 10px 12px;">
-                    <a href="javascript:void(0)" onclick="abrirSubpastaRastreio('${cod}', '${safeNome}', '${safeLote}', '${safePed}', '${safeCid}', '${safeCpf}')" style="color: #38bdf8; text-decoration: underline; display: inline-flex; align-items: center; gap: 5px;" title="Clique para abrir a subpasta oficial com a linha do tempo">
-                        <i class="fa-solid fa-box-archive" style="font-size: 0.8rem;"></i> ${cod}
-                    </a>
+                    ${codDisplay}
                 </td>
                 <td style="font-weight: 600; color: #f8fafc; padding: 10px 12px;">
                     ${r.cliente_nome || '--'}
@@ -9657,6 +9672,30 @@ async function carregarSroRastroSubpasta(codigo) {
     if (elTimeline) {
         elTimeline.style.display = 'none';
         elTimeline.innerHTML = '';
+    }
+
+    if (codigo && codigo.startsWith('AGUARDANDO_')) {
+        if (elCodDestaque) elCodDestaque.innerText = 'Aguardando Emissão de Etiqueta / Despacho';
+        if (elBadge) {
+            elBadge.innerText = 'Em Expedição';
+            elBadge.style.background = 'rgba(251, 191, 36, 0.2)';
+            elBadge.style.color = '#fbbf24';
+            elBadge.style.border = '1px solid rgba(251, 191, 36, 0.4)';
+        }
+        if (elLoading) elLoading.style.display = 'none';
+        if (elTimeline) {
+            elTimeline.style.display = 'block';
+            elTimeline.innerHTML = `
+                <div style="text-align: center; padding: 30px 20px; color: #cbd5e1; background: rgba(30, 41, 59, 0.5); border-radius: 8px; border: 1px dashed #475569;">
+                    <i class="fa-solid fa-truck-ramp-box fa-2x" style="color: #fbbf24; margin-bottom: 10px;"></i>
+                    <h4 style="margin: 0 0 8px 0; font-size: 1.05rem; color: #f8fafc;">1º Envio Registrado no Omie</h4>
+                    <p style="margin: 0; font-size: 0.88rem; color: #94a3b8; max-width: 480px; margin: 0 auto;">
+                        Este pedido de venda foi faturado no Omie com o primeiro envio de exemplares. Assim que o pacote for bipado ou a etiqueta for emitida no Projeto Correios, o código de rastreamento e a linha do tempo aparecerão aqui automaticamente.
+                    </p>
+                </div>
+            `;
+        }
+        return;
     }
 
     try {
