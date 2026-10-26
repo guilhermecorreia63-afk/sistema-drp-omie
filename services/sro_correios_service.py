@@ -42,11 +42,40 @@ def consultar_sro_objeto(codigo_objeto: str) -> Dict[str, Any]:
         }
     )
 
+    # 1. Consulta prévia ao Portal Postal WebService
+    dados_portal_postal = None
+    try:
+        from services import portal_postal_service
+        resp_pp = portal_postal_service.consultar_por_sro(cod)
+        if resp_pp.get("sucesso"):
+            dados_portal_postal = resp_pp
+    except Exception as e_pp:
+        pass
+
     try:
         with urllib.request.urlopen(req, timeout=12) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             objetos = data.get("objetos", [])
             if not objetos:
+                if dados_portal_postal:
+                    return {
+                        "sucesso": True,
+                        "codigo": cod,
+                        "origem": "PORTAL_POSTAL",
+                        "status_geral": dados_portal_postal.get("situacao") or "Objeto em Trânsito",
+                        "descricao_status": f"Status Portal Postal: {dados_portal_postal.get('situacao')} (NF {dados_portal_postal.get('nf')})",
+                        "destinatario": dados_portal_postal.get("destinatario"),
+                        "data_postagem": dados_portal_postal.get("data_postagem"),
+                        "eventos": [{
+                            "codigo": "PP-01",
+                            "tipo": "PORTAL_POSTAL",
+                            "descricao": dados_portal_postal.get("situacao"),
+                            "detalhe": f"Postado em {dados_portal_postal.get('data_postagem')} | Prazo estimado: {dados_portal_postal.get('data_prazo')}",
+                            "data_hora": dados_portal_postal.get("data_situacao") or dados_portal_postal.get("data_postagem"),
+                            "unidade_nome": "Agência dos Correios / Portal Postal",
+                            "cidade_uf": ""
+                        }]
+                    }
                 return {
                     "sucesso": False,
                     "codigo": cod,
@@ -58,6 +87,26 @@ def consultar_sro_objeto(codigo_objeto: str) -> Dict[str, Any]:
             raw_eventos = obj.get("eventos", [])
 
             if not raw_eventos:
+                # Se não tem eventos no SRO, mas o Portal Postal tem a postagem
+                if dados_portal_postal:
+                    return {
+                        "sucesso": True,
+                        "codigo": cod,
+                        "origem": "PORTAL_POSTAL",
+                        "status_geral": dados_portal_postal.get("situacao") or "Objeto em Trânsito",
+                        "descricao_status": f"{dados_portal_postal.get('situacao')} (NF {dados_portal_postal.get('nf')})",
+                        "destinatario": dados_portal_postal.get("destinatario"),
+                        "data_postagem": dados_portal_postal.get("data_postagem"),
+                        "eventos": [{
+                            "codigo": "PP-01",
+                            "tipo": "PORTAL_POSTAL",
+                            "descricao": dados_portal_postal.get("situacao"),
+                            "detalhe": f"Postado em {dados_portal_postal.get('data_postagem')} | Prazo estimado: {dados_portal_postal.get('data_prazo')}",
+                            "data_hora": dados_portal_postal.get("data_situacao") or dados_portal_postal.get("data_postagem"),
+                            "unidade_nome": "Agência dos Correios / Portal Postal",
+                            "cidade_uf": ""
+                        }]
+                    }
                 return {
                     "sucesso": True,
                     "codigo": cod,

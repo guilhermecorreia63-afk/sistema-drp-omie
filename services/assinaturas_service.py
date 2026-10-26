@@ -357,17 +357,26 @@ def processar_assinaturas_pdv(forcar_download=False):
             qtd_val = int(qtd)
 
         # =====================================================================
-        # REGRA DO CICLO DE 12 EXEMPLARES (ASSINATURA ANUAL)
+        # REGRA DO CICLO DE 12 EXEMPLARES (ASSINATURA ANUAL BASEADA EM CAIXINHAS)
         # =====================================================================
-        # Cada exemplar corresponde a um mês consecutivo de envio.
-        # Um contrato iniciado/renovado no mês m_start do ano ano_start
-        # tem vigência de até 12 exemplares (1 a 12).
+        # Contagem real de caixinhas marcadas no ciclo de 2026 (colunas 29 a 40)
+        # Colunas: 29=Jan/26, 30=Fev/26, 31=Mar/26, ..., 40=Dez/26
+        caixinhas_marcadas_2026 = 0
+        meses_marcados_nomes = []
+        nomes_meses_2026 = ['Jan/26', 'Fev/26', 'Mar/26', 'Abr/26', 'Mai/26', 'Jun/26', 'Jul/26', 'Ago/26', 'Set/26', 'Out/26', 'Nov/26', 'Dez/26']
+        for idx_m, c_idx in enumerate(range(29, 41)):
+            v = r[c_idx]
+            if v is True or v == 1 or str(v).strip().upper() in ['TRUE', 'VERDADEIRO', '1']:
+                caixinhas_marcadas_2026 += 1
+                meses_marcados_nomes.append(nomes_meses_2026[idx_m])
+
         dt_base = None
         is_renovacao = False
         elegivel = False
         jan = False
         fev = False
         mar = False
+        ja_recebidos_antes = 0
         
         # Prioridade 1: Renovação registrada em 2026 ou 2027
         if ren_dt and isinstance(ren_dt, datetime) and ren_dt.year >= 2026:
@@ -387,29 +396,42 @@ def processar_assinaturas_pdv(forcar_download=False):
 
         # Prioridade 3: Grandes volumes / Paróquias contínuas institucionais (>= 20 unidades)
         if not dt_base and qtd and isinstance(qtd, (int, float)) and qtd >= 20:
-            rec_dez26 = (r[col_dez26] is True)
+            rec_dez26 = (r[col_dez26] is True or r[col_dez26] == 1 or str(r[col_dez26]).strip().upper() in ['TRUE', 'VERDADEIRO', '1'])
             if rec_dez26:
                 jan, fev, mar = True, True, True
                 elegivel = True
                 qtd_val = int(qtd)
+                ja_recebidos_antes = caixinhas_marcadas_2026
 
+        # CÁLCULO PRINCIPAL: BASEADO NA CONTAGEM REAL DE CAIXINHAS RECEBIDAS
         if not elegivel:
-            if not dt_base:
-                continue
-
-            ano_start = dt_base.year
-            m_start = dt_base.month
-
-            # Posição de cada mês de 2027 na contagem dos 12 exemplares
-            ex_jan = (2027 - ano_start) * 12 + (1 - m_start) + 1
-            ex_fev = (2027 - ano_start) * 12 + (2 - m_start) + 1
-            ex_mar = (2027 - ano_start) * 12 + (3 - m_start) + 1
-
-            jan = (1 <= ex_jan <= 12)
-            fev = (1 <= ex_fev <= 12)
-            mar = (1 <= ex_mar <= 12)
-
-            elegivel = (jan or fev or mar)
+            if caixinhas_marcadas_2026 > 0:
+                ja_recebidos_antes = caixinhas_marcadas_2026
+                saldo_restante = max(0, 12 - ja_recebidos_antes)
+                
+                # Se já recebeu 12 caixinhas completas (como Mario Brito Cód 424 ou Heloísa Barbosa Cód 555),
+                # o ciclo anual de 12 meses já está 100% CONCLUÍDO e não deve receber no Lote 1
+                if saldo_restante == 0 and not is_renovacao:
+                    continue
+                
+                # Se ainda tem saldo restante de exemplares a receber do ciclo
+                if saldo_restante > 0:
+                    jan = (saldo_restante >= 1)
+                    fev = (saldo_restante >= 2)
+                    mar = (saldo_restante >= 3)
+                    elegivel = (jan or fev or mar)
+            elif dt_base:
+                ano_start = dt_base.year
+                m_start = dt_base.month
+                ex_jan = (2027 - ano_start) * 12 + (1 - m_start) + 1
+                ex_fev = (2027 - ano_start) * 12 + (2 - m_start) + 1
+                ex_mar = (2027 - ano_start) * 12 + (3 - m_start) + 1
+                jan = (1 <= ex_jan <= 12)
+                fev = (1 <= ex_fev <= 12)
+                mar = (1 <= ex_mar <= 12)
+                elegivel = (jan or fev or mar)
+                pos_jan = ex_jan
+                ja_recebidos_antes = max(0, (pos_jan - 1)) if pos_jan > 1 else 0
 
         if not elegivel:
             continue
@@ -430,27 +452,32 @@ def processar_assinaturas_pdv(forcar_download=False):
         total_exemplares_cliente = qtd_val * meses_cont
         peso_total_cliente_kg = round((total_exemplares_cliente + qtd_dez26_extra) * 0.100, 3)
 
-        # Cálculo exato de ciclos baseado no mês de início (12 exemplares anuais)
-        pos_jan = ex_jan if dt_base else 1
-        ja_recebidos_antes = max(0, (pos_jan - 1)) if pos_jan > 1 else 0
         total_apos_lote = ja_recebidos_antes + meses_cont
         restantes_apos_lote = max(0, 12 - total_apos_lote)
         status_apos_lote = "CONCLUIDO" if total_apos_lote >= 12 else "ATIVO"
 
         etapas_cliente = []
         if ja_recebidos_antes > 0:
+            meses_desc = f" ({meses_marcados_nomes[0]} a {meses_marcados_nomes[-1]})" if len(meses_marcados_nomes) >= 2 else (f" ({meses_marcados_nomes[0]})" if meses_marcados_nomes else "")
             etapas_cliente.append({
                 "ciclo": "Exemplares Anteriores (2026)",
                 "status": "ENVIADO",
                 "badge": "success",
-                "obs": f"{ja_recebidos_antes} exemplar(es) já recebidos desde {dt_base.strftime('%m/%Y') if dt_base else 'o início'}",
+                "obs": f"{ja_recebidos_antes} exemplar(es) já recebidos{meses_desc}",
                 "qtd": ja_recebidos_antes * qtd_val
             })
+
+        meses_inclusos = []
+        if jan: meses_inclusos.append("Jan")
+        if fev: meses_inclusos.append("Fev")
+        if mar: meses_inclusos.append("Mar")
+        str_inclusos = ", ".join(meses_inclusos)
+
         etapas_cliente.append({
             "ciclo": "Lote 1 (Jan, Fev e Mar/2027)",
             "status": "NESTE_LOTE",
             "badge": "primary",
-            "obs": f"{meses_cont} exemplar(es) incluídos neste lote ({'Jan ' if jan else ''}{'Fev ' if fev else ''}{'Mar' if mar else ''})",
+            "obs": f"{meses_cont} exemplar(es) incluídos neste lote ({str_inclusos})",
             "qtd": total_exemplares_cliente
         })
         if restantes_apos_lote > 0:
@@ -469,6 +496,15 @@ def processar_assinaturas_pdv(forcar_download=False):
                 "obs": "12 exemplares completados com sucesso neste lote!",
                 "qtd": 0
             })
+
+        ciclos_info = {
+            "total_contratado": 12 * qtd_val,
+            "ja_recebidos": ja_recebidos_antes * qtd_val,
+            "neste_lote": total_exemplares_cliente,
+            "restantes_futuros": restantes_apos_lote * qtd_val,
+            "origem": "Planilha Envios PDV (Controle de Caixinhas)",
+            "etapas": etapas_cliente
+        }
 
         item = {
             "linha_planilha": idx,
@@ -498,6 +534,8 @@ def processar_assinaturas_pdv(forcar_download=False):
             "is_renovacao": is_renovacao,
             "data_registro_base": dt_base.strftime("%d/%m/%Y") if dt_base else "-",
             "status_assinatura": status_apos_lote,
+            "ja_recebidos_antes": ja_recebidos_antes,
+            "restantes_apos_lote": restantes_apos_lote,
             "ciclos_info": {
                 "total_contratado": 12 * qtd_val,
                 "ja_recebidos": ja_recebidos_antes * qtd_val,
@@ -636,33 +674,46 @@ def processar_assinaturas_pdv(forcar_download=False):
         "grupos": grupos
     }
 
-def gerar_excel_etiquetas(grupo_id):
+def gerar_excel_etiquetas(grupo_id="todos"):
     """
-    Gera uma planilha Excel pronta para download com as etiquetas e rotas de envio do grupo.
+    Gera uma planilha Excel pronta para download com as etiquetas, rotas de envio
+    e auditoria de ciclos (já recebidos, neste lote e restantes).
+    Suporta grupo específico ou 'todos' / 'geral' para consolidado de todos os grupos.
     """
     dados = processar_assinaturas_pdv(forcar_download=False)
-    grupo = dados["grupos"].get(grupo_id)
-    if not grupo:
-        raise ValueError(f"Grupo {grupo_id} não encontrado.")
+    
+    if grupo_id in ("todos", "geral", "consolidado", "") or not grupo_id:
+        clientes_lista = []
+        for g_chave, g_dados in dados["grupos"].items():
+            for c in g_dados["clientes"]:
+                c_copy = dict(c)
+                c_copy["grupo_nome"] = g_dados["titulo"]
+                clientes_lista.append(c_copy)
+        titulo_aba = "Auditoria Completa (Todos)"
+    else:
+        grupo = dados["grupos"].get(grupo_id)
+        if not grupo:
+            raise ValueError(f"Grupo {grupo_id} não encontrado.")
+        clientes_lista = []
+        for c in grupo["clientes"]:
+            c_copy = dict(c)
+            c_copy["grupo_nome"] = grupo["titulo"]
+            clientes_lista.append(c_copy)
+        titulo_aba = f"Etiquetas - {grupo_id[:20]}"
 
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = "Etiquetas de Envio"
+    ws.title = titulo_aba[:31]
 
     # Estilos
     header_fill = PatternFill(start_color="1F2937", end_color="1F2937", fill_type="solid")
     header_font = Font(name="Arial", size=10, bold=True, color="FFFFFF")
-    border_thin = Border(
-        left=Side(style="thin", color="D1D5DB"),
-        right=Side(style="thin", color="D1D5DB"),
-        top=Side(style="thin", color="D1D5DB"),
-        bottom=Side(style="thin", color="D1D5DB")
-    )
 
     headers = [
-        "Linha", "Cód. Cliente", "Destinatário / Cliente", "CPF / CNPJ",
+        "Linha", "Cód. Cliente", "Destinatário / Cliente", "CPF / CNPJ", "Grupo / Modalidade",
         "Logradouro", "Número", "Complemento", "Bairro", "Cidade", "UF", "CEP",
-        "Assinaturas", "Jan/27", "Fev/27", "Mar/27", "Total Exemplares", "Peso (kg)", "Obs / Envio"
+        "Assinaturas", "Jan/27", "Fev/27", "Mar/27", "Exemplares Lote Atual",
+        "Já Recebidos (2026)", "Restantes Futuros", "Status Contrato", "Peso (kg)", "Obs / Envio"
     ]
     ws.append(headers)
 
@@ -671,26 +722,30 @@ def gerar_excel_etiquetas(grupo_id):
         cell.font = header_font
         cell.alignment = Alignment(horizontal="center", vertical="center")
 
-    for c in grupo["clientes"]:
-        obs_extra = c.get("entregador") or c.get("transportadora") or c.get("tipo_envio") or ""
+    for c in clientes_lista:
+        obs_extra = c.get("entregador") or c.get("transportadora") or c.get("tipo_envio") or c.get("observacao_especial") or ""
         row = [
-            c["linha_planilha"],
-            c["codigo_cliente"],
-            c["cliente"],
-            c["cpf_cnpj"],
-            c["rua"],
-            c["numero"],
-            c["complemento"],
-            c["bairro"],
-            c["cidade"],
-            c["uf"],
-            c["cep"],
-            c["quantidade_assinaturas"],
-            c["qtd_jan27"],
-            c["qtd_fev27"],
-            c["qtd_mar27"],
-            c["total_exemplares"],
-            c["peso_kg"],
+            c.get("linha_planilha"),
+            c.get("codigo_cliente"),
+            c.get("cliente"),
+            c.get("cpf_cnpj"),
+            c.get("grupo_nome"),
+            c.get("rua"),
+            c.get("numero"),
+            c.get("complemento"),
+            c.get("bairro"),
+            c.get("cidade"),
+            c.get("uf"),
+            c.get("cep"),
+            c.get("quantidade_assinaturas"),
+            c.get("qtd_jan27"),
+            c.get("qtd_fev27"),
+            c.get("qtd_mar27"),
+            c.get("total_exemplares_envio") or c.get("total_exemplares"),
+            c.get("ja_recebidos_antes", 0),
+            c.get("restantes_apos_lote", 0),
+            c.get("status_assinatura", "ATIVO"),
+            c.get("peso_kg"),
             obs_extra
         ]
         ws.append(row)
@@ -699,7 +754,7 @@ def gerar_excel_etiquetas(grupo_id):
     for col in ws.columns:
         max_len = max(len(str(cell.value or "")) for cell in col)
         col_letter = col[0].column_letter
-        ws.column_dimensions[col_letter].width = max(max_len + 3, 10)
+        ws.column_dimensions[col_letter].width = min(max(max_len + 3, 10), 50)
 
     output = io.BytesIO()
     wb.save(output)
