@@ -9481,27 +9481,50 @@ function renderizarTabelaRastreios(lista) {
     if (!tbody) return;
 
     if (!lista || lista.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 35px; font-size: 0.95rem;">Nenhum código de rastreio registrado ainda. Clique em "Cadastrar Rastreio" acima para vincular os códigos das etiquetas geradas.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 40px; font-size: 0.95rem;">
+            <div style="font-size: 2rem; margin-bottom: 8px;">📦</div>
+            Nenhum código de rastreamento registrado ainda.<br>
+            <span style="font-size: 0.8rem; color: #64748b;">Utilize o botão "Novo Código de Rastreio" acima para vincular os envios de Dezembro ou dos Lotes de Assinatura.</span>
+        </td></tr>`;
         return;
     }
 
     tbody.innerHTML = lista.map(r => {
         const cod = (r.codigo_rastreio || '').trim().toUpperCase();
-        const linkCorreios = `https://rastreamento.correios.com.br/app/index.php?codigo=${cod}`;
         const dtFmt = r.data_postagem ? r.data_postagem.split('-').reverse().join('/') : '--';
         const st = (r.status_rastreio || 'Postado').toUpperCase();
+        const loteRef = r.tipo_envio || r.lote_referencia || 'Lote 1 (Jan-Mar/2027)';
 
         let badgeStatus = `<span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); font-size: 0.72rem; white-space: nowrap;"><i class="fa-solid fa-truck-fast"></i> Em Trânsito</span>`;
         if (st.includes('ENTREG')) {
             badgeStatus = `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); font-size: 0.72rem; white-space: nowrap;"><i class="fa-solid fa-circle-check"></i> Entregue</span>`;
-        } else if (st.includes('POST')) {
+        } else if (st.includes('POST') || st.includes('ETIQUETA')) {
             badgeStatus = `<span class="badge" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); font-size: 0.72rem; white-space: nowrap;"><i class="fa-solid fa-box"></i> Postado</span>`;
         }
 
+        // Cor temática do Lote
+        let badgeLoteBg = 'rgba(168, 85, 247, 0.15)';
+        let badgeLoteCol = '#c084fc';
+        if (loteRef.includes('Dezembro') || loteRef.includes('1º Envio')) {
+            badgeLoteBg = 'rgba(14, 165, 233, 0.15)';
+            badgeLoteCol = '#38bdf8';
+        } else if (loteRef.includes('Lote 2')) {
+            badgeLoteBg = 'rgba(236, 72, 153, 0.15)';
+            badgeLoteCol = '#f472b6';
+        }
+
+        const safeNome = (r.cliente_nome || '').replace(/'/g, "\\'");
+        const safeLote = loteRef.replace(/'/g, "\\'");
+        const safePed = (r.numero_pedido || '').replace(/'/g, "\\'");
+        const safeCid = (r.cidade_uf || '').replace(/'/g, "\\'");
+        const safeCpf = (r.cpf_cnpj || '').replace(/'/g, "\\'");
+
         return `
             <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
-                <td style="font-weight: 700; font-family: monospace; font-size: 0.9rem; color: #38bdf8; white-space: nowrap; padding: 10px 12px;">
-                    ${cod}
+                <td style="font-weight: 700; font-family: monospace; font-size: 0.9rem; white-space: nowrap; padding: 10px 12px;">
+                    <a href="javascript:void(0)" onclick="abrirSubpastaRastreio('${cod}', '${safeNome}', '${safeLote}', '${safePed}', '${safeCid}', '${safeCpf}')" style="color: #38bdf8; text-decoration: underline; display: inline-flex; align-items: center; gap: 5px;" title="Clique para abrir a subpasta oficial com a linha do tempo">
+                        <i class="fa-solid fa-box-archive" style="font-size: 0.8rem;"></i> ${cod}
+                    </a>
                 </td>
                 <td style="font-weight: 600; color: #f8fafc; padding: 10px 12px;">
                     ${r.cliente_nome || '--'}
@@ -9513,19 +9536,21 @@ function renderizarTabelaRastreios(lista) {
                     ${r.cidade_uf || '--'}
                 </td>
                 <td style="white-space: nowrap; padding: 10px 12px;">
-                    <span class="badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; font-size: 0.72rem;">${r.lote_referencia || 'Lote 1'}</span>
+                    <span class="badge" style="background: ${badgeLoteBg}; color: ${badgeLoteCol}; font-size: 0.72rem; border-radius: 4px;">
+                        ${loteRef}
+                    </span>
                 </td>
-                <td style="white-space: nowrap; color: #94a3b8; font-size: 0.82rem; padding: 10px 12px;">
+                <td style="white-space: nowrap; color: #94a3b8; font-size: 0.82rem; padding: 10px 12px; text-align: center;">
                     ${dtFmt}
                 </td>
                 <td style="text-align: center; white-space: nowrap; padding: 10px 12px;">
                     ${badgeStatus}
                 </td>
                 <td style="text-align: center; white-space: nowrap; padding: 10px 12px;">
-                    <a href="${linkCorreios}" target="_blank" rel="noopener noreferrer" class="btn btn-xs" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; border-radius: 4px; padding: 4px 8px; font-size: 0.72rem; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; font-weight: 600;" title="Rastrear no portal oficial dos Correios">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Rastrear
-                    </a>
-                    <button class="btn btn-xs" onclick="excluirRastreioAssinatura(${r.id})" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239,68,68,0.3); color: #f87171; border-radius: 4px; padding: 4px 8px; font-size: 0.72rem; margin-left: 4px;" title="Remover rastreio">
+                    <button class="btn btn-xs" onclick="abrirSubpastaRastreio('${cod}', '${safeNome}', '${safeLote}', '${safePed}', '${safeCid}', '${safeCpf}')" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; border-radius: 4px; padding: 4px 9px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 5px; font-weight: 600; cursor: pointer;" title="Abrir subpasta de rastro detalhado">
+                        <i class="fa-solid fa-folder-open"></i> Rastro
+                    </button>
+                    <button class="btn btn-xs" onclick="excluirRastreioAssinatura(${r.id})" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239,68,68,0.3); color: #f87171; border-radius: 4px; padding: 4px 8px; font-size: 0.72rem; margin-left: 4px; cursor: pointer;" title="Remover rastreio">
                         <i class="fa-solid fa-trash-can"></i>
                     </button>
                 </td>
@@ -9534,8 +9559,224 @@ function renderizarTabelaRastreios(lista) {
     }).join('');
 }
 
+// ==========================================
+// SUBPASTA DE RASTREIO & HISTÓRICO DE ENVIOS
+// ==========================================
+let subpastaEstadoAtivo = {
+    codigoAtual: '',
+    clienteNome: '',
+    loteReferencia: '',
+    numeroPedido: '',
+    cidadeUf: '',
+    cpfCnpj: ''
+};
+
+async function abrirSubpastaRastreio(codigo, clienteNome, loteReferencia, numeroPedido, cidadeUf, cpfCnpj) {
+    subpastaEstadoAtivo = {
+        codigoAtual: codigo,
+        clienteNome: clienteNome || '',
+        loteReferencia: loteReferencia || '',
+        numeroPedido: numeroPedido || '',
+        cidadeUf: cidadeUf || '',
+        cpfCnpj: cpfCnpj || ''
+    };
+
+    const modal = document.getElementById('modal-subpasta-rastreio');
+    if (modal) modal.style.display = 'flex';
+
+    // Preencher dados do cabeçalho
+    const elNome = document.getElementById('subpasta-cliente-nome');
+    const elDet = document.getElementById('subpasta-cliente-detalhes');
+    if (elNome) elNome.innerText = clienteNome || 'Assinante';
+    if (elDet) elDet.innerText = `Pedido: ${numeroPedido ? '#' + numeroPedido : '--'} | CPF: ${cpfCnpj || '--'} | Cidade: ${cidadeUf || '--'}`;
+
+    // Montar abas de envios do cliente se houver mais de um registro
+    montarAbasEnviosCliente(clienteNome, codigo);
+
+    // Consultar o SRO Rastro oficial
+    await carregarSroRastroSubpasta(codigo);
+}
+
+function montarAbasEnviosCliente(clienteNome, codigoAtivo) {
+    const abasContainer = document.getElementById('subpasta-abas-envios');
+    if (!abasContainer) return;
+
+    const todosRastreios = window.rastreiosAssinaturasCache || [];
+    const enviosCliente = todosRastreios.filter(r => 
+        clienteNome && (r.cliente_nome || '').trim().toLowerCase() === clienteNome.trim().toLowerCase()
+    );
+
+    if (enviosCliente.length <= 1) {
+        const refNome = subpastaEstadoAtivo.loteReferencia || 'Envio Atual';
+        abasContainer.innerHTML = `
+            <span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); font-size: 0.8rem; padding: 6px 12px; border-radius: 6px;">
+                <i class="fa-solid fa-box"></i> ${refNome} (${codigoAtivo})
+            </span>
+        `;
+        return;
+    }
+
+    // Se houver múltiplos envios (ex: Dezembro e Lote 1), renderiza botões selecionáveis
+    abasContainer.innerHTML = enviosCliente.map(env => {
+        const cod = (env.codigo_rastreio || '').toUpperCase();
+        const nomeLote = env.tipo_envio || env.lote_referencia || 'Lote de Envio';
+        const isAtivo = (cod === codigoAtivo);
+        const estilo = isAtivo
+            ? 'background: linear-gradient(135deg, #0ea5e9, #0284c7); color: #fff; font-weight: 700; border: none;'
+            : 'background: rgba(30, 41, 59, 0.7); color: #cbd5e1; border: 1px solid #475569;';
+
+        const safeNome = (env.cliente_nome || '').replace(/'/g, "\\'");
+        const safeLote = (env.tipo_envio || env.lote_referencia || '').replace(/'/g, "\\'");
+        const safePed = (env.numero_pedido || '').replace(/'/g, "\\'");
+        const safeCid = (env.cidade_uf || '').replace(/'/g, "\\'");
+        const safeCpf = (env.cpf_cnpj || '').replace(/'/g, "\\'");
+
+        return `
+            <button class="btn btn-xs" onclick="abrirSubpastaRastreio('${cod}', '${safeNome}', '${safeLote}', '${safePed}', '${safeCid}', '${safeCpf}')" style="${estilo} padding: 6px 12px; border-radius: 6px; cursor: pointer;">
+                <i class="fa-solid fa-cube"></i> ${nomeLote}: <strong>${cod}</strong>
+            </button>
+        `;
+    }).join('');
+}
+
+async function carregarSroRastroSubpasta(codigo) {
+    const elCodDestaque = document.getElementById('subpasta-codigo-destaque');
+    const elBadge = document.getElementById('subpasta-badge-status');
+    const elData = document.getElementById('subpasta-data-status');
+    const elLoading = document.getElementById('subpasta-timeline-loading');
+    const elTimeline = document.getElementById('subpasta-timeline-eventos');
+
+    if (elCodDestaque) elCodDestaque.innerText = codigo || '--';
+    if (elBadge) {
+        elBadge.innerText = 'Consultando Correios...';
+        elBadge.style.background = 'rgba(56, 189, 248, 0.2)';
+        elBadge.style.color = '#38bdf8';
+    }
+    if (elData) elData.innerText = '--';
+    if (elLoading) elLoading.style.display = 'block';
+    if (elTimeline) {
+        elTimeline.style.display = 'none';
+        elTimeline.innerHTML = '';
+    }
+
+    try {
+        const resp = await fetch(`/api/correios/sro_rastrear?codigo=${encodeURIComponent(codigo)}`);
+        const data = await resp.json();
+
+        if (elLoading) elLoading.style.display = 'none';
+        if (elTimeline) elTimeline.style.display = 'block';
+
+        if (!resp.ok || !data.sucesso) {
+            if (elBadge) {
+                elBadge.innerText = 'Não Localizado';
+                elBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+                elBadge.style.color = '#f87171';
+            }
+            if (elTimeline) {
+                elTimeline.innerHTML = `
+                    <div style="text-align: center; padding: 25px; color: #f87171;">
+                        <i class="fa-solid fa-circle-exclamation fa-2x" style="margin-bottom: 8px;"></i>
+                        <p style="margin: 0; font-size: 0.9rem;">${data.mensagem || 'Não foi possível consultar as informações deste código no momento.'}</p>
+                    </div>
+                `;
+            }
+            return;
+        }
+
+        const eventos = data.eventos || [];
+        const statusGeral = data.status_geral || 'Em Trânsito';
+        const dataUltimo = data.data_ultimo_evento || '';
+
+        if (elBadge) {
+            elBadge.innerText = statusGeral;
+            if (statusGeral.toUpperCase().includes('ENTREG')) {
+                elBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+                elBadge.style.color = '#34d399';
+                elBadge.style.border = '1px solid rgba(16, 185, 129, 0.4)';
+            } else {
+                elBadge.style.background = 'rgba(56, 189, 248, 0.2)';
+                elBadge.style.color = '#38bdf8';
+                elBadge.style.border = '1px solid rgba(56, 189, 248, 0.4)';
+            }
+        }
+        if (elData && dataUltimo) elData.innerText = `Atualizado em: ${dataUltimo}`;
+
+        if (eventos.length === 0) {
+            if (elTimeline) {
+                elTimeline.innerHTML = `
+                    <div style="text-align: center; padding: 25px; color: #cbd5e1; background: rgba(30, 41, 59, 0.5); border-radius: 8px;">
+                        <i class="fa-solid fa-barcode fa-2x" style="color: #fbbf24; margin-bottom: 8px;"></i>
+                        <h4 style="margin: 0 0 6px 0; font-size: 1rem; color: #f8fafc;">Etiqueta Cadastrada no Sistema</h4>
+                        <p style="margin: 0; font-size: 0.85rem; color: #94a3b8;">${data.descricao_status || 'Aguardando conferência e primeira bipagem nas agências dos Correios.'}</p>
+                    </div>
+                `;
+            }
+            return;
+        }
+
+        // Renderizar a Linha do Tempo Visual
+        if (elTimeline) {
+            elTimeline.innerHTML = `
+                <div style="position: relative; border-left: 2px solid #334155; margin-left: 14px; padding-left: 22px;">
+                    ${eventos.map((ev, idx) => {
+                        const isPrimeiro = (idx === 0);
+                        const corPonto = isPrimeiro ? '#38bdf8' : '#64748b';
+                        const iconPonto = isPrimeiro ? 'fa-truck-fast' : 'fa-circle-dot';
+                        return `
+                            <div style="position: relative; margin-bottom: 22px;">
+                                <div style="position: absolute; left: -31px; top: 0; width: 18px; height: 18px; border-radius: 50%; background: #0f172a; border: 2px solid ${corPonto}; display: flex; align-items: center; justify-content: center; font-size: 0.55rem; color: ${corPonto};">
+                                    <i class="fa-solid ${iconPonto}"></i>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
+                                    <span style="font-weight: 700; color: ${isPrimeiro ? '#f8fafc' : '#cbd5e1'}; font-size: 0.95rem;">
+                                        ${ev.descricao}
+                                    </span>
+                                    <span style="font-size: 0.78rem; color: #94a3b8; font-family: monospace;">
+                                        ${ev.data_hora}
+                                    </span>
+                                </div>
+                                ${ev.detalhe ? `<p style="margin: 4px 0 0 0; font-size: 0.85rem; color: #94a3b8;">${ev.detalhe}</p>` : ''}
+                                <div style="margin-top: 5px; font-size: 0.8rem; color: #64748b; display: flex; gap: 12px; flex-wrap: wrap;">
+                                    <span><i class="fa-solid fa-location-dot"></i> ${ev.unidade_nome} ${ev.cidade_uf ? '(' + ev.cidade_uf + ')' : ''}</span>
+                                    ${ev.destino ? `<span><i class="fa-solid fa-arrow-right"></i> Destino: ${ev.destino.cidade_uf || ev.destino.nome}</span>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+    } catch (e) {
+        console.error('Erro ao consultar SRO Rastro:', e);
+        if (elLoading) elLoading.style.display = 'none';
+        if (elTimeline) {
+            elTimeline.style.display = 'block';
+            elTimeline.innerHTML = `<div style="text-align: center; padding: 25px; color: #f87171;">⚠️ Falha de comunicação com o servidor ao consultar rastreio.</div>`;
+        }
+    }
+}
+
+function fecharModalSubpastaRastreio() {
+    const modal = document.getElementById('modal-subpasta-rastreio');
+    if (modal) modal.style.display = 'none';
+}
+
+function reconsultarSroSubpasta() {
+    if (subpastaEstadoAtivo.codigoAtual) {
+        carregarSroRastroSubpasta(subpastaEstadoAtivo.codigoAtual);
+    }
+}
+
+function copiarCodigoSubpasta() {
+    if (subpastaEstadoAtivo.codigoAtual) {
+        navigator.clipboard.writeText(subpastaEstadoAtivo.codigoAtual).then(() => {
+            alert(`Código ${subpastaEstadoAtivo.codigoAtual} copiado para a área de transferência!`);
+        });
+    }
+}
+
 function filtrarTabelaRastreiosAssinaturas() {
-    const q = (document.getElementById('filtro-assinaturas-rastreios')?.value || '').toLowerCase().trim();
+    const q = (document.getElementById('filtro-rastreios-assinaturas')?.value || '').toLowerCase().trim();
     const todos = window.rastreiosAssinaturasCache || [];
 
     if (!q) {
@@ -9548,7 +9789,8 @@ function filtrarTabelaRastreiosAssinaturas() {
         const n = String(r.cliente_nome || '').toLowerCase();
         const p = String(r.numero_pedido || '').toLowerCase();
         const cid = String(r.cidade_uf || '').toLowerCase();
-        return c.includes(q) || n.includes(q) || p.includes(q) || cid.includes(q);
+        const lote = String(r.tipo_envio || r.lote_referencia || '').toLowerCase();
+        return c.includes(q) || n.includes(q) || p.includes(q) || cid.includes(q) || lote.includes(q);
     });
 
     renderizarTabelaRastreios(filtrados);
@@ -9565,12 +9807,13 @@ function fecharModalCadastrarRastreio() {
 }
 
 async function salvarNovoRastreioAssinatura() {
-    const cod = document.getElementById('rastreio-novo-codigo')?.value.trim();
-    const nome = document.getElementById('rastreio-novo-cliente')?.value.trim();
-    const ped = document.getElementById('rastreio-novo-pedido')?.value.trim();
-    const cid = document.getElementById('rastreio-novo-cidade')?.value.trim();
-    const lote = document.getElementById('rastreio-novo-lote')?.value.trim();
-    const data = document.getElementById('rastreio-novo-data')?.value.trim();
+    const cod = document.getElementById('rast-codigo')?.value.trim();
+    const nome = document.getElementById('rast-cliente')?.value.trim();
+    const cpf = document.getElementById('rast-cpf')?.value.trim();
+    const ped = document.getElementById('rast-pedido')?.value.trim();
+    const cid = document.getElementById('rast-cidade-uf')?.value.trim();
+    const lote = document.getElementById('rast-lote')?.value.trim();
+    const status = document.getElementById('rast-status')?.value.trim();
 
     if (!cod || !nome) {
         alert('Por favor, informe ao menos o Código de Rastreio e o Nome do Assinante.');
@@ -9584,11 +9827,12 @@ async function salvarNovoRastreioAssinatura() {
             body: JSON.stringify({
                 codigo_rastreio: cod,
                 cliente_nome: nome,
+                cpf_cnpj: cpf,
                 numero_pedido: ped,
                 cidade_uf: cid,
                 lote_referencia: lote,
-                data_postagem: data,
-                status_rastreio: 'Postado'
+                tipo_envio: lote,
+                status_rastreio: status || 'Em Trânsito'
             })
         });
 
@@ -9596,12 +9840,14 @@ async function salvarNovoRastreioAssinatura() {
         if (resp.ok && resData.success) {
             alert('✅ Rastreio cadastrado com sucesso!');
             fecharModalCadastrarRastreio();
-            const elCod = document.getElementById('rastreio-novo-codigo');
-            const elNome = document.getElementById('rastreio-novo-cliente');
-            const elPed = document.getElementById('rastreio-novo-pedido');
-            const elCid = document.getElementById('rastreio-novo-cidade');
+            const elCod = document.getElementById('rast-codigo');
+            const elNome = document.getElementById('rast-cliente');
+            const elCpf = document.getElementById('rast-cpf');
+            const elPed = document.getElementById('rast-pedido');
+            const elCid = document.getElementById('rast-cidade-uf');
             if (elCod) elCod.value = '';
             if (elNome) elNome.value = '';
+            if (elCpf) elCpf.value = '';
             if (elPed) elPed.value = '';
             if (elCid) elCid.value = '';
             carregarRastreiosAssinaturas();
@@ -9791,6 +10037,10 @@ window.salvarNovoRastreioAssinatura = salvarNovoRastreioAssinatura;
 window.excluirRastreioAssinatura = excluirRastreioAssinatura;
 window.sincronizarRastreiosCorreios = sincronizarRastreiosCorreios;
 window.completarCPFsOmie = completarCPFsOmie;
+window.abrirSubpastaRastreio = abrirSubpastaRastreio;
+window.fecharModalSubpastaRastreio = fecharModalSubpastaRastreio;
+window.reconsultarSroSubpasta = reconsultarSroSubpasta;
+window.copiarCodigoSubpasta = copiarCodigoSubpasta;
 window.abrirModalConfigurarNovoLote = abrirModalConfigurarNovoLote;
 window.fecharModalConfigurarNovoLote = fecharModalConfigurarNovoLote;
 window.aoMudarPresetNovoLote = aoMudarPresetNovoLote;

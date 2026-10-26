@@ -114,6 +114,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_assinaturas_listar_rastreios()
         elif url_path == '/api/assinaturas/lote_ativo':
             self.handle_api_assinaturas_obter_lote_ativo()
+        elif url_path == '/api/correios/sro_rastrear':
+            self.handle_api_correios_sro_rastrear()
         else:
             super().do_GET()
 
@@ -2815,6 +2817,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             num_ped = str(body.get("numero_pedido") or "").strip()
             cid_uf = str(body.get("cidade_uf") or "").strip()
             lote = str(body.get("lote_referencia") or "Lote 1 (Jan-Mar/2027)").strip()
+            tipo_envio = str(body.get("tipo_envio") or lote).strip()
+            cpf_cnpj = str(body.get("cpf_cnpj") or "").strip()
             dt_postagem = str(body.get("data_postagem") or datetime.now().strftime("%d/%m/%Y")).strip()
             status_r = str(body.get("status_rastreio") or "Em Trânsito").strip()
             agora_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -2828,32 +2832,51 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 sql_upd = """
                     UPDATE assinaturas_rastreios SET
                         codigo_rastreio = :cod, cliente_nome = :nome, numero_pedido = :ped,
-                        cidade_uf = :cid, lote_referencia = :lote, data_postagem = :dt,
-                        status_rastreio = :st
+                        cidade_uf = :cid, lote_referencia = :lote, tipo_envio = :tipo,
+                        cpf_cnpj = :cpf, data_postagem = :dt, status_rastreio = :st
                     WHERE id = :id
                 """
                 db.executar_query(sql_upd, {
                     "cod": cod_rastreio, "nome": cli_nome, "ped": num_ped, "cid": cid_uf,
-                    "lote": lote, "dt": dt_postagem, "st": status_r, "id": int(rid)
+                    "lote": lote, "tipo": tipo_envio, "cpf": cpf_cnpj, "dt": dt_postagem,
+                    "st": status_r, "id": int(rid)
                 }, is_select=False)
             else:
                 sql_ins = """
                     INSERT INTO assinaturas_rastreios (
                         codigo_rastreio, cliente_nome, numero_pedido, cidade_uf,
-                        lote_referencia, data_postagem, status_rastreio, criado_em
+                        lote_referencia, tipo_envio, cpf_cnpj, data_postagem, status_rastreio, criado_em
                     ) VALUES (
-                        :cod, :nome, :ped, :cid, :lote, :dt, :st, :criado
+                        :cod, :nome, :ped, :cid, :lote, :tipo, :cpf, :dt, :st, :criado
                     )
                 """
                 db.executar_query(sql_ins, {
                     "cod": cod_rastreio, "nome": cli_nome, "ped": num_ped, "cid": cid_uf,
-                    "lote": lote, "dt": dt_postagem, "st": status_r, "criado": agora_str
+                    "lote": lote, "tipo": tipo_envio, "cpf": cpf_cnpj, "dt": dt_postagem,
+                    "st": status_r, "criado": agora_str
                 }, is_select=False)
 
             self._send_json({"success": True, "message": f"Código de rastreio {cod_rastreio} salvo com sucesso!"})
         except Exception as e:
             print(f"[API RASTREIO] Erro ao salvar rastreio: {e}")
             self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_correios_sro_rastrear(self):
+        try:
+            import urllib.parse
+            parsed = urllib.parse.urlparse(self.path)
+            params = urllib.parse.parse_qs(parsed.query)
+            cod = params.get('codigo', [''])[0]
+            if not cod:
+                self._send_json({"sucesso": False, "mensagem": "Código de rastreio não informado."}, status=400)
+                return
+
+            from services.sro_correios_service import consultar_sro_objeto
+            res = consultar_sro_objeto(cod)
+            self._send_json(res)
+        except Exception as e:
+            print(f"[API SRO RASTREIO] Erro: {e}")
+            self._send_json({"sucesso": False, "mensagem": str(e)}, status=500)
 
     def handle_api_assinaturas_excluir_rastreio(self):
         try:
