@@ -350,6 +350,52 @@ def processar_assinaturas_pdv(forcar_download=False):
         if not cli or str(cli).startswith("#") or str(cod).startswith("#"):
             continue
 
+        cli_up = str(cli or "").upper()
+        cod_str = str(cod or "")
+
+        # =====================================================================
+        # EXCLUSÃO DE PARÓQUIAS E ASSINANTES VENCIDOS (SEM RENOVAÇÃO CONFIRMADA)
+        # =====================================================================
+        # 1. Jaqueline Alves da Cruz (vencida em jun/26, sem renovação)
+        if "JAQUELINE ALVES DA CRUZ" in cli_up or cod_str == "12586":
+            continue
+
+        # 2. Paróquia de Nossa Senhora da Glória (vencida)
+        if "PAROQUIA DE NOSSA SENHORA DA GLORIA" in cli_up or cod_str == "73":
+            continue
+
+        # 3. Paróquia Nossa Senhora do Perpétuo Socorro - Alto Alegre (sem pedido de renovação)
+        if "ALTO ALEGRE" in cli_up or cod_str == "568":
+            continue
+
+        # 4. Comunidade Católica Shalom Goiânia (sem pedido de renovação)
+        if ("SHALOM" in cli_up and ("GOIÂNIA" in cli_up or "GOIANIA" in cli_up)) or cod_str == "16802":
+            continue
+
+        # 5. Mitra Diocesana de Lages - P N Sra do Perpétuo Socorro (terminou em nov/26)
+        if ("LAGES" in cli_up and "PERP" in cli_up) or cod_str == "20678":
+            continue
+
+        # 6. Mitra Diocesana de Guarulhos - Paróquia N Sra Aparecida (terminou em jul/26)
+        if ("GUARULHOS" in cli_up and "APARECIDA" in cli_up) or cod_str == "65":
+            continue
+
+        # 7. Diocese de Marabá - Paróquia de S. Maria (contrato antigo Cód 184 que terminou em nov/26)
+        if cod_str == "184":
+            continue
+
+        # =====================================================================
+        # ENRIQUECIMENTO DE CNPJs OFICIAIS DO OMIE ERP PARA PARÓQUIAS VÁLIDAS
+        # =====================================================================
+        if "PIO DE PIETRELCINA" in cli_up or "MARITUBA" in str(r[47] or "").upper():
+            cpf = "04.814.851/0102-72"
+        elif "ALFREDO VASCONCELOS" in cli_up or cod_str == "15619":
+            cpf = "00.638.765/0001-51"
+        elif ("CUIAB" in cli_up or "CUIABA" in str(r[47] or "").upper()) and "ROSARIO" in cli_up:
+            cpf = "03.005.139/0015-11"
+        elif ("MARABA" in cli_up or "MARABÁ" in cli_up) and ("SANTA MARIA" in cli_up or cod_str == "17339"):
+            cpf = "04.882.130/0015-51"
+
         qtd_val = 1
         if ren_qtd and isinstance(ren_qtd, (int, float)) and ren_qtd > 0:
             qtd_val = int(ren_qtd)
