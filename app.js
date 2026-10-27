@@ -6834,10 +6834,13 @@ async function confirmarIntegracaoOmieConsignacao() {
         });
 
         const data = await resp.json();
-        if (data.success) {
+        if (data.success && (!data.erros || data.erros.length === 0)) {
             let infoMsg = '✅ Acerto integrado no Omie com sucesso!\n\n';
             if (data.pedido_venda) {
-                infoMsg += `• Pedido de Venda: #${data.pedido_venda.numero_pedido || ''} (${data.pedido_venda.descricao_status || 'OK'})\n`;
+                const numPedClean = String(data.pedido_venda.numero_pedido || '').replace(/^0+/, '');
+                infoMsg += `• Pedido de Venda Gerado no Omie: #${numPedClean} (${data.pedido_venda.descricao_status || 'OK'})\n`;
+                const inpPedManual = document.getElementById('input-pedido-manual-consignacao');
+                if (inpPedManual) inpPedManual.value = numPedClean;
             }
             if (data.devolucoes && data.devolucoes.length > 0) {
                 const devsOficiais = data.devolucoes.filter(d => d.tipo !== 'MANUAL_NAO_FATURADA');
@@ -6869,7 +6872,8 @@ async function confirmarIntegracaoOmieConsignacao() {
             alert(infoMsg);
             carregarHistoricoAcertosConsignacao();
         } else {
-            alert('Atenção na integração: ' + (data.message || (data.erros || []).join('\n')));
+            const errList = data.erros && data.erros.length > 0 ? data.erros.join('\n') : (data.message || 'Erro desconhecido na integração');
+            alert('⚠️ Atenção na integração com o Omie:\n\n' + errList);
             btnIntegrar.disabled = false;
             btnIntegrar.innerHTML = originalText;
         }

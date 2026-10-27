@@ -513,7 +513,13 @@ class ConsignacaoService:
         itens = dados_acerto.get("itens", [])
         if itens and acerto_id:
             db.executar_query("DELETE FROM consignacao_acerto_itens WHERE acerto_id = :id", {"id": acerto_id}, is_select=False)
+            cache = self._carregar_produtos_cache()
             for it in itens:
+                sku = str(it.get("sku") or "").strip()
+                ncod = int(it.get("codigo_produto_omie") or it.get("codigo_produto") or it.get("id_produto") or 0)
+                if ncod <= 0 and sku:
+                    ncod = int(cache.get("by_sku", {}).get(sku, {}).get("id_produto") or 0)
+
                 sql_item = """
                     INSERT INTO consignacao_acerto_itens (
                         acerto_id, sku, codigo_produto_omie, descricao, qtd_enviada,
@@ -526,8 +532,8 @@ class ConsignacaoService:
                 """
                 db.executar_query(sql_item, {
                     "ac_id": acerto_id,
-                    "sku": it.get("sku", ""),
-                    "ncod": int(it.get("codigo_produto", 0)),
+                    "sku": sku,
+                    "ncod": ncod,
                     "desc": it.get("descricao", ""),
                     "env": int(it.get("qtd_enviada", 0)),
                     "ret": int(it.get("qtd_retorno", 0)),
@@ -925,13 +931,16 @@ class ConsignacaoService:
             }
         elif itens_vendidos and cod_cli:
             try:
+                cache = self._carregar_produtos_cache()
                 det_produtos = []
                 for idx, it in enumerate(itens_vendidos, 1):
-                    ncod = int(it.get("codigo_produto_omie") or it.get("codigo_produto") or 0)
+                    sku = str(it.get("sku") or "").strip()
+                    ncod = int(it.get("codigo_produto_omie") or it.get("codigo_produto") or it.get("id_produto") or 0)
+                    if ncod <= 0 and sku:
+                        ncod = int(cache.get("by_sku", {}).get(sku, {}).get("id_produto") or 0)
                     qtd = int(it.get("qtd_vendida"))
                     preco_tab = float(it.get("preco_unitario") or 0.0)
                     desc_pct = float(it.get("desconto_pct") or 30.0)
-                    sku = str(it.get("sku") or "")
                     
                     det_produtos.append({
                         "ide": {
@@ -1102,10 +1111,13 @@ class ConsignacaoService:
 
         if tem_pv_ok and (tem_devolucao_ok or not resultado["devolucoes"]):
             novo_status = "FINALIZADO_OMIE"
+            resultado["success"] = True
         elif not resultado["erros"]:
             novo_status = "FINALIZADO_OMIE"
+            resultado["success"] = True
         else:
             novo_status = "ERRO_INTEGRACAO"
+            resultado["success"] = False
 
         agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         dados_pv_str = json.dumps(resultado["pedido_venda"], ensure_ascii=False) if resultado["pedido_venda"] else ""
