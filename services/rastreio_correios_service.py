@@ -155,6 +155,28 @@ def sincronizar_rastreios_correios():
     ignorados_testes = 0
     agora_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    # 1.1 Limpar eventuais registros fantasmas ou testes antigos que já possuem rastreio real entregue
+    try:
+        db.executar_query("""
+            DELETE FROM assinaturas_rastreios 
+            WHERE codigo_rastreio IN ('YD310983593BR', 'YD310983620BR', 'YD310983647BR', 'YD310983664BR')
+        """, is_select=False)
+    except Exception:
+        pass
+
+    # 1.2 Buscar postagens recentes no Portal Postal (últimos 15 dias) para enriquecer pedidos que já foram postados
+    postagens_portal = []
+    try:
+        from services.portal_postal_service import consultar_por_periodo
+        from datetime import timedelta
+        d_fim_p = datetime.now().strftime("%Y-%m-%d")
+        d_ini_p = (datetime.now() - timedelta(days=15)).strftime("%Y-%m-%d")
+        resp_portal = consultar_por_periodo(d_ini_p, d_fim_p)
+        if resp_portal.get("sucesso"):
+            postagens_portal = resp_portal.get("registros", [])
+    except Exception as e:
+        print(f"Aviso ao consultar Portal Postal: {e}")
+
     # 2. Assegurar que os Pedidos Faturados no Omie apareçam no Painel de Rastreio (inclusive Fortaleza e pedidos novos)
     if df_ass_ped is not None and not df_ass_ped.empty:
         for _, row in df_ass_ped.iterrows():
@@ -178,36 +200,76 @@ def sincronizar_rastreios_correios():
             if eh_fortaleza:
                 tipo_envio += " (Entrega Própria Fortaleza)"
 
+            # Verificar se já temos rastreio oficial no Portal Postal para este pedido/destinatário
+            sro_encontrado = None
+            data_post_portal = None
+            evento_portal = None
+            if not eh_fortaleza and postagens_portal:
+                nome_upper = normalizar_nome(nome)
+                termos_busca = [t for t in nome_upper.split() if len(t) > 3]
+                # Se for Convento, adicionar também Santíssima Trindade (razão social)
+                if "CONVENTO" in nome_upper:
+                    termos_busca.extend(["CONVENTO", "SANTISSIMA", "TRINDADE"])
+
+                for p_rec in postagens_portal:
+                    dest_p = normalizar_nome(p_rec.get("destinatario"))
+                    # Match por termos relevantes do destinatário
+                    if any(t in dest_p for t in termos_busca) or (ped in str(p_rec.get("nf") or "")):
+                        sro_encontrado = str(p_rec.get("sro") or "").strip().upper()
+                        data_post_portal = str(p_rec.get("data_postagem") or "")
+                        evento_portal = str(p_rec.get("situacao") or "")
+                        break
+
             if ped not in mapa_rastreios_por_ped:
                 if eh_fortaleza:
                     cod_placeholder = f"ENTREGA_PROPRIA_{ped}"
                     status_inicial = "Enviado"
+                    dt_inicial = datetime.now().strftime("%d/%m/%Y")
+                    ultimo_ev = "Envio local em Fortaleza (Entregador Próprio)"
+                elif sro_encontrado:
+                    cod_placeholder = sro_encontrado
+                    status_inicial = "Em Trânsito"
+                    dt_inicial = data_post_portal or datetime.now().strftime("%d/%m/%Y")
+                    ultimo_ev = evento_portal or "Objeto postado"
                 else:
                     cod_placeholder = f"AGUARDANDO_POSTAGEM_{ped}"
                     status_inicial = "Aguardando Despacho"
+                    dt_inicial = datetime.now().strftime("%d/%m/%Y")
+                    ultimo_ev = "Aguardando coleta e código de rastreamento"
 
                 sql_ins_ped = """
                     INSERT INTO assinaturas_rastreios (
                         codigo_rastreio, cliente_nome, numero_pedido, cpf_cnpj, cidade_uf,
-                        lote_referencia, tipo_envio, data_postagem, status_rastreio, criado_em
+                        lote_referencia, tipo_envio, data_postagem, status_rastreio, ultimo_evento, criado_em
                     ) VALUES (
                         :cod, :nome, :ped, :cpf, :cid,
-                        :lote, :tipo, :dt, :st, :agora
+                        :lote, :tipo, :dt, :st, :ev, :agora
                     )
                 """
                 db.executar_query(sql_ins_ped, {
                     "cod": cod_placeholder, "nome": nome, "ped": ped, "cpf": cpf,
                     "cid": cid, "lote": tipo_envio, "tipo": tipo_envio,
-                    "dt": datetime.now().strftime("%d/%m/%Y"), "st": status_inicial, "agora": agora_str
+                    "dt": dt_inicial, "st": status_inicial, "ev": ultimo_ev, "agora": agora_str
                 }, is_select=False)
                 novos_inseridos += 1
                 mapa_rastreios_por_ped[ped] = {"codigo_rastreio": cod_placeholder, "status_rastreio": status_inicial}
             else:
-                # Se já existia e é Fortaleza com placeholder antigo, atualiza para Entrega Própria e Enviado
                 r_exist = mapa_rastreios_por_ped[ped]
                 cod_exist = str(r_exist.get("codigo_rastreio") or "")
                 st_exist = str(r_exist.get("status_rastreio") or "")
-                if eh_fortaleza and (cod_exist.startswith("AGUARDANDO_") or not cod_exist.startswith("ENTREGA_PROPRIA_")):
+                
+                # Se era um placeholder AGUARDANDO_POSTAGEM_ e encontramos o código real no Portal Postal, atualiza
+                if cod_exist.startswith("AGUARDANDO_") and sro_encontrado:
+                    st_atual = "Entregue" if "ENTREG" in (evento_portal or "").upper() else "Em Trânsito"
+                    db.executar_query(
+                        """UPDATE assinaturas_rastreios 
+                           SET codigo_rastreio = :sro, status_rastreio = :st, data_postagem = :dt, ultimo_evento = :ev 
+                           WHERE id = :id""",
+                        {"sro": sro_encontrado, "st": st_atual, "dt": data_post_portal or r_exist.get("data_postagem"), "ev": evento_portal, "id": int(r_exist["id"])},
+                        is_select=False
+                    )
+                    atualizados += 1
+                elif eh_fortaleza and (cod_exist.startswith("AGUARDANDO_") or not cod_exist.startswith("ENTREGA_PROPRIA_")):
                     novo_st = "Entregue" if "ENTREG" in st_exist.upper() else "Enviado"
                     db.executar_query(
                         "UPDATE assinaturas_rastreios SET codigo_rastreio = :cod, tipo_envio = :tipo, status_rastreio = :st WHERE id = :id",
@@ -233,7 +295,10 @@ def sincronizar_rastreios_correios():
             SELECT codigo_objeto, pedido, destinatario, cpf_cnpj_destinatario,
                    cidade, uf, status_rotulo, cancelado, created_at
             FROM prepostagens
-            WHERE codigo_objeto IS NOT NULL AND TRIM(codigo_objeto) != ''
+            WHERE codigo_objeto IS NOT NULL 
+              AND TRIM(codigo_objeto) != ''
+              AND cancelado = 0
+              AND UPPER(status_rotulo) NOT IN ('PENDENTE', 'CANCELADO')
             ORDER BY created_at DESC
         """
         postagens = consultar_gestor_turso(sql)
@@ -304,8 +369,14 @@ def sincronizar_rastreios_correios():
                 "st": status_post, "tipo": tipo_envio, "cpf": cpf_final,
                 "cid": cidade_uf, "ped": ped_ref, "cod": cod_objeto
             }, is_select=False)
-            atualizados += 1
         else:
+            # Se o pedido já possui um rastreio oficial válido e ativo registrado, não cria duplicata
+            if ped_ref and ped_ref in mapa_rastreios_por_ped:
+                r_exist = mapa_rastreios_por_ped[ped_ref]
+                cod_exist = str(r_exist.get("codigo_rastreio") or "")
+                if not cod_exist.startswith("AGUARDANDO_"):
+                    continue
+
             sql_ins = """
                 INSERT INTO assinaturas_rastreios (
                     codigo_rastreio, cliente_nome, numero_pedido, cpf_cnpj, cidade_uf,

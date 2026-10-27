@@ -9634,8 +9634,7 @@ function renderizarTabelaRastreios(lista) {
 
         const isEntregaPropria = cod.startsWith('ENTREGA_PROPRIA_') || 
                                  cod.startsWith('ENTREGADOR_') || 
-                                 loteRef.toLowerCase().includes('entrega própria') || 
-                                 cidUf.includes('FORTALEZA') || cidUf.includes('MARACANAU') || cidUf.includes('EUSEBIO');
+                                 loteRef.toLowerCase().includes('entrega própria');
 
         let badgeStatus = `<span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); font-size: 0.72rem; white-space: nowrap;"><i class="fa-solid fa-truck-fast"></i> Em Trânsito</span>`;
         if (st.includes('ENTREG')) {

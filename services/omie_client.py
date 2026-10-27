@@ -252,7 +252,8 @@ class OmieClient:
         self._retry_delay: float = 2.0  # Segundos de espera no retry de 429
         self._cache: Dict[str, Tuple[Any, float]] = {}  # cache: key -> (data, timestamp)
 
-    def _load_config(self, empresa: str) -> OmieConfig:
+    @staticmethod
+    def _load_config(empresa: str) -> OmieConfig:
         """
         Carrega as credenciais da empresa selecionada.
 
