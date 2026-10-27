@@ -8757,6 +8757,54 @@ async function concluirLoteAssinaturas() {
 }
 window.concluirLoteAssinaturas = concluirLoteAssinaturas;
 
+let _ultimoSyncOmieTime = 0;
+let _isSyncingOmieAuto = false;
+async function checarSyncOmieAutomaticoSilencioso() {
+    const agora = Date.now();
+    if (_isSyncingOmieAuto || (agora - _ultimoSyncOmieTime < 300000)) return;
+    _ultimoSyncOmieTime = agora;
+    _isSyncingOmieAuto = true;
+
+    try {
+        const resp = await fetch('/api/assinaturas/sincronizar_pedidos_omie', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dias_atras: 0 })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.success && data.importados_count > 0) {
+            console.log(`[SYNC AUTO OMIE] ${data.importados_count} novo(s) pedido(s) de assinatura importado(s)!`);
+            const r2 = await fetch('/api/assinaturas/pedidos_proximo_envio');
+            const d2 = await r2.json();
+            if (r2.ok && d2.success) {
+                const pedidos = d2.pedidos || [];
+                window.pedidosProximoEnvioCache = pedidos;
+                let totExemplares = 0;
+                let totValor = 0;
+                pedidos.forEach(p => {
+                    totExemplares += parseInt(p.quantidade_assinaturas || 1, 10);
+                    totValor += parseFloat(p.valor_total || 0);
+                });
+                const elTotCount = document.getElementById('metric-ped-tot-count');
+                const elTotExemp = document.getElementById('metric-ped-tot-exemplares');
+                const elTotVal = document.getElementById('metric-ped-tot-valor');
+                if (elTotCount) elTotCount.innerText = pedidos.length;
+                if (elTotExemp) elTotExemp.innerText = totExemplares.toLocaleString('pt-BR') + ' un';
+                if (elTotVal) elTotVal.innerText = 'R$ ' + totValor.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                const html = renderLinhasPedidosProximoEnvio(pedidos);
+                const tbody1 = document.getElementById('tbody-pedidos-proximo-envio');
+                const tbody2 = document.getElementById('tbody-pedidos-proximo-envio-aba2');
+                if (tbody1) tbody1.innerHTML = html;
+                if (tbody2) tbody2.innerHTML = html;
+            }
+        }
+    } catch (e) {
+        console.warn('[SYNC AUTO OMIE] Checagem automática ignorada:', e);
+    } finally {
+        _isSyncingOmieAuto = false;
+    }
+}
+
 async function carregarPedidosProximoEnvio() {
     const tbody1 = document.getElementById('tbody-pedidos-proximo-envio');
     const tbody2 = document.getElementById('tbody-pedidos-proximo-envio-aba2');
@@ -8793,6 +8841,9 @@ async function carregarPedidosProximoEnvio() {
         const html = renderLinhasPedidosProximoEnvio(pedidos);
         if (tbody1) tbody1.innerHTML = html;
         if (tbody2) tbody2.innerHTML = html;
+
+        // Dispara verificação automática em segundo plano
+        checarSyncOmieAutomaticoSilencioso();
 
     } catch (e) {
         console.error('Erro ao buscar pedidos do próximo envio:', e);

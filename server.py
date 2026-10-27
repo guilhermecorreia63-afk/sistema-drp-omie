@@ -32,6 +32,12 @@ try:
 except ImportError:
     db = None
 
+try:
+    from services.pedidos_assinaturas import PedidosAssinaturasService
+    servico_pedidos_assinaturas = PedidosAssinaturasService()
+except Exception as e:
+    servico_pedidos_assinaturas = None
+
 PORT = 8889
 
 class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
@@ -1227,9 +1233,9 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
             # C. Sincronização automática dos novos pedidos de assinatura faturados no Omie ERP para o Turso DB
             try:
-                if servico_pedidos_assinaturas:
-                    res_ass = servico_pedidos_assinaturas.sincronizar_pedidos_faturados_omie(dias_atras=30)
-                    print(f"[CRON API] Sync pedidos faturados assinaturas: {res_ass.get('message')}", flush=True)
+                from services.pedidos_assinaturas import PedidosAssinaturasService
+                res_ass = PedidosAssinaturasService().sincronizar_pedidos_faturados_omie(dias_atras=30)
+                print(f"[CRON API] Sync pedidos faturados assinaturas: {res_ass.get('message')}", flush=True)
             except Exception as e_ass:
                 print(f"[CRON API] Aviso sync assinaturas cron: {e_ass}", flush=True)
 
@@ -3026,7 +3032,9 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             body = self._read_body()
             dias_atras = int(body.get("dias_atras") if body.get("dias_atras") is not None else 0)
             num_pedido = body.get("numero_pedido")
-            res = servico_pedidos_assinaturas.sincronizar_pedidos_faturados_omie(dias_atras=dias_atras, numero_pedido_especifico=num_pedido)
+            from services.pedidos_assinaturas import PedidosAssinaturasService
+            srv = PedidosAssinaturasService()
+            res = srv.sincronizar_pedidos_faturados_omie(dias_atras=dias_atras, numero_pedido_especifico=num_pedido)
             self._send_json(res)
         except Exception as e:
             print(f"[API ASSINATURAS] Erro ao sincronizar pedidos Omie: {e}")
