@@ -385,6 +385,10 @@ def processar_assinaturas_pdv(forcar_download=False):
         if cod_str == "184":
             continue
 
+        # 8. Augusto Pereira - Linha 1198 / Cód 185 (contrato antigo 10/11/2025 na Praça da Liberdade, manter linha 1618)
+        if (cod_str == "185" and idx == 1198) or (cod_str == "185" and "LIBERDADE" in str(r[43] or "").upper()):
+            continue
+
         # =====================================================================
         # DEDUPLICAÇÃO DE ASSINANTES (CONFIRMADO: POSSUEM APENAS 1 ASSINATURA REAL)
         # =====================================================================
@@ -458,45 +462,70 @@ def processar_assinaturas_pdv(forcar_download=False):
         # Paróquias / Clientes institucionais contínuos (>= 20 unidades)
         eh_paroquia = (qtd and isinstance(qtd, (int, float)) and qtd >= 20)
 
-        # Validação de Assinaturas Vencidas / Encerradas
-        if not eh_paroquia:
+        # Prorrogação de 1 mês solicitada pelo usuário para Verilene Pinheiro (Linha 1092 / Cód 79)
+        eh_verilene = (str(cod) == "79" or idx == 1092 or ("VERILENE" in cli_up and "PINHEIRO" in cli_up))
+        obs_especial = ""
+        qtd_dez26_extra = 0
+
+        if eh_verilene:
+            obs_especial = "Enviar 1 und de Dezembro/2026 (Prorrogação de 1 mês solicitada)"
+            qtd_dez26_extra = 1
+            elegivel = True
+            jan, fev, mar = False, False, False
+            ja_recebidos_antes = 10
+            saldo_restante = 1
+        elif not eh_paroquia:
             if not dt_base:
                 continue
 
-            # Se o contrato/renovação iniciou antes de 2026:
-            # Só é elegível para 2027 se o contrato for do final de 2025 e o cliente recebeu até Nov/Dez de 2026!
-            # Se a última caixinha recebida foi em Jan..Out de 2026, seu ciclo de 12 meses já encerrou em 2026!
-            if dt_base.year < 2026:
-                if ult_mes_idx is None or ult_mes_idx < 39: # 39=Nov/26, 40=Dez/26
-                    continue
-
-            # Se já recebeu 12 caixinhas completas em 2026 e não possui renovação para 2027:
-            if caixinhas_marcadas_2026 >= 12 and (not is_renovacao or dt_base.year < 2027):
+            # Se o contrato/cadastro iniciou em 2025 ou antes e NÃO teve renovação em 2026/2027:
+            # O contrato anual encerrou em 2026 (como o grupo de Nov/2025, linhas 1093 a 1232)
+            if dt_base.year < 2026 and not (is_renovacao and dt_base.year >= 2026):
                 continue
 
-            # Se não teve caixinhas em 2026 e não é renovação para 2027:
-            if caixinhas_marcadas_2026 == 0 and dt_base.year < 2027:
+            # Se for renovação em 2026 (ex: Camila Rodrigues em 01/07/2026):
+            # As caixinhas do novo ciclo de 12 meses são contadas a partir do mês da renovação!
+            if is_renovacao and dt_base.year == 2026:
+                m_ren = dt_base.month
+                c_novo_ciclo = 0
+                for col_idx in range(28 + m_ren, 41):
+                    val_c = r[col_idx]
+                    if val_c is True or val_c == 1 or str(val_c).strip().upper() in ['TRUE', 'VERDADEIRO', '1']:
+                        c_novo_ciclo += 1
+                ja_recebidos_antes = c_novo_ciclo
+                saldo_restante = max(0, 12 - ja_recebidos_antes)
+            elif dt_base.year == 2026 and not is_renovacao:
+                # Cliente novo registrado em 2026
+                m_reg = dt_base.month
+                c_novo_ciclo = 0
+                for col_idx in range(28 + m_reg, 41):
+                    val_c = r[col_idx]
+                    if val_c is True or val_c == 1 or str(val_c).strip().upper() in ['TRUE', 'VERDADEIRO', '1']:
+                        c_novo_ciclo += 1
+                ja_recebidos_antes = c_novo_ciclo
+                saldo_restante = max(0, 12 - ja_recebidos_antes)
+            elif dt_base.year >= 2027:
+                ja_recebidos_antes = 0
+                saldo_restante = 12
+            else:
+                ja_recebidos_antes = caixinhas_marcadas_2026
+                saldo_restante = max(0, 12 - ja_recebidos_antes)
+
+            # Se já recebeu as 12 caixinhas completas deste ciclo
+            if saldo_restante == 0:
                 continue
 
-        # CÁLCULO PRINCIPAL: BASEADO NA CONTAGEM REAL DE CAIXINHAS RECEBIDAS
-        ja_recebidos_antes = caixinhas_marcadas_2026
-        saldo_restante = max(0, 12 - ja_recebidos_antes)
-
-        if eh_paroquia:
-            jan, fev, mar = True, True, True
-            elegivel = True
-        elif saldo_restante > 0:
             jan = (saldo_restante >= 1)
             fev = (saldo_restante >= 2)
             mar = (saldo_restante >= 3)
             elegivel = (jan or fev or mar)
-        elif is_renovacao and dt_base.year >= 2027:
+        else: # eh_paroquia
             jan, fev, mar = True, True, True
             elegivel = True
-        else:
-            elegivel = False
+            ja_recebidos_antes = caixinhas_marcadas_2026
+            saldo_restante = 12
 
-        if not elegivel:
+        if not elegivel and qtd_dez26_extra == 0:
             continue
 
         # Acréscimo manual solicitado pelo usuário para cliente 15619 (Alfredo Vasconcelos)
@@ -504,18 +533,17 @@ def processar_assinaturas_pdv(forcar_download=False):
             qtd_val += 50 # 101 original + 50 = 151 assinaturas
 
         # Observação especial solicitada pelo usuário para Silvana Maria dos Santos Silva (Linha 523 / Cód 18427)
-        obs_especial = ""
-        qtd_dez26_extra = 0
         cli_upper = str(cli).upper()
-        if str(cod) == "18427" or "SILVANA MARIA DO SANTOS SILVA" in cli_upper or "SILVANA MARIA DOS SANTOS SILVA" in cli_upper:
+        if not eh_verilene and (str(cod) == "18427" or "SILVANA MARIA DO SANTOS SILVA" in cli_upper or "SILVANA MARIA DOS SANTOS SILVA" in cli_upper):
             obs_especial = "Enviar 1 und de Dezembro/2026 junto com Jan, Fev e Mar"
             qtd_dez26_extra = 1
 
         meses_cont = (1 if jan else 0) + (1 if fev else 0) + (1 if mar else 0)
         total_exemplares_cliente = qtd_val * meses_cont
-        peso_total_cliente_kg = round((total_exemplares_cliente + qtd_dez26_extra) * 0.100, 3)
+        total_exemplares_envio_cliente = total_exemplares_cliente + qtd_dez26_extra
+        peso_total_cliente_kg = round(total_exemplares_envio_cliente * 0.100, 3)
 
-        total_apos_lote = ja_recebidos_antes + meses_cont
+        total_apos_lote = ja_recebidos_antes + meses_cont + qtd_dez26_extra
         restantes_apos_lote = max(0, 12 - total_apos_lote)
         status_apos_lote = "CONCLUIDO" if total_apos_lote >= 12 else "ATIVO"
 
@@ -531,6 +559,8 @@ def processar_assinaturas_pdv(forcar_download=False):
             })
 
         meses_inclusos = []
+        if qtd_dez26_extra > 0:
+            meses_inclusos.append(f"{qtd_dez26_extra} un Dez/26 extra")
         if jan: meses_inclusos.append("Jan")
         if fev: meses_inclusos.append("Fev")
         if mar: meses_inclusos.append("Mar")
@@ -540,8 +570,8 @@ def processar_assinaturas_pdv(forcar_download=False):
             "ciclo": "Lote 1 (Jan, Fev e Mar/2027)",
             "status": "NESTE_LOTE",
             "badge": "primary",
-            "obs": f"{meses_cont} exemplar(es) incluídos neste lote ({str_inclusos})",
-            "qtd": total_exemplares_cliente
+            "obs": f"{total_exemplares_envio_cliente} exemplar(es) incluídos neste lote ({str_inclusos})",
+            "qtd": total_exemplares_envio_cliente
         })
         if restantes_apos_lote > 0:
             etapas_cliente.append({
@@ -563,7 +593,7 @@ def processar_assinaturas_pdv(forcar_download=False):
         ciclos_info = {
             "total_contratado": 12 * qtd_val,
             "ja_recebidos": ja_recebidos_antes * qtd_val,
-            "neste_lote": total_exemplares_cliente,
+            "neste_lote": total_exemplares_envio_cliente,
             "restantes_futuros": restantes_apos_lote * qtd_val,
             "origem": "Planilha Envios PDV (Controle de Caixinhas)",
             "etapas": etapas_cliente
@@ -660,15 +690,17 @@ def processar_assinaturas_pdv(forcar_download=False):
     tot_jan = sum(c["qtd_jan27"] for c in clientes_processados)
     tot_fev = sum(c["qtd_fev27"] for c in clientes_processados)
     tot_mar = sum(c["qtd_mar27"] for c in clientes_processados)
-    tot_geral_pecas = tot_jan + tot_fev + tot_mar
-    tot_geral_peso = round(tot_geral_pecas * 0.100, 2)
+    tot_dez_extra = sum(c.get("qtd_dez26_extra", 0) for c in clientes_processados)
+    tot_geral_pecas = tot_jan + tot_fev + tot_mar + tot_dez_extra
+    tot_geral_peso = round(sum(c.get("peso_kg", 0) for c in clientes_processados), 2)
 
     def resumir_grupo(lista, nome_id, titulo, descricao, tipo_logistica, custo_total_frete=None):
         q_jan = sum(x["qtd_jan27"] for x in lista)
         q_fev = sum(x["qtd_fev27"] for x in lista)
         q_mar = sum(x["qtd_mar27"] for x in lista)
-        tot_pecas = q_jan + q_fev + q_mar
-        tot_peso = round(tot_pecas * 0.100, 2)
+        q_dez = sum(x.get("qtd_dez26_extra", 0) for x in lista)
+        tot_pecas = q_jan + q_fev + q_mar + q_dez
+        tot_peso = round(sum(x.get("peso_kg", 0) for x in lista), 2)
         tot_assinaturas = sum(x["quantidade_assinaturas"] for x in lista)
         res = {
             "id": nome_id,
@@ -680,6 +712,7 @@ def processar_assinaturas_pdv(forcar_download=False):
             "jan27": q_jan,
             "fev27": q_fev,
             "mar27": q_mar,
+            "dez26_extra": q_dez,
             "total_pecas": tot_pecas,
             "total_peso_kg": tot_peso,
             "clientes": lista
@@ -731,6 +764,7 @@ def processar_assinaturas_pdv(forcar_download=False):
             "jan27": tot_jan,
             "fev27": tot_fev,
             "mar27": tot_mar,
+            "dez26_extra": tot_dez_extra,
             "total_pecas": tot_geral_pecas,
             "total_peso_kg": tot_geral_peso
         },
@@ -786,7 +820,13 @@ def gerar_excel_etiquetas(grupo_id="todos"):
         cell.alignment = Alignment(horizontal="center", vertical="center")
 
     for c in clientes_lista:
-        obs_extra = c.get("entregador") or c.get("transportadora") or c.get("tipo_envio") or c.get("observacao_especial") or ""
+        partes_obs = []
+        if c.get("observacao_especial"):
+            partes_obs.append(c["observacao_especial"])
+        log_desc = c.get("entregador") or c.get("transportadora") or c.get("tipo_envio")
+        if log_desc:
+            partes_obs.append(log_desc)
+        obs_extra = " | ".join(partes_obs)
         row = [
             c.get("linha_planilha"),
             c.get("codigo_cliente"),
