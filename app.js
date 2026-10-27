@@ -9630,10 +9630,18 @@ function renderizarTabelaRastreios(lista) {
         const dtFmt = r.data_postagem ? r.data_postagem.split('-').reverse().join('/') : '--';
         const st = (r.status_rastreio || 'Postado').toUpperCase();
         const loteRef = r.tipo_envio || r.lote_referencia || 'Lote 1 (Jan-Mar/2027)';
+        const cidUf = (r.cidade_uf || '').toUpperCase();
+
+        const isEntregaPropria = cod.startsWith('ENTREGA_PROPRIA_') || 
+                                 cod.startsWith('ENTREGADOR_') || 
+                                 loteRef.toLowerCase().includes('entrega própria') || 
+                                 cidUf.includes('FORTALEZA') || cidUf.includes('MARACANAU') || cidUf.includes('EUSEBIO');
 
         let badgeStatus = `<span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); font-size: 0.72rem; white-space: nowrap;"><i class="fa-solid fa-truck-fast"></i> Em Trânsito</span>`;
         if (st.includes('ENTREG')) {
             badgeStatus = `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); font-size: 0.72rem; white-space: nowrap;"><i class="fa-solid fa-circle-check"></i> Entregue</span>`;
+        } else if (isEntregaPropria) {
+            badgeStatus = `<span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); font-size: 0.72rem; white-space: nowrap;"><i class="fa-solid fa-truck-ramp-box"></i> Enviado</span>`;
         } else if (st.includes('AGUARDANDO')) {
             badgeStatus = `<span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148,163,184,0.3); font-size: 0.72rem; white-space: nowrap;"><i class="fa-solid fa-hourglass-half"></i> Preparando</span>`;
         } else if (st.includes('POST') || st.includes('ETIQUETA')) {
@@ -9662,7 +9670,13 @@ function renderizarTabelaRastreios(lista) {
                 <i class="fa-solid fa-box-archive" style="font-size: 0.8rem;"></i> ${cod}
             </a>
         `;
-        if (cod.startsWith('AGUARDANDO_')) {
+        if (isEntregaPropria) {
+            codDisplay = `
+                <span class="badge" style="background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14,165,233,0.3); font-size: 0.75rem; padding: 4px 8px; border-radius: 4px;" title="Envio direto em Fortaleza por entregador próprio">
+                    <i class="fa-solid fa-motorcycle"></i> Entregador Próprio
+                </span>
+            `;
+        } else if (cod.startsWith('AGUARDANDO_')) {
             codDisplay = `
                 <a href="javascript:void(0)" onclick="abrirSubpastaRastreio('${cod}', '${safeNome}', '${safeLote}', '${safePed}', '${safeCid}', '${safeCpf}')" style="text-decoration: none;">
                     <span class="badge" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; cursor: pointer;" title="Pedido faturado aguardando emissão da etiqueta">
@@ -9670,6 +9684,28 @@ function renderizarTabelaRastreios(lista) {
                     </span>
                 </a>
             `;
+        }
+
+        let acaoBtn = `
+            <button class="btn btn-xs" onclick="abrirSubpastaRastreio('${cod}', '${safeNome}', '${safeLote}', '${safePed}', '${safeCid}', '${safeCpf}')" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; border-radius: 4px; padding: 4px 9px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 5px; font-weight: 600; cursor: pointer;" title="Abrir subpasta de rastro detalhado">
+                <i class="fa-solid fa-folder-open"></i> Rastro
+            </button>
+        `;
+
+        if (isEntregaPropria) {
+            if (st.includes('ENTREG')) {
+                acaoBtn = `
+                    <button class="btn btn-xs" onclick="alternarStatusEntregaPropria(${r.id}, 'Enviado')" style="background: rgba(148, 163, 184, 0.15); border: 1px solid rgba(148,163,184,0.3); color: #94a3b8; border-radius: 4px; padding: 4px 8px; font-size: 0.72rem; margin-right: 4px; cursor: pointer;" title="Voltar para status Enviado">
+                        <i class="fa-solid fa-rotate-left"></i> Desmarcar
+                    </button>
+                `;
+            } else {
+                acaoBtn = `
+                    <button class="btn btn-xs" onclick="alternarStatusEntregaPropria(${r.id}, 'Entregue')" style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #34d399; border-radius: 4px; padding: 4px 8px; font-size: 0.72rem; margin-right: 4px; font-weight: 600; cursor: pointer;" title="Marcar como entregue pelo entregador">
+                        <i class="fa-solid fa-check"></i> Marcar Entregue
+                    </button>
+                `;
+            }
         }
 
         return `
@@ -9698,9 +9734,7 @@ function renderizarTabelaRastreios(lista) {
                     ${badgeStatus}
                 </td>
                 <td style="text-align: center; white-space: nowrap; padding: 10px 12px;">
-                    <button class="btn btn-xs" onclick="abrirSubpastaRastreio('${cod}', '${safeNome}', '${safeLote}', '${safePed}', '${safeCid}', '${safeCpf}')" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; border-radius: 4px; padding: 4px 9px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 5px; font-weight: 600; cursor: pointer;" title="Abrir subpasta de rastro detalhado">
-                        <i class="fa-solid fa-folder-open"></i> Rastro
-                    </button>
+                    ${acaoBtn}
                     <button class="btn btn-xs" onclick="excluirRastreioAssinatura(${r.id})" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239,68,68,0.3); color: #f87171; border-radius: 4px; padding: 4px 8px; font-size: 0.72rem; margin-left: 4px; cursor: pointer;" title="Remover rastreio">
                         <i class="fa-solid fa-trash-can"></i>
                     </button>
@@ -9709,6 +9743,25 @@ function renderizarTabelaRastreios(lista) {
         `;
     }).join('');
 }
+
+async function alternarStatusEntregaPropria(id, novoStatus) {
+    try {
+        const resp = await fetch('/api/assinaturas/atualizar_status_rastreio', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id, status_rastreio: novoStatus })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.success) {
+            await carregarRastreiosAssinaturas();
+        } else {
+            alert('Erro ao atualizar status: ' + (data.message || 'Falha'));
+        }
+    } catch (e) {
+        alert('Erro ao conectar com o servidor: ' + e.message);
+    }
+}
+window.alternarStatusEntregaPropria = alternarStatusEntregaPropria;
 
 // ==========================================
 // SUBPASTA DE RASTREIO & HISTÓRICO DE ENVIOS

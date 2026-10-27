@@ -25,8 +25,26 @@ load_dotenv(os.path.join(raiz, ".env"))
 
 import database as db
 
-GESTOR_TURSO_URL = os.getenv("CORREIOS_TURSO_URL")
-GESTOR_TURSO_TOKEN = os.getenv("CORREIOS_TURSO_TOKEN")
+def obter_config_correios_turso():
+    url = (
+        os.getenv("CORREIOS_TURSO_URL") or
+        os.getenv("TURSO_CORREIOS_URL") or
+        os.getenv("TURSO_URL_CORREIOS") or
+        os.getenv("GESTOR_TURSO_URL") or
+        os.getenv("CORREIOS_DATABASE_URL") or
+        os.getenv("TURSO_DATABASE_URL_CORREIOS")
+    )
+    token = (
+        os.getenv("CORREIOS_TURSO_TOKEN") or
+        os.getenv("TURSO_CORREIOS_TOKEN") or
+        os.getenv("TURSO_AUTH_TOKEN_CORREIOS") or
+        os.getenv("GESTOR_TURSO_TOKEN") or
+        os.getenv("CORREIOS_AUTH_TOKEN") or
+        os.getenv("TURSO_TOKEN_CORREIOS")
+    )
+    if url and url.startswith("libsql://"):
+        url = "https://" + url[9:]
+    return url, token
 
 def limpar_digitos(doc):
     if not doc:
@@ -50,7 +68,11 @@ def eh_registro_teste(nome, pedido):
 
 def consultar_gestor_turso(sql):
     """Executa query no banco do Projeto Correios via pipeline HTTP da Turso."""
-    url = f"{GESTOR_TURSO_URL}/v2/pipeline"
+    url, token = obter_config_correios_turso()
+    if not url or not token:
+        raise Exception("Configurações dos Correios Turso (CORREIOS_TURSO_URL / CORREIOS_TURSO_TOKEN) não encontradas nas variáveis de ambiente.")
+
+    pipeline_url = f"{url.rstrip('/')}/v2/pipeline"
     body = {
         "requests": [
             {
@@ -60,10 +82,10 @@ def consultar_gestor_turso(sql):
         ]
     }
     req = urllib.request.Request(
-        url,
+        pipeline_url,
         data=json.dumps(body).encode("utf-8"),
         headers={
-            "Authorization": f"Bearer {GESTOR_TURSO_TOKEN}",
+            "Authorization": f"Bearer {token}",
             "Content-Type": "application/json"
         }
     )
@@ -83,27 +105,26 @@ def consultar_gestor_turso(sql):
 def sincronizar_rastreios_correios():
     """
     Sincroniza os rastreios dos pedidos de assinaturas e lotes de envio.
-    Descarta qualquer registro que não seja de um assinante real.
+    1. Registra e atualiza pedidos faturados do Omie (inclusive Fortaleza com entregador próprio).
+    2. Consulta o banco do Projeto Correios (se configurado) e enriquece os rastreios dos assinantes reais.
     """
-    if not GESTOR_TURSO_URL or not GESTOR_TURSO_TOKEN:
-        return {
-            "sucesso": False,
-            "mensagem": "Configurações dos Correios (CORREIOS_TURSO_URL / CORREIOS_TURSO_TOKEN) não configuradas no arquivo .env."
-        }
-
     # 1. Carregar assinantes do Turso local (pedidos novos e base ativa)
     df_ass_ped = db.executar_query("SELECT id, numero_pedido, cliente_nome, cpf_cnpj, cidade, uf, sku_produto FROM assinaturas_pedidos_proximo_envio")
     df_ass_base = db.executar_query("SELECT id, codigo_cliente_omie, cliente_nome, cpf_cnpj, cidade, uf FROM assinantes_base")
-    df_rastreios_existentes = db.executar_query("SELECT id, codigo_rastreio, numero_pedido, tipo_envio FROM assinaturas_rastreios")
+    df_rastreios_existentes = db.executar_query("SELECT id, codigo_rastreio, numero_pedido, tipo_envio, status_rastreio FROM assinaturas_rastreios")
 
     existentes_codigos = set()
     existentes_pedidos = set()
+    mapa_rastreios_por_ped = {}
+
     if df_rastreios_existentes is not None and not df_rastreios_existentes.empty:
         for _, r in df_rastreios_existentes.iterrows():
             c = str(r.get("codigo_rastreio") or "").strip().upper()
             p = str(r.get("numero_pedido") or "").strip()
             if c: existentes_codigos.add(c)
-            if p: existentes_pedidos.add(p)
+            if p:
+                existentes_pedidos.add(p)
+                mapa_rastreios_por_ped[p] = dict(r)
 
     mapa_pedidos = {}
     mapa_cpfs = {}
@@ -129,7 +150,84 @@ def sincronizar_rastreios_correios():
             if cpf and cpf not in mapa_cpfs: mapa_cpfs[cpf] = item
             if nome and nome not in mapa_nomes: mapa_nomes[nome] = item
 
-    # 2. Consultar pré-postagens do Projeto Correios
+    novos_inseridos = 0
+    atualizados = 0
+    ignorados_testes = 0
+    agora_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # 2. Assegurar que os Pedidos Faturados no Omie apareçam no Painel de Rastreio (inclusive Fortaleza e pedidos novos)
+    if df_ass_ped is not None and not df_ass_ped.empty:
+        for _, row in df_ass_ped.iterrows():
+            ped = str(row.get("numero_pedido") or "").strip()
+            nome = str(row.get("cliente_nome") or "").strip()
+            cpf = str(row.get("cpf_cnpj") or "").strip()
+            cidade_raw = str(row.get("cidade") or "").strip().upper()
+            uf_raw = str(row.get("uf") or "").strip().upper()
+            cid = f"{row.get('cidade') or ''} / {row.get('uf') or ''}"
+            sku = str(row.get("sku_produto") or "")
+
+            eh_fortaleza = ("FORTALEZA" in cidade_raw) or (uf_raw == "CE" and any(m in cidade_raw for m in ["FORTALEZA", "MARACANAU", "MARACANAÚ", "CAUCAIA", "EUSEBIO", "EUSÉBIO"]))
+
+            if "PRD00379" in sku:
+                tipo_envio = f"1º Envio (Jan a Março/2027) - Pedido Omie #{ped}"
+            elif "000223" in sku:
+                tipo_envio = f"1º Envio (Dezembro/2026) - Pedido Omie #{ped}"
+            else:
+                tipo_envio = f"1º Envio (Inicial) - Pedido Omie #{ped}"
+
+            if eh_fortaleza:
+                tipo_envio += " (Entrega Própria Fortaleza)"
+
+            if ped not in mapa_rastreios_por_ped:
+                if eh_fortaleza:
+                    cod_placeholder = f"ENTREGA_PROPRIA_{ped}"
+                    status_inicial = "Enviado"
+                else:
+                    cod_placeholder = f"AGUARDANDO_POSTAGEM_{ped}"
+                    status_inicial = "Aguardando Despacho"
+
+                sql_ins_ped = """
+                    INSERT INTO assinaturas_rastreios (
+                        codigo_rastreio, cliente_nome, numero_pedido, cpf_cnpj, cidade_uf,
+                        lote_referencia, tipo_envio, data_postagem, status_rastreio, criado_em
+                    ) VALUES (
+                        :cod, :nome, :ped, :cpf, :cid,
+                        :lote, :tipo, :dt, :st, :agora
+                    )
+                """
+                db.executar_query(sql_ins_ped, {
+                    "cod": cod_placeholder, "nome": nome, "ped": ped, "cpf": cpf,
+                    "cid": cid, "lote": tipo_envio, "tipo": tipo_envio,
+                    "dt": datetime.now().strftime("%d/%m/%Y"), "st": status_inicial, "agora": agora_str
+                }, is_select=False)
+                novos_inseridos += 1
+                mapa_rastreios_por_ped[ped] = {"codigo_rastreio": cod_placeholder, "status_rastreio": status_inicial}
+            else:
+                # Se já existia e é Fortaleza com placeholder antigo, atualiza para Entrega Própria e Enviado
+                r_exist = mapa_rastreios_por_ped[ped]
+                cod_exist = str(r_exist.get("codigo_rastreio") or "")
+                st_exist = str(r_exist.get("status_rastreio") or "")
+                if eh_fortaleza and (cod_exist.startswith("AGUARDANDO_") or not cod_exist.startswith("ENTREGA_PROPRIA_")):
+                    novo_st = "Entregue" if "ENTREG" in st_exist.upper() else "Enviado"
+                    db.executar_query(
+                        "UPDATE assinaturas_rastreios SET codigo_rastreio = :cod, tipo_envio = :tipo, status_rastreio = :st WHERE id = :id",
+                        {"cod": f"ENTREGA_PROPRIA_{ped}", "tipo": tipo_envio, "st": novo_st, "id": int(r_exist["id"])},
+                        is_select=False
+                    )
+                    atualizados += 1
+
+    # 3. Consultar pré-postagens do Projeto Correios (se configurado)
+    url_correios, token_correios = obter_config_correios_turso()
+    if not url_correios or not token_correios:
+        msg = f"Sincronização concluída! {novos_inseridos} novo(s) envio(s) (inclusive Fortaleza/Entrega Própria) atualizados com sucesso no painel."
+        return {
+            "sucesso": True,
+            "mensagem": msg,
+            "novos_inseridos": novos_inseridos,
+            "atualizados": atualizados,
+            "aviso": "Conexão Correios Turso pendente de variáveis no Vercel (pedidos de Fortaleza e locais sincronizados com sucesso)."
+        }
+
     try:
         sql = """
             SELECT codigo_objeto, pedido, destinatario, cpf_cnpj_destinatario,
@@ -140,26 +238,20 @@ def sincronizar_rastreios_correios():
         """
         postagens = consultar_gestor_turso(sql)
     except Exception as e:
-        return {"sucesso": False, "mensagem": f"Erro ao acessar banco do Projeto Correios: {e}"}
+        msg = f"Pedidos locais atualizados ({novos_inseridos} novos). Aviso Correios: {e}"
+        return {"sucesso": True, "mensagem": msg, "novos_inseridos": novos_inseridos, "atualizados": atualizados}
 
-    novos_inseridos = 0
-    atualizados = 0
-    ignorados_testes = 0
-    agora_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    # 3. Processar postagens com validação estrita (ignorar 100% dos testes)
+    # 4. Processar postagens com validação estrita (ignorar 100% dos testes)
     for p in postagens:
         num_ped = str(p.get("pedido") or "").strip()
         dest_nome = str(p.get("destinatario") or "").strip()
         cpf_dest = limpar_digitos(p.get("cpf_cnpj_destinatario"))
         cod_objeto = str(p.get("codigo_objeto") or "").strip().upper()
 
-        # Descarte obrigatório de testes
         if eh_registro_teste(dest_nome, num_ped):
             ignorados_testes += 1
             continue
 
-        # Verificar se cruza com um assinante real
         assinante_match = None
         if num_ped and num_ped in mapa_pedidos:
             assinante_match = mapa_pedidos[num_ped]
@@ -172,7 +264,6 @@ def sincronizar_rastreios_correios():
                     assinante_match = item
                     break
 
-        # Se NÃO cruzou com nenhum assinante nosso, DESCARTA!
         if not assinante_match:
             continue
 
@@ -184,7 +275,6 @@ def sincronizar_rastreios_correios():
         status_post = "Cancelada" if cancelado == 1 else (str(p.get("status_rotulo") or "Postado").strip())
         criado = str(p.get("created_at") or agora_str)[:10]
 
-        # Determinar Tipo de Envio / Lote com clareza
         sku = str(assinante_match.get("sku_produto") or "")
         ped_ref = str(assinante_match.get("numero_pedido") or num_ped)
 
@@ -232,43 +322,6 @@ def sincronizar_rastreios_correios():
             }, is_select=False)
             existentes_codigos.add(cod_objeto)
             novos_inseridos += 1
-
-    # 4. Assegurar que os Pedidos Faturados no Omie apareçam no Painel de Rastreio (Ex: Marielli #18022 e Convento #18028)
-    if df_ass_ped is not None and not df_ass_ped.empty:
-        for _, row in df_ass_ped.iterrows():
-            ped = str(row.get("numero_pedido") or "").strip()
-            nome = str(row.get("cliente_nome") or "").strip()
-            cpf = str(row.get("cpf_cnpj") or "").strip()
-            cid = f"{row.get('cidade') or ''} / {row.get('uf') or ''}"
-            sku = str(row.get("sku_produto") or "")
-
-            if "PRD00379" in sku:
-                tipo_envio = f"1º Envio (Jan a Março/2027) - Pedido Omie #{ped}"
-            elif "000223" in sku:
-                tipo_envio = f"1º Envio (Dezembro/2026) - Pedido Omie #{ped}"
-            else:
-                tipo_envio = f"1º Envio (Inicial) - Pedido Omie #{ped}"
-
-            # Verificar se já existe rastreio cadastrado para este pedido
-            df_check = db.executar_query("SELECT id, codigo_rastreio FROM assinaturas_rastreios WHERE numero_pedido = :ped", {"ped": ped})
-            if df_check is None or df_check.empty:
-                # Criar entrada do 1º Envio para o cliente
-                cod_placeholder = f"AGUARDANDO_POSTAGEM_{ped}"
-                sql_ins_ped = """
-                    INSERT INTO assinaturas_rastreios (
-                        codigo_rastreio, cliente_nome, numero_pedido, cpf_cnpj, cidade_uf,
-                        lote_referencia, tipo_envio, data_postagem, status_rastreio, criado_em
-                    ) VALUES (
-                        :cod, :nome, :ped, :cpf, :cid,
-                        :lote, :tipo, :dt, 'Aguardando Despacho', :agora
-                    )
-                """
-                db.executar_query(sql_ins_ped, {
-                    "cod": cod_placeholder, "nome": nome, "ped": ped, "cpf": cpf,
-                    "cid": cid, "lote": tipo_envio, "tipo": tipo_envio,
-                    "dt": datetime.now().strftime("%d/%m/%Y"), "agora": agora_str
-                }, is_select=False)
-                novos_inseridos += 1
 
     msg = f"Sincronização de assinaturas concluída! {novos_inseridos} registros atualizados com sucesso (dados de testes do Projeto Correios foram 100% filtrados e descartados)."
     return {

@@ -213,6 +213,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_assinaturas_concluir_lote()
         elif url_path == '/api/assinaturas/salvar_rastreio':
             self.handle_api_assinaturas_salvar_rastreio()
+        elif url_path == '/api/assinaturas/atualizar_status_rastreio':
+            self.handle_api_assinaturas_atualizar_status_rastreio()
         elif url_path == '/api/assinaturas/excluir_rastreio':
             self.handle_api_assinaturas_excluir_rastreio()
         elif url_path == '/api/assinaturas/configurar_lote_ativo':
@@ -2865,6 +2867,24 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self._send_json({"success": True, "message": f"Código de rastreio {cod_rastreio} salvo com sucesso!"})
         except Exception as e:
             print(f"[API RASTREIO] Erro ao salvar rastreio: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_assinaturas_atualizar_status_rastreio(self):
+        try:
+            body = self._read_body()
+            rid = body.get("id")
+            novo_status = str(body.get("status_rastreio") or "Entregue").strip()
+            if not rid:
+                self._send_json({"success": False, "message": "ID não informado."}, status=400)
+                return
+            db.executar_query(
+                "UPDATE assinaturas_rastreios SET status_rastreio = :st WHERE id = :id",
+                {"st": novo_status, "id": int(rid)},
+                is_select=False
+            )
+            self._send_json({"success": True, "novo_status": novo_status, "message": f"Status atualizado para '{novo_status}' com sucesso!"})
+        except Exception as e:
+            print(f"[API RASTREIO] Erro ao atualizar status: {e}")
             self._send_json({"success": False, "message": str(e)}, status=500)
 
     def handle_api_correios_sro_rastrear(self):
