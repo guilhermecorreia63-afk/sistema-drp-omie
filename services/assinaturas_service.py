@@ -2,7 +2,7 @@ import os
 import io
 import urllib.request
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 import requests
@@ -24,6 +24,7 @@ GOOGLE_SHEETS_URL = "https://docs.google.com/spreadsheets/d/1lqDiqjD5fmQ9r2f3KS-
 # Cache seguro no diretório temporário do sistema (/tmp no Vercel/Linux)
 TEMP_DIR = tempfile.gettempdir()
 CACHE_SHEET_LIVE = os.path.join(TEMP_DIR, "planilha_ao_vivo.xlsx")
+LOCAL_SHEET_NOVA = os.path.join(os.path.dirname(__file__), "..", "1° Assinatura PDV (respostas) (2).xlsx")
 LOCAL_SHEET_REPO = os.path.join(os.path.dirname(__file__), "..", "planilha_ao_vivo.xlsx")
 LOCAL_SHEET_FALLBACK = os.path.join(os.path.dirname(__file__), "..", "1° Assinatura PDV (respostas) (1).xlsx")
 
@@ -158,11 +159,14 @@ def sincronizar_planilha(forcar=True):
 
 def carregar_workbook_assinaturas(forcar_download=False):
     """
-    Retorna o workbook do OpenpyXL priorizando cache em memória RAM,
-    seguido por /tmp, arquivo estático e backup.
+    Retorna o workbook do OpenpyXL priorizando a planilha mais recente auditada pelo usuário,
+    seguido por cache em memória RAM, /tmp, arquivo estático e backup.
     """
     global _CACHED_BYTES_EXCEL
     
+    if os.path.exists(LOCAL_SHEET_NOVA):
+        return openpyxl.load_workbook(LOCAL_SHEET_NOVA, data_only=True)
+
     if forcar_download or (_CACHED_BYTES_EXCEL is None and not os.path.exists(CACHE_SHEET_LIVE)):
         try:
             sincronizar_planilha(forcar=forcar_download)
@@ -190,6 +194,8 @@ def carregar_workbook_assinaturas(forcar_download=False):
 
 def obter_caminho_planilha():
     """Mantido para compatibilidade."""
+    if os.path.exists(LOCAL_SHEET_NOVA):
+        return LOCAL_SHEET_NOVA
     if os.path.exists(CACHE_SHEET_LIVE):
         return CACHE_SHEET_LIVE
     if os.path.exists(LOCAL_SHEET_REPO):
@@ -324,7 +330,8 @@ def processar_assinaturas_pdv(forcar_download=False):
     clientes_processados = []
     seen_dedup_unicos = set()
 
-    for idx, r in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+    for idx, row in enumerate(ws.iter_rows(min_row=2), start=2):
+        r = [c.value for c in row]
         reg = r[0]
         cod = r[1]
         qtd = r[2]
@@ -352,86 +359,51 @@ def processar_assinaturas_pdv(forcar_download=False):
             continue
 
         cli_up = str(cli or "").upper()
-        cod_str = str(cod or "")
+        cod_str = str(cod or "").strip()
 
         # =====================================================================
-        # EXCLUSÃO DE PARÓQUIAS E ASSINANTES VENCIDOS (SEM RENOVAÇÃO CONFIRMADA)
+        # LEITURA DAS CORES DE AUDITORIA MANUAL DA PLANILHA (RESPOSTAS 2)
         # =====================================================================
-        # 1. Jaqueline Alves da Cruz (vencida em jun/26, sem renovação)
-        if "JAQUELINE ALVES DA CRUZ" in cli_up or cod_str == "12586":
-            continue
+        # AMARELO (FFFFFF00 / FFFF00): Renovações que já finalizaram
+        # VERMELHO (FFFF0000 / FF0000): Assinaturas normais vencidas
+        # BRANCO (FFFFFFFF / sem preenchimento): Assinaturas ativas/abertas
+        fills = [c.fill.start_color.rgb for c in row[:10] if c.fill and c.fill.start_color and c.fill.start_color.rgb]
+        is_amarelo = any(f in ['FFFFFF00', 'FFFF00'] for f in fills)
+        is_vermelho = any(f in ['FFFF0000', 'FF0000'] for f in fills)
 
-        # 2. Paróquia de Nossa Senhora da Glória (vencida)
-        if "PAROQUIA DE NOSSA SENHORA DA GLORIA" in cli_up or cod_str == "73":
-            continue
+        # Identificação de tratamentos especiais prioritários
+        eh_verilene = (cod_str == "79" or ("VERILENE" in cli_up and "PINHEIRO" in cli_up))
+        eh_julia = (cod_str == "237" or (("JULIA" in cli_up or "JÚLIA" in cli_up) and "OLIVEIRA" in cli_up and "JULIANA" not in cli_up))
 
-        # 3. Paróquia Nossa Senhora do Perpétuo Socorro - Alto Alegre (sem pedido de renovação)
-        if "ALTO ALEGRE" in cli_up or cod_str == "568":
-            continue
+        if not eh_verilene:
+            if is_vermelho:
+                # Exclui 100% das assinaturas normais vencidas pintadas de vermelho
+                continue
+            if is_amarelo:
+                # Exclui 100% das renovações finalizadas pintadas de amarelo
+                continue
 
-        # 4. Comunidade Católica Shalom Goiânia (sem pedido de renovação)
-        if ("SHALOM" in cli_up and ("GOIÂNIA" in cli_up or "GOIANIA" in cli_up)) or cod_str == "16802":
+        # =====================================================================
+        # EXCLUSÃO DE PARÓQUIAS E ASSINANTES VENCIDOS (CONFIRMADO PELO USUÁRIO)
+        # =====================================================================
+        if cod_str in ["12586", "73", "568", "16802", "20678", "65", "184", "15939", "17066", "17067", "11617", "16871", "4145", "20579", "209", "1622", "16868", "19825"]:
             continue
-
-        # 5. Mitra Diocesana de Lages - P N Sra do Perpétuo Socorro (terminou em nov/26)
-        if ("LAGES" in cli_up and "PERP" in cli_up) or cod_str == "20678":
+        if any(n in cli_up for n in [
+            "JAQUELINE ALVES DA CRUZ", "PAROQUIA DE NOSSA SENHORA DA GLORIA", "ALTO ALEGRE",
+            "DIOCESE DE BONFIM", "CAMOINA GRANDE", "JOSE OPERARIO", "JOSÉ OPERÁRIO",
+            "SANTO AMARO", "CARLENE MARIA", "LUZIANA", "LUZIÂNIA", "SANTISSIMA TRINDADE", "SANTÍSSIMA TRINDADE"
+        ]):
             continue
-
-        # 6. Mitra Diocesana de Guarulhos - Paróquia N Sra Aparecida (terminou em jul/26)
-        if ("GUARULHOS" in cli_up and "APARECIDA" in cli_up) or cod_str == "65":
+        if ("PERPETUO SOCORRO" in cli_up or "PERPÉTUO SOCORRO" in cli_up) and "SANTA MARIA" in str(r[47] or "").upper():
             continue
-
-        # 7. Diocese de Marabá - Paróquia de S. Maria (contrato antigo Cód 184 que terminou em nov/26)
-        if cod_str == "184":
+        if ("ROSARIO" in cli_up or "ROSÁRIO" in cli_up) and ("SEBASTIAO" in cli_up or "SEBASTIÃO" in cli_up):
             continue
-
-        # 8. Augusto Pereira - Linha 1198 / Cód 185 (contrato antigo 10/11/2025 na Praça da Liberdade, manter linha 1618)
-        if (cod_str == "185" and idx == 1198) or (cod_str == "185" and "LIBERDADE" in str(r[43] or "").upper()):
-            continue
-
-        # 9. Diocese de Bonfim - Paróquia do Sagrado Coração de Jesus (finalizado)
-        if cod_str == "15939" or "DIOCESE DE BONFIM" in cli_up:
-            continue
-
-        # 10. Mitra Diocesana de Campina Grande-PB / Camoina Grande (finalizado)
-        if cod_str in ["17066", "17067"] or "CAMOINA GRANDE" in cli_up or ("CAMPINA GRANDE" in cli_up and "MITRA" in cli_up):
-            continue
-
-        # 11. Paróquia São José Operário (finalizado)
-        if cod_str == "11617" or ("JOSE OPERARIO" in cli_up or "JOSÉ OPERÁRIO" in cli_up):
-            continue
-
-        # 12. Mitra Diocesana de Santo Amaro (finalizado)
-        if cod_str == "16871" or "SANTO AMARO" in cli_up:
-            continue
-
-        # 13. Carlene Maria Fernandes de Lima (finalizado)
-        if cod_str == "4145" or "CARLENE MARIA" in cli_up:
-            continue
-
-        # 14. Paróquia Nossa Senhora do Perpétuo Socorro - RS / Santa Maria (finalizado)
-        if cod_str in ["20579", "209"] or ("PERPETUO SOCORRO" in cli_up and "SANTA MARIA" in str(r[47] or "").upper()) or ("PERPÉTUO SOCORRO" in cli_up and "SANTA MARIA" in str(r[47] or "").upper()):
-            continue
-
-        # 15. Mitra Diocesana Luziana - Paróquia Sagrada Família (finalizado)
-        if cod_str == "1622" or "LUZIANA" in cli_up or "LUZIÂNIA" in cli_up:
-            continue
-
-        # 16. Paróquia Nsra do Rosário e São Sebastião - Niterói (finalizado)
-        if cod_str == "16868" or ("ROSARIO" in cli_up and "SEBASTIAO" in cli_up) or ("ROSÁRIO" in cli_up and "SEBASTIÃO" in cli_up):
-            continue
-
-        # 17. Sociedade Caritativa Santíssima Trindade (finalizado)
-        if cod_str == "19825" or "SANTISSIMA TRINDADE" in cli_up or "SANTÍSSIMA TRINDADE" in cli_up:
+        if cod_str == "185" and "LIBERDADE" in str(r[43] or "").upper():
             continue
 
         # =====================================================================
         # DEDUPLICAÇÃO DE ASSINANTES (CONFIRMADO: POSSUEM APENAS 1 ASSINATURA REAL)
         # =====================================================================
-        # Excluir o registro duplicado na planilha e manter apenas 1 envio ativo para:
-        # 1. Associação Mãe da Divina Misericórdia (Cód 20392, linhas 2 e 20)
-        # 2. Thaís Queiroz (Cód 10305, linhas 105 e 699)
-        # 3. Sidirlene Santos (Cód 11180, linhas 701 e 1080)
         if cod_str in {"20392", "10305", "11180"} or any(n in cli_up for n in ["DIVINA MISERICORDIA", "DIVINA MISERICÓRDIA", "THAIS QUEIROZ", "THAÍS QUEIROZ", "SIDIRLENE SANTOS"]):
             chave_dedup = cod_str if cod_str else cli_up
             if chave_dedup in seen_dedup_unicos:
@@ -459,8 +431,6 @@ def processar_assinaturas_pdv(forcar_download=False):
         # =====================================================================
         # REGRA DO CICLO DE 12 EXEMPLARES (ASSINATURA ANUAL BASEADA EM CAIXINHAS)
         # =====================================================================
-        # Contagem real de caixinhas marcadas no ciclo de 2026 (colunas 29 a 40)
-        # Colunas: 29=Jan/26, 30=Fev/26, 31=Mar/26, ..., 40=Dez/26
         caixinhas_marcadas_2026 = 0
         meses_marcados_nomes = []
         ult_mes_idx = None
@@ -479,27 +449,47 @@ def processar_assinaturas_pdv(forcar_download=False):
         fev = False
         mar = False
         ja_recebidos_antes = 0
+        obs_especial = ""
+        qtd_dez26_extra = 0
         
         # Identificar Data Base do Contrato Mais Recente (renovação ou registro inicial)
         if ren_dt and isinstance(ren_dt, datetime):
             dt_base = ren_dt
             is_renovacao = True
             qtd_val = int(ren_qtd) if ren_qtd and isinstance(ren_qtd, (int, float)) and ren_qtd > 0 else (int(qtd) if qtd and isinstance(qtd, (int, float)) else 1)
+        elif isinstance(ren_dt, (int, float)) and ren_dt > 30000:
+            try:
+                dt_base = datetime(1899, 12, 30) + timedelta(days=int(ren_dt))
+                is_renovacao = True
+                qtd_val = int(ren_qtd) if ren_qtd and isinstance(ren_qtd, (int, float)) and ren_qtd > 0 else (int(qtd) if qtd and isinstance(qtd, (int, float)) else 1)
+            except Exception:
+                pass
+        elif isinstance(ren_dt, str) and len(ren_dt) >= 10:
+            for fmt in ["%Y-%m-%d", "%d/%m/%Y"]:
+                try:
+                    dt_base = datetime.strptime(ren_dt[:10], fmt)
+                    is_renovacao = True
+                    qtd_val = int(ren_qtd) if ren_qtd and isinstance(ren_qtd, (int, float)) and ren_qtd > 0 else (int(qtd) if qtd and isinstance(qtd, (int, float)) else 1)
+                    break
+                except Exception:
+                    pass
         elif reg and isinstance(reg, datetime):
             dt_base = reg
             qtd_val = int(qtd) if qtd and isinstance(qtd, (int, float)) else 1
-        elif isinstance(reg, str) and len(reg) >= 10:
+        elif isinstance(reg, (int, float)) and reg > 30000:
             try:
-                dt_base = datetime.strptime(reg[:10], "%Y-%m-%d")
+                dt_base = datetime(1899, 12, 30) + timedelta(days=int(reg))
                 qtd_val = int(qtd) if qtd and isinstance(qtd, (int, float)) else 1
             except Exception:
                 pass
-
-        # Identificação de tratamentos especiais
-        eh_verilene = (str(cod) == "79" or idx == 1092 or ("VERILENE" in cli_up and "PINHEIRO" in cli_up))
-        eh_julia = (str(cod) == "237" or idx == 1249 or (("JULIA" in cli_up or "JÚLIA" in cli_up) and "OLIVEIRA" in cli_up and "JULIANA" not in cli_up))
-        obs_especial = ""
-        qtd_dez26_extra = 0
+        elif isinstance(reg, str) and len(reg) >= 10:
+            for fmt in ["%Y-%m-%d", "%d/%m/%Y"]:
+                try:
+                    dt_base = datetime.strptime(reg[:10], fmt)
+                    qtd_val = int(qtd) if qtd and isinstance(qtd, (int, float)) else 1
+                    break
+                except Exception:
+                    pass
 
         if eh_verilene:
             obs_especial = "Enviar 1 und de Dezembro/2026 (Prorrogação de 1 mês solicitada)"
@@ -548,9 +538,9 @@ def processar_assinaturas_pdv(forcar_download=False):
                 continue
 
             # Distribuição dos meses de 2027 conforme o saldo restante:
-            # 1 exemplar restante (ex: iniciou 01/02/2026): recebe apenas Janeiro/2027
+            # 1 exemplar restante (ex: iniciou 01/02/2026 ou recebeu 11 caixinhas): recebe apenas Janeiro/2027
             # 2 exemplares restantes (ex: iniciou 01/03/2026): recebe Janeiro e Fevereiro/2027
-            # 3 ou mais exemplares restantes (ex: iniciou 01/04/2026 em diante): recebe Jan, Fev e Mar/2027
+            # 3 ou mais exemplares restantes (ex: iniciou 01/04/2026 em diante ou renovou): recebe Jan, Fev e Mar/2027
             jan = (saldo_restante >= 1)
             fev = (saldo_restante >= 2)
             mar = (saldo_restante >= 3)
