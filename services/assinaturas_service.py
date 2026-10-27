@@ -389,6 +389,42 @@ def processar_assinaturas_pdv(forcar_download=False):
         if (cod_str == "185" and idx == 1198) or (cod_str == "185" and "LIBERDADE" in str(r[43] or "").upper()):
             continue
 
+        # 9. Diocese de Bonfim - Paróquia do Sagrado Coração de Jesus (finalizado)
+        if cod_str == "15939" or "DIOCESE DE BONFIM" in cli_up:
+            continue
+
+        # 10. Mitra Diocesana de Campina Grande-PB / Camoina Grande (finalizado)
+        if cod_str in ["17066", "17067"] or "CAMOINA GRANDE" in cli_up or ("CAMPINA GRANDE" in cli_up and "MITRA" in cli_up):
+            continue
+
+        # 11. Paróquia São José Operário (finalizado)
+        if cod_str == "11617" or ("JOSE OPERARIO" in cli_up or "JOSÉ OPERÁRIO" in cli_up):
+            continue
+
+        # 12. Mitra Diocesana de Santo Amaro (finalizado)
+        if cod_str == "16871" or "SANTO AMARO" in cli_up:
+            continue
+
+        # 13. Carlene Maria Fernandes de Lima (finalizado)
+        if cod_str == "4145" or "CARLENE MARIA" in cli_up:
+            continue
+
+        # 14. Paróquia Nossa Senhora do Perpétuo Socorro - RS / Santa Maria (finalizado)
+        if cod_str in ["20579", "209"] or ("PERPETUO SOCORRO" in cli_up and "SANTA MARIA" in str(r[47] or "").upper()) or ("PERPÉTUO SOCORRO" in cli_up and "SANTA MARIA" in str(r[47] or "").upper()):
+            continue
+
+        # 15. Mitra Diocesana Luziana - Paróquia Sagrada Família (finalizado)
+        if cod_str == "1622" or "LUZIANA" in cli_up or "LUZIÂNIA" in cli_up:
+            continue
+
+        # 16. Paróquia Nsra do Rosário e São Sebastião - Niterói (finalizado)
+        if cod_str == "16868" or ("ROSARIO" in cli_up and "SEBASTIAO" in cli_up) or ("ROSÁRIO" in cli_up and "SEBASTIÃO" in cli_up):
+            continue
+
+        # 17. Sociedade Caritativa Santíssima Trindade (finalizado)
+        if cod_str == "19825" or "SANTISSIMA TRINDADE" in cli_up or "SANTÍSSIMA TRINDADE" in cli_up:
+            continue
+
         # =====================================================================
         # DEDUPLICAÇÃO DE ASSINANTES (CONFIRMADO: POSSUEM APENAS 1 ASSINATURA REAL)
         # =====================================================================
