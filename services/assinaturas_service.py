@@ -322,6 +322,7 @@ def processar_assinaturas_pdv(forcar_download=False):
     col_dez26 = 40 # Dezembro/2026
 
     clientes_processados = []
+    seen_dedup_unicos = set()
 
     for idx, r in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
         reg = r[0]
@@ -383,6 +384,19 @@ def processar_assinaturas_pdv(forcar_download=False):
         # 7. Diocese de Marabá - Paróquia de S. Maria (contrato antigo Cód 184 que terminou em nov/26)
         if cod_str == "184":
             continue
+
+        # =====================================================================
+        # DEDUPLICAÇÃO DE ASSINANTES (CONFIRMADO: POSSUEM APENAS 1 ASSINATURA REAL)
+        # =====================================================================
+        # Excluir o registro duplicado na planilha e manter apenas 1 envio ativo para:
+        # 1. Associação Mãe da Divina Misericórdia (Cód 20392, linhas 2 e 20)
+        # 2. Thaís Queiroz (Cód 10305, linhas 105 e 699)
+        # 3. Sidirlene Santos (Cód 11180, linhas 701 e 1080)
+        if cod_str in {"20392", "10305", "11180"} or any(n in cli_up for n in ["DIVINA MISERICORDIA", "DIVINA MISERICÓRDIA", "THAIS QUEIROZ", "THAÍS QUEIROZ", "SIDIRLENE SANTOS"]):
+            chave_dedup = cod_str if cod_str else cli_up
+            if chave_dedup in seen_dedup_unicos:
+                continue
+            seen_dedup_unicos.add(chave_dedup)
 
         # =====================================================================
         # ENRIQUECIMENTO DE CNPJs OFICIAIS DO OMIE ERP PARA PARÓQUIAS VÁLIDAS
