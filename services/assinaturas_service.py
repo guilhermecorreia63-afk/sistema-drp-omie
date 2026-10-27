@@ -423,12 +423,14 @@ def processar_assinaturas_pdv(forcar_download=False):
         # Colunas: 29=Jan/26, 30=Fev/26, 31=Mar/26, ..., 40=Dez/26
         caixinhas_marcadas_2026 = 0
         meses_marcados_nomes = []
+        ult_mes_idx = None
         nomes_meses_2026 = ['Jan/26', 'Fev/26', 'Mar/26', 'Abr/26', 'Mai/26', 'Jun/26', 'Jul/26', 'Ago/26', 'Set/26', 'Out/26', 'Nov/26', 'Dez/26']
         for idx_m, c_idx in enumerate(range(29, 41)):
             v = r[c_idx]
             if v is True or v == 1 or str(v).strip().upper() in ['TRUE', 'VERDADEIRO', '1']:
                 caixinhas_marcadas_2026 += 1
                 meses_marcados_nomes.append(nomes_meses_2026[idx_m])
+                ult_mes_idx = c_idx
 
         dt_base = None
         is_renovacao = False
@@ -438,60 +440,61 @@ def processar_assinaturas_pdv(forcar_download=False):
         mar = False
         ja_recebidos_antes = 0
         
-        # Prioridade 1: Renovação registrada em 2026 ou 2027
-        if ren_dt and isinstance(ren_dt, datetime) and ren_dt.year >= 2026:
+        # Identificar Data Base do Contrato Mais Recente (renovação ou registro inicial)
+        if ren_dt and isinstance(ren_dt, datetime):
             dt_base = ren_dt
             is_renovacao = True
             qtd_val = int(ren_qtd) if ren_qtd and isinstance(ren_qtd, (int, float)) and ren_qtd > 0 else (int(qtd) if qtd and isinstance(qtd, (int, float)) else 1)
-        # Prioridade 2: Primeiro registro em 2026 ou 2027
-        elif reg and isinstance(reg, datetime) and reg.year >= 2026:
+        elif reg and isinstance(reg, datetime):
             dt_base = reg
             qtd_val = int(qtd) if qtd and isinstance(qtd, (int, float)) else 1
-        elif isinstance(reg, str) and len(reg) >= 10 and reg.startswith("2026"):
+        elif isinstance(reg, str) and len(reg) >= 10:
             try:
                 dt_base = datetime.strptime(reg[:10], "%Y-%m-%d")
                 qtd_val = int(qtd) if qtd and isinstance(qtd, (int, float)) else 1
             except Exception:
                 pass
 
-        # Prioridade 3: Grandes volumes / Paróquias contínuas institucionais (>= 20 unidades)
-        if not dt_base and qtd and isinstance(qtd, (int, float)) and qtd >= 20:
-            rec_dez26 = (r[col_dez26] is True or r[col_dez26] == 1 or str(r[col_dez26]).strip().upper() in ['TRUE', 'VERDADEIRO', '1'])
-            if rec_dez26:
-                jan, fev, mar = True, True, True
-                elegivel = True
-                qtd_val = int(qtd)
-                ja_recebidos_antes = caixinhas_marcadas_2026
+        # Paróquias / Clientes institucionais contínuos (>= 20 unidades)
+        eh_paroquia = (qtd and isinstance(qtd, (int, float)) and qtd >= 20)
+
+        # Validação de Assinaturas Vencidas / Encerradas
+        if not eh_paroquia:
+            if not dt_base:
+                continue
+
+            # Se o contrato/renovação iniciou antes de 2026:
+            # Só é elegível para 2027 se o contrato for do final de 2025 e o cliente recebeu até Nov/Dez de 2026!
+            # Se a última caixinha recebida foi em Jan..Out de 2026, seu ciclo de 12 meses já encerrou em 2026!
+            if dt_base.year < 2026:
+                if ult_mes_idx is None or ult_mes_idx < 39: # 39=Nov/26, 40=Dez/26
+                    continue
+
+            # Se já recebeu 12 caixinhas completas em 2026 e não possui renovação para 2027:
+            if caixinhas_marcadas_2026 >= 12 and (not is_renovacao or dt_base.year < 2027):
+                continue
+
+            # Se não teve caixinhas em 2026 e não é renovação para 2027:
+            if caixinhas_marcadas_2026 == 0 and dt_base.year < 2027:
+                continue
 
         # CÁLCULO PRINCIPAL: BASEADO NA CONTAGEM REAL DE CAIXINHAS RECEBIDAS
-        if not elegivel:
-            if caixinhas_marcadas_2026 > 0:
-                ja_recebidos_antes = caixinhas_marcadas_2026
-                saldo_restante = max(0, 12 - ja_recebidos_antes)
-                
-                # Se já recebeu 12 caixinhas completas (como Mario Brito Cód 424 ou Heloísa Barbosa Cód 555),
-                # o ciclo anual de 12 meses já está 100% CONCLUÍDO e não deve receber no Lote 1
-                if saldo_restante == 0 and not is_renovacao:
-                    continue
-                
-                # Se ainda tem saldo restante de exemplares a receber do ciclo
-                if saldo_restante > 0:
-                    jan = (saldo_restante >= 1)
-                    fev = (saldo_restante >= 2)
-                    mar = (saldo_restante >= 3)
-                    elegivel = (jan or fev or mar)
-            elif dt_base:
-                ano_start = dt_base.year
-                m_start = dt_base.month
-                ex_jan = (2027 - ano_start) * 12 + (1 - m_start) + 1
-                ex_fev = (2027 - ano_start) * 12 + (2 - m_start) + 1
-                ex_mar = (2027 - ano_start) * 12 + (3 - m_start) + 1
-                jan = (1 <= ex_jan <= 12)
-                fev = (1 <= ex_fev <= 12)
-                mar = (1 <= ex_mar <= 12)
-                elegivel = (jan or fev or mar)
-                pos_jan = ex_jan
-                ja_recebidos_antes = max(0, (pos_jan - 1)) if pos_jan > 1 else 0
+        ja_recebidos_antes = caixinhas_marcadas_2026
+        saldo_restante = max(0, 12 - ja_recebidos_antes)
+
+        if eh_paroquia:
+            jan, fev, mar = True, True, True
+            elegivel = True
+        elif saldo_restante > 0:
+            jan = (saldo_restante >= 1)
+            fev = (saldo_restante >= 2)
+            mar = (saldo_restante >= 3)
+            elegivel = (jan or fev or mar)
+        elif is_renovacao and dt_base.year >= 2027:
+            jan, fev, mar = True, True, True
+            elegivel = True
+        else:
+            elegivel = False
 
         if not elegivel:
             continue
