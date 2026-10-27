@@ -495,11 +495,9 @@ def processar_assinaturas_pdv(forcar_download=False):
             except Exception:
                 pass
 
-        # Paróquias / Clientes institucionais contínuos (>= 20 unidades)
-        eh_paroquia = (qtd and isinstance(qtd, (int, float)) and qtd >= 20)
-
-        # Prorrogação de 1 mês solicitada pelo usuário para Verilene Pinheiro (Linha 1092 / Cód 79)
+        # Identificação de tratamentos especiais
         eh_verilene = (str(cod) == "79" or idx == 1092 or ("VERILENE" in cli_up and "PINHEIRO" in cli_up))
+        eh_julia = (str(cod) == "237" or idx == 1249 or (("JULIA" in cli_up or "JÚLIA" in cli_up) and "OLIVEIRA" in cli_up and "JULIANA" not in cli_up))
         obs_especial = ""
         qtd_dez26_extra = 0
 
@@ -510,35 +508,33 @@ def processar_assinaturas_pdv(forcar_download=False):
             jan, fev, mar = False, False, False
             ja_recebidos_antes = 10
             saldo_restante = 1
-        elif not eh_paroquia:
+        elif eh_julia:
+            # Júlia Oliveira: recebeu Jun, Out, Nov, Dez/2026 (4 caixinhas). Prorrogação de 3 meses, finaliza em Agosto/2027.
+            obs_especial = "Prorrogação de 3 meses (cliente não recebeu de julho a setembro/2026). Deve finalizar em Agosto/2027."
+            elegivel = True
+            jan, fev, mar = True, True, True
+            ja_recebidos_antes = 4
+            saldo_restante = 8
+        else:
             if not dt_base:
                 continue
 
             # Se o contrato/cadastro iniciou em 2025 ou antes e NÃO teve renovação em 2026/2027:
-            # O contrato anual encerrou em 2026 (como o grupo de Nov/2025, linhas 1093 a 1232)
+            # O contrato anual encerrou em 2026
             if dt_base.year < 2026 and not (is_renovacao and dt_base.year >= 2026):
                 continue
 
-            # Se for renovação em 2026 (ex: Camila Rodrigues em 01/07/2026):
-            # As caixinhas do novo ciclo de 12 meses são contadas a partir do mês da renovação!
-            if is_renovacao and dt_base.year == 2026:
-                m_ren = dt_base.month
-                c_novo_ciclo = 0
-                for col_idx in range(28 + m_ren, 41):
-                    val_c = r[col_idx]
-                    if val_c is True or val_c == 1 or str(val_c).strip().upper() in ['TRUE', 'VERDADEIRO', '1']:
-                        c_novo_ciclo += 1
-                ja_recebidos_antes = c_novo_ciclo
-                saldo_restante = max(0, 12 - ja_recebidos_antes)
-            elif dt_base.year == 2026 and not is_renovacao:
-                # Cliente novo registrado em 2026
-                m_reg = dt_base.month
-                c_novo_ciclo = 0
-                for col_idx in range(28 + m_reg, 41):
-                    val_c = r[col_idx]
-                    if val_c is True or val_c == 1 or str(val_c).strip().upper() in ['TRUE', 'VERDADEIRO', '1']:
-                        c_novo_ciclo += 1
-                ja_recebidos_antes = c_novo_ciclo
+            # Determinar mês de início do ciclo anual em 2026
+            if dt_base.year == 2026:
+                m_start = dt_base.month
+                # Se registrou em janeiro mas o primeiro mês efetivo recebido foi depois (ex: Pio de Pietrelcina começou em Fev/26)
+                prim_mes_marcado = next((idx_m + 1 for idx_m, c in enumerate(range(29, 41)) if r[c] in [True, 1, 'TRUE', '1']), None)
+                if prim_mes_marcado and prim_mes_marcado > m_start:
+                    m_start = prim_mes_marcado
+
+                # Contagem de caixinhas recebidas no ciclo a partir de m_start
+                c_ciclo = sum(1 for c in range(28 + m_start, 41) if r[c] in [True, 1, 'TRUE', '1'])
+                ja_recebidos_antes = c_ciclo
                 saldo_restante = max(0, 12 - ja_recebidos_antes)
             elif dt_base.year >= 2027:
                 ja_recebidos_antes = 0
@@ -547,19 +543,18 @@ def processar_assinaturas_pdv(forcar_download=False):
                 ja_recebidos_antes = caixinhas_marcadas_2026
                 saldo_restante = max(0, 12 - ja_recebidos_antes)
 
-            # Se já recebeu as 12 caixinhas completas deste ciclo
+            # Se já completou os 12 meses do ciclo em 2026 (ex: começou 01/01/2026 e recebeu 12 caixinhas): encerrou
             if saldo_restante == 0:
                 continue
 
+            # Distribuição dos meses de 2027 conforme o saldo restante:
+            # 1 exemplar restante (ex: iniciou 01/02/2026): recebe apenas Janeiro/2027
+            # 2 exemplares restantes (ex: iniciou 01/03/2026): recebe Janeiro e Fevereiro/2027
+            # 3 ou mais exemplares restantes (ex: iniciou 01/04/2026 em diante): recebe Jan, Fev e Mar/2027
             jan = (saldo_restante >= 1)
             fev = (saldo_restante >= 2)
             mar = (saldo_restante >= 3)
             elegivel = (jan or fev or mar)
-        else: # eh_paroquia
-            jan, fev, mar = True, True, True
-            elegivel = True
-            ja_recebidos_antes = caixinhas_marcadas_2026
-            saldo_restante = 12
 
         if not elegivel and qtd_dez26_extra == 0:
             continue
@@ -570,7 +565,7 @@ def processar_assinaturas_pdv(forcar_download=False):
 
         # Observação especial solicitada pelo usuário para Silvana Maria dos Santos Silva (Linha 523 / Cód 18427)
         cli_upper = str(cli).upper()
-        if not eh_verilene and (str(cod) == "18427" or "SILVANA MARIA DO SANTOS SILVA" in cli_upper or "SILVANA MARIA DOS SANTOS SILVA" in cli_upper):
+        if not eh_verilene and not eh_julia and (str(cod) == "18427" or "SILVANA MARIA DO SANTOS SILVA" in cli_upper or "SILVANA MARIA DOS SANTOS SILVA" in cli_upper):
             obs_especial = "Enviar 1 und de Dezembro/2026 junto com Jan, Fev e Mar"
             qtd_dez26_extra = 1
 
@@ -610,11 +605,14 @@ def processar_assinaturas_pdv(forcar_download=False):
             "qtd": total_exemplares_envio_cliente
         })
         if restantes_apos_lote > 0:
+            obs_restante = f"{restantes_apos_lote} exemplar(es) restantes para conclusão"
+            if eh_julia:
+                obs_restante = f"{restantes_apos_lote} exemplar(es) restantes para conclusão (Finaliza em Agosto/2027)"
             etapas_cliente.append({
-                "ciclo": "Próximos Lotes (Abril em diante)",
+                "ciclo": "Próximos Lotes (Abril a Agosto/2027)" if eh_julia else "Próximos Lotes (Abril em diante)",
                 "status": "PENDENTE",
                 "badge": "secondary",
-                "obs": f"{restantes_apos_lote} exemplar(es) restantes para conclusão",
+                "obs": obs_restante,
                 "qtd": restantes_apos_lote * qtd_val
             })
         else:
