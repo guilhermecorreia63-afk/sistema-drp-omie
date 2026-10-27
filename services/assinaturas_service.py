@@ -159,13 +159,16 @@ def sincronizar_planilha(forcar=True):
 
 def carregar_workbook_assinaturas(forcar_download=False):
     """
-    Retorna o workbook do OpenpyXL priorizando a planilha mais recente auditada pelo usuário,
-    seguido por cache em memória RAM, /tmp, arquivo estático e backup.
+    Retorna o workbook do OpenpyXL priorizando a planilha auditada mais recente (respostas (2) ou planilha_ao_vivo do repo),
+    garantindo que o Vercel utilize as marcações manuais de cores feitas no Excel.
     """
     global _CACHED_BYTES_EXCEL
     
     if os.path.exists(LOCAL_SHEET_NOVA):
         return openpyxl.load_workbook(LOCAL_SHEET_NOVA, data_only=True)
+
+    if os.path.exists(LOCAL_SHEET_REPO):
+        return openpyxl.load_workbook(LOCAL_SHEET_REPO, data_only=True)
 
     if forcar_download or (_CACHED_BYTES_EXCEL is None and not os.path.exists(CACHE_SHEET_LIVE)):
         try:
@@ -178,9 +181,6 @@ def carregar_workbook_assinaturas(forcar_download=False):
 
     if os.path.exists(CACHE_SHEET_LIVE):
         return openpyxl.load_workbook(CACHE_SHEET_LIVE, data_only=True)
-
-    if os.path.exists(LOCAL_SHEET_REPO):
-        return openpyxl.load_workbook(LOCAL_SHEET_REPO, data_only=True)
 
     if os.path.exists(LOCAL_SHEET_FALLBACK):
         return openpyxl.load_workbook(LOCAL_SHEET_FALLBACK, data_only=True)
