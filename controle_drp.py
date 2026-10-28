@@ -137,10 +137,20 @@ class ControleDRP:
             for _, r in df_prod.iterrows():
                 id_p = r['id_produto']
                 raw_sku = str(r['sku']).strip() if pd.notna(r['sku']) and str(r['sku']).strip() else f"ID-{id_p}"
-                id_para_sku[id_p] = raw_sku
-
                 nome_prod = str(r['nome']) if pd.notna(r['nome']) else f"Produto {raw_sku}"
                 fam_prod = str(r['familia']) if pd.notna(r['familia']) else "GERAL"
+
+                # Ignorar produtos antigos/descontinuados LV.
+                sku_up = raw_sku.upper()
+                nome_up = nome_prod.upper()
+                if (
+                    sku_up.startswith("LV.") or sku_up.startswith("LV-") or "LV." in sku_up or
+                    nome_up.startswith("LV.") or nome_up.startswith("LV -") or nome_up.startswith("LV ") or
+                    fam_prod.upper().startswith("LV")
+                ):
+                    continue
+
+                id_para_sku[id_p] = raw_sku
                 marca_prod = self.extrair_marca(r)
 
                 if raw_sku not in sku_info:

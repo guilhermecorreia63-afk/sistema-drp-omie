@@ -122,6 +122,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_assinaturas_obter_lote_ativo()
         elif url_path == '/api/correios/sro_rastrear':
             self.handle_api_correios_sro_rastrear()
+        elif url_path == '/api/destaques':
+            self.handle_api_destaques_get()
         else:
             super().do_GET()
 
@@ -215,6 +217,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_assinaturas_salvar_rastreio()
         elif url_path == '/api/assinaturas/atualizar_status_rastreio':
             self.handle_api_assinaturas_atualizar_status_rastreio()
+        elif url_path == '/api/assinaturas/atualizar_codigo_rastreio':
+            self.handle_api_assinaturas_atualizar_codigo_rastreio()
         elif url_path == '/api/assinaturas/excluir_rastreio':
             self.handle_api_assinaturas_excluir_rastreio()
         elif url_path == '/api/assinaturas/configurar_lote_ativo':
@@ -223,6 +227,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_assinaturas_sincronizar_rastreios_correios()
         elif url_path == '/api/assinaturas/completar_cpfs_omie':
             self.handle_api_assinaturas_completar_cpfs_omie()
+        elif url_path == '/api/destaques':
+            self.handle_api_destaques_save()
         else:
             self.send_error(404, f"Endpoint não encontrado: {self.path}")
 
@@ -784,16 +790,26 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     def handle_api_destaques_get(self):
         json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'produtos_destaque_drp.json')
-        skus = []
+        destaques = []
         if os.path.exists(json_path):
             try:
                 with open(json_path, 'r', encoding='utf-8') as f:
-                    skus = json.load(f)
+                    raw = json.load(f)
+                    for item in raw:
+                        if isinstance(item, str):
+                            destaques.append({"sku": str(item).strip(), "nome": "", "cd": True, "matriz": False})
+                        elif isinstance(item, dict) and item.get("sku"):
+                            destaques.append({
+                                "sku": str(item["sku"]).strip(),
+                                "nome": str(item.get("nome") or "").strip(),
+                                "cd": bool(item.get("cd", True)),
+                                "matriz": bool(item.get("matriz", False))
+                            })
             except Exception:
-                skus = []
+                destaques = []
         response_payload = {
             "success": True,
-            "destaques": skus
+            "destaques": destaques
         }
         self.send_response(200)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
@@ -807,18 +823,35 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             body = json.loads(post_data.decode('utf-8'))
         except Exception:
             body = {}
-        skus_list = body.get('destaques', body.get('skus', []))
-        skus_clean = sorted(list(set(str(s).strip() for s in skus_list if s)))
+        itens_in = body.get('destaques', body.get('itens', []))
+        destaques_clean = []
+        vistos = set()
+        for it in itens_in:
+            if isinstance(it, str):
+                sku = str(it).strip()
+                if sku and sku not in vistos:
+                    vistos.add(sku)
+                    destaques_clean.append({"sku": sku, "nome": "", "cd": True, "matriz": False})
+            elif isinstance(it, dict) and it.get("sku"):
+                sku = str(it["sku"]).strip()
+                if sku and sku not in vistos:
+                    vistos.add(sku)
+                    destaques_clean.append({
+                        "sku": sku,
+                        "nome": str(it.get("nome") or "").strip(),
+                        "cd": bool(it.get("cd", True)),
+                        "matriz": bool(it.get("matriz", False))
+                    })
         json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'produtos_destaque_drp.json')
         try:
             with open(json_path, 'w', encoding='utf-8') as f:
-                json.dump(skus_clean, f, ensure_ascii=False, indent=2)
+                json.dump(destaques_clean, f, ensure_ascii=False, indent=2)
         except Exception as e:
             print(f"[API SERVER] Erro ao salvar produtos_destaque_drp.json: {e}")
         response_payload = {
             "success": True,
-            "message": f"Lista de lançamentos/destaques salva com sucesso ({len(skus_clean)} SKUs).",
-            "destaques": skus_clean
+            "message": f"Lista de lançamentos forçados salva com sucesso ({len(destaques_clean)} itens).",
+            "destaques": destaques_clean
         }
         self.send_response(200)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
@@ -887,6 +920,17 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             
         self._send_json({"success": True, "remessa_id": remessa_id, "status_transito": novo_status, "status_map": status_map})
 
+    def _obter_destaques_set(self):
+        try:
+            p = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'produtos_destaque_drp.json')
+            if os.path.exists(p):
+                with open(p, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    return set(str(x.get('sku', '') if isinstance(x, dict) else x).strip().upper() for x in data)
+        except Exception:
+            pass
+        return set()
+
     def handle_api_produtos_turso_json(self):
         try:
             prods = db.carregar_produtos_cache() if db else []
@@ -895,7 +939,29 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 if os.path.exists(json_path):
                     with open(json_path, 'r', encoding='utf-8') as f:
                         prods = json.load(f)
-            self._send_json(prods)
+
+            destaques_set = self._obter_destaques_set()
+            prods_filtrados = []
+            for p in prods:
+                sku = str(p.get("sku", "")).strip().upper()
+                nome = str(p.get("nome") or p.get("descricao") or "").strip().upper()
+                fam = str(p.get("familia") or "").strip().upper()
+                inativo = str(p.get("inativo", "N")).upper() == "S" or p.get("ativo") is False
+
+                if sku in destaques_set:
+                    prods_filtrados.append(p)
+                    continue
+                if inativo:
+                    continue
+                if (
+                    sku.startswith("LV.") or sku.startswith("LV-") or "LV." in sku or
+                    nome.startswith("LV.") or nome.startswith("LV -") or nome.startswith("LV ") or
+                    fam.startswith("LV")
+                ):
+                    continue
+                prods_filtrados.append(p)
+
+            self._send_json(prods_filtrados)
         except Exception as e:
             self._send_json({"error": str(e)}, status=500)
 
@@ -1236,7 +1302,7 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             # C. Sincronização automática dos novos pedidos de assinatura faturados no Omie ERP para o Turso DB
             try:
                 from services.pedidos_assinaturas import PedidosAssinaturasService
-                res_ass = PedidosAssinaturasService().sincronizar_pedidos_faturados_omie(dias_atras=30)
+                res_ass = PedidosAssinaturasService().sincronizar_pedidos_faturados_omie(dias_atras=5)
                 print(f"[CRON API] Sync pedidos faturados assinaturas: {res_ass.get('message')}", flush=True)
             except Exception as e_ass:
                 print(f"[CRON API] Aviso sync assinaturas cron: {e_ass}", flush=True)
@@ -1745,13 +1811,17 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             infAdic['cConsFinal'] = "S"
             infAdic['cContato'] = "CD SP"
             if not infAdic.get('cDadosAdic'):
-                infAdic['cDadosAdic'] = "Remessa Transferencia entre CD | Transportadora TRANSLATINO | Frete CIF | Destino: GUARULHOS MACEDO CNPJ 07.044.456/0092-30"
+                infAdic['cDadosAdic'] = "Remessa Transferencia entre CD | Transportadora TRANSLATINO | Frete CIF | Destino: GUARULHOS MACEDO CNPJ 07.044.456/0092-30 | DESCONTO DE 90% NA NOTA FISCAL"
+            elif "DESCONTO DE 90%" not in infAdic['cDadosAdic']:
+                infAdic['cDadosAdic'] += " | DESCONTO DE 90% NA NOTA FISCAL"
             body['infAdic'] = infAdic
 
             # Obs
             obs = body.get('obs', {})
             if not obs.get('cObs'):
-                obs['cObs'] = "Remessa Transferencia entre CD | Transportadora TRANSLATINO | Frete CIF | Destino: GUARULHOS MACEDO CNPJ 07.044.456/0092-30||Fazer etiqueta com letras grandes e deixar a NF fora das caixas e quantidade de volumes:|A/C Sr. Gildo.|Entregar ao Tiberio|Comunidade Catolica Shalom|Translatino"
+                obs['cObs'] = "Remessa Transferencia entre CD | Transportadora TRANSLATINO | Frete CIF | Destino: GUARULHOS MACEDO CNPJ 07.044.456/0092-30||Fazer etiqueta com letras grandes e deixar a NF fora das caixas e quantidade de volumes:|A/C Sr. Gildo.|Entregar ao Tiberio|Comunidade Catolica Shalom|Translatino||ATENÇÃO: APLICAR DESCONTO DE 90% NA NOTA FISCAL"
+            elif "DESCONTO DE 90%" not in obs['cObs']:
+                obs['cObs'] += "||ATENÇÃO: APLICAR DESCONTO DE 90% NA NOTA FISCAL"
             body['obs'] = obs
 
             # Email
@@ -1812,6 +1882,11 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 # Forçar o CFOP do item de acordo com o cenário fiscal
                 item['cCFOP'] = "6.152"
                 item['codigo_local_estoque'] = 1794541746
+
+                # Aplicar Desconto de 90% em cada item
+                qtd_item = float(item.get('nQtde') or item.get('nQtd') or 1)
+                subtotal_item = round(qtd_item * float(item.get('nValUnit') or 0), 2)
+                item['nDesconto'] = round(subtotal_item * 0.90, 2)
 
                 # Garantir tributação padrão DRP: ICMS 41, PIS 07, COFINS 07
                 origem_icms = (item.get('ICMS') or {}).get('cOrigem', '0')
@@ -2877,14 +2952,40 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             if not rid:
                 self._send_json({"success": False, "message": "ID não informado."}, status=400)
                 return
-            db.executar_query(
-                "UPDATE assinaturas_rastreios SET status_rastreio = :st WHERE id = :id",
-                {"st": novo_status, "id": int(rid)},
-                is_select=False
-            )
+            
+            if "codigo_rastreio" in body and body["codigo_rastreio"]:
+                db.executar_query(
+                    "UPDATE assinaturas_rastreios SET status_rastreio = :st, codigo_rastreio = :cod WHERE id = :id",
+                    {"st": novo_status, "cod": str(body["codigo_rastreio"]).strip().upper(), "id": int(rid)},
+                    is_select=False
+                )
+            else:
+                db.executar_query(
+                    "UPDATE assinaturas_rastreios SET status_rastreio = :st WHERE id = :id",
+                    {"st": novo_status, "id": int(rid)},
+                    is_select=False
+                )
             self._send_json({"success": True, "novo_status": novo_status, "message": f"Status atualizado para '{novo_status}' com sucesso!"})
         except Exception as e:
             print(f"[API RASTREIO] Erro ao atualizar status: {e}")
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_assinaturas_atualizar_codigo_rastreio(self):
+        try:
+            body = self._read_body()
+            rid = body.get("id")
+            novo_codigo = str(body.get("codigo_rastreio") or "").strip().upper()
+            if not rid or not novo_codigo:
+                self._send_json({"success": False, "message": "ID e Código de Rastreio são obrigatórios."}, status=400)
+                return
+            db.executar_query(
+                "UPDATE assinaturas_rastreios SET codigo_rastreio = :cod, ultimo_evento = :ev WHERE id = :id",
+                {"cod": novo_codigo, "ev": f"Código de rastreio J&T Express atualizado: {novo_codigo}", "id": int(rid)},
+                is_select=False
+            )
+            self._send_json({"success": True, "codigo_rastreio": novo_codigo, "message": f"Código {novo_codigo} salvo com sucesso!"})
+        except Exception as e:
+            print(f"[API RASTREIO] Erro ao atualizar codigo de rastreio: {e}")
             self._send_json({"success": False, "message": str(e)}, status=500)
 
     def handle_api_correios_sro_rastrear(self):

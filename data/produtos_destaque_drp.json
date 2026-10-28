@@ -1,85 +1,500 @@
 [
-  "000110",
-  "009540",
-  "007004",
-  "001929",
-  "000613",
-  "000274",
-  "PRD00865",
-  "002454",
-  "000683",
-  "PRD00118",
-  "000054",
-  "PRD00856",
-  "000109",
-  "007157",
-  "000578",
-  "009285",
-  "PRD00861",
-  "000041",
-  "000124",
-  "007309",
-  "000664",
-  "001168",
-  "000040",
-  "000579",
-  "008976",
-  "007158",
-  "000562",
-  "PRD00860",
-  "000627",
-  "001930",
-  "006591",
-  "008148",
-  "007308",
-  "009394",
-  "007456",
-  "000039",
-  "008512",
-  "PRD00868",
-  "000639",
-  "000275",
-  "004941",
-  "PRD00863",
-  "000762",
-  "PRD00855",
-  "002504",
-  "PRD00866",
-  "010321",
-  "000624",
-  "010320",
-  "PRD00867",
-  "PRD00862",
-  "007143",
-  "001922",
-  "000682",
-  "007455",
-  "007001",
-  "000276",
-  "009393",
-  "PRD00869",
-  "000638",
-  "000649",
-  "000069",
-  "000642",
-  "000090",
-  "005243",
-  "000272",
-  "008149",
-  "000634",
-  "000685",
-  "007307",
-  "000648",
-  "009283",
-  "000641",
-  "000684",
-  "009422",
-  "000607",
-  "000662",
-  "PRD00876",
-  "PRD00413",
-  "PRD00414",
-  "PRD00561",
-  "PRD00562",
-  "PRD00563"
+  {
+    "sku": "000110",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "009540",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "007004",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "001929",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000613",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000274",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "PRD00865",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "002454",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000683",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "PRD00118",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000054",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "PRD00856",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000109",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "007157",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000578",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "009285",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "PRD00861",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000041",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000124",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "007309",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000664",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "001168",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000040",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000579",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "008976",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "007158",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000562",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "PRD00860",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000627",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "001930",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "006591",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "008148",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "007308",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "009394",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "007456",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000039",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "008512",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "PRD00868",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000639",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000275",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "004941",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "PRD00863",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000762",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "PRD00855",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "002504",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "PRD00866",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "010321",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000624",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "010320",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "PRD00867",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "PRD00862",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "007143",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "001922",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000682",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "007455",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "007001",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000276",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "009393",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "PRD00869",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000638",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000649",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000069",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000642",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000090",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "005243",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000272",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "008149",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000634",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000685",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "007307",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000648",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "009283",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000641",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000684",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "009422",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000607",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "000662",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "PRD00876",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "PRD00413",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "PRD00414",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "PRD00561",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "PRD00562",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  },
+  {
+    "sku": "PRD00563",
+    "nome": "",
+    "cd": true,
+    "matriz": false
+  }
 ]

@@ -109,7 +109,7 @@ def sincronizar_rastreios_correios():
     2. Consulta o banco do Projeto Correios (se configurado) e enriquece os rastreios dos assinantes reais.
     """
     # 1. Carregar assinantes do Turso local (pedidos novos e base ativa)
-    df_ass_ped = db.executar_query("SELECT id, numero_pedido, cliente_nome, cpf_cnpj, cidade, uf, sku_produto FROM assinaturas_pedidos_proximo_envio")
+    df_ass_ped = db.executar_query("SELECT id, numero_pedido, cliente_nome, cpf_cnpj, cidade, uf, sku_produto, forma_envio FROM assinaturas_pedidos_proximo_envio")
     df_ass_base = db.executar_query("SELECT id, codigo_cliente_omie, cliente_nome, cpf_cnpj, cidade, uf FROM assinantes_base")
     df_rastreios_existentes = db.executar_query("SELECT id, codigo_rastreio, numero_pedido, tipo_envio, status_rastreio FROM assinaturas_rastreios")
 
@@ -188,7 +188,11 @@ def sincronizar_rastreios_correios():
             cid = f"{row.get('cidade') or ''} / {row.get('uf') or ''}"
             sku = str(row.get("sku_produto") or "")
 
+            forma_envio_ped = str(row.get("forma_envio") or "").upper()
             eh_fortaleza = ("FORTALEZA" in cidade_raw) or (uf_raw == "CE" and any(m in cidade_raw for m in ["FORTALEZA", "MARACANAU", "MARACANAÚ", "CAUCAIA", "EUSEBIO", "EUSÉBIO"]))
+            
+            is_jt = forma_envio_ped in ["JT_EXPRESS", "J&T EXPRESS", "J&T", "JT"]
+            is_entrega_propria = forma_envio_ped in ["ENTREGA_PROPRIA", "ENTREGADOR_PROPRIO", "ROBERTO_SOUZA"] or (not is_jt and eh_fortaleza and "CORREIOS" not in forma_envio_ped)
 
             if "PRD00379" in sku:
                 tipo_envio = f"1º Envio (Jan a Março/2027) - Pedido Omie #{ped}"
@@ -197,14 +201,16 @@ def sincronizar_rastreios_correios():
             else:
                 tipo_envio = f"1º Envio (Inicial) - Pedido Omie #{ped}"
 
-            if eh_fortaleza:
+            if is_jt:
+                tipo_envio += " (Envio J&T Express)"
+            elif is_entrega_propria:
                 tipo_envio += " (Entrega Própria Fortaleza)"
 
-            # Verificar se já temos rastreio oficial no Portal Postal para este pedido/destinatário
+            # Verificar se já temos rastreio oficial no Portal Postal para este pedido/destinatário (apenas Correios)
             sro_encontrado = None
             data_post_portal = None
             evento_portal = None
-            if not eh_fortaleza and postagens_portal:
+            if not is_jt and not is_entrega_propria and postagens_portal:
                 nome_upper = normalizar_nome(nome)
                 termos_busca = [t for t in nome_upper.split() if len(t) > 3]
                 # Se for Convento, adicionar também Santíssima Trindade (razão social)
@@ -221,7 +227,12 @@ def sincronizar_rastreios_correios():
                         break
 
             if ped not in mapa_rastreios_por_ped:
-                if eh_fortaleza:
+                if is_jt:
+                    cod_placeholder = f"JT_MANUAL_{ped}"
+                    status_inicial = "Enviado"
+                    dt_inicial = datetime.now().strftime("%d/%m/%Y")
+                    ultimo_ev = "Envio via J&T Express (Rastreamento Manual)"
+                elif is_entrega_propria:
                     cod_placeholder = f"ENTREGA_PROPRIA_{ped}"
                     status_inicial = "Enviado"
                     dt_inicial = datetime.now().strftime("%d/%m/%Y")
@@ -269,10 +280,22 @@ def sincronizar_rastreios_correios():
                         is_select=False
                     )
                     atualizados += 1
-                elif eh_fortaleza and (cod_exist.startswith("AGUARDANDO_") or not cod_exist.startswith("ENTREGA_PROPRIA_")):
+                elif is_jt and (cod_exist.startswith("AGUARDANDO_") or cod_exist.startswith("ENTREGA_PROPRIA_")):
                     novo_st = "Entregue" if "ENTREG" in st_exist.upper() else "Enviado"
                     db.executar_query(
-                        "UPDATE assinaturas_rastreios SET codigo_rastreio = :cod, tipo_envio = :tipo, status_rastreio = :st WHERE id = :id",
+                        """UPDATE assinaturas_rastreios 
+                           SET codigo_rastreio = :cod, tipo_envio = :tipo, lote_referencia = :tipo, status_rastreio = :st, ultimo_evento = 'Envio via J&T Express (Rastreamento Manual)' 
+                           WHERE id = :id""",
+                        {"cod": f"JT_MANUAL_{ped}", "tipo": tipo_envio, "st": novo_st, "id": int(r_exist["id"])},
+                        is_select=False
+                    )
+                    atualizados += 1
+                elif is_entrega_propria and (cod_exist.startswith("AGUARDANDO_") or not cod_exist.startswith("ENTREGA_PROPRIA_")):
+                    novo_st = "Entregue" if "ENTREG" in st_exist.upper() else "Enviado"
+                    db.executar_query(
+                        """UPDATE assinaturas_rastreios 
+                           SET codigo_rastreio = :cod, tipo_envio = :tipo, lote_referencia = :tipo, status_rastreio = :st 
+                           WHERE id = :id""",
                         {"cod": f"ENTREGA_PROPRIA_{ped}", "tipo": tipo_envio, "st": novo_st, "id": int(r_exist["id"])},
                         is_select=False
                     )

@@ -16,7 +16,9 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <link rel="stylesheet" href="styles.css?v=20261023_v2">
+    <!-- JsBarcode para Geração de Código de Barras (Code128 / EAN13) -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <link rel="stylesheet" href="styles.css?v=20261028_v8">
 </head>
 <body>
     <div class="app-container" id="app-container">
@@ -26,78 +28,105 @@
                 <div class="brand-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
                 <div class="brand-text">
                     <h2>DRP Omie</h2>
-                    <span>Matriz & CD_SP | Netlify</span>
+                    <span>Hub Central de Operações</span>
                 </div>
                 <button class="btn-icon sidebar-collapse-btn" id="btn-close-sidebar" title="Recolher Menu">
                     <i class="fa-solid fa-chevron-left"></i>
                 </button>
             </div>
 
-            <nav class="nav-tabs">
-                <button class="nav-tab active" data-tab="tab-hub" style="background: rgba(2, 132, 199, 0.15); border-left: 3px solid #38bdf8;">
-                    <i class="fa-solid fa-house" style="color: #38bdf8;"></i>
-                    <span style="font-weight: 700; color: #38bdf8;">🏠 Início / Hub</span>
+            <nav class="nav-tabs" id="sidebar-nav">
+                <!-- Botão no Hub Principal -->
+                <button class="nav-tab active" data-tab="tab-hub" id="btn-nav-hub" onclick="navegarParaAba('tab-hub')">
+                    <i class="fa-solid fa-house"></i>
+                    <span>Início / Hub Principal</span>
                 </button>
 
-                <div style="padding: 10px 14px 4px; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.8px; color: #64748b; text-transform: uppercase;">
-                    MÓDULO 1: DRP MATRIZ & CD
-                </div>
-                <button class="nav-tab" data-tab="tab-cd-sp">
-                    <i class="fa-solid fa-truck-ramp-box"></i>
-                    <span>1. Reposição CD_SP</span>
-                </button>
-                <button class="nav-tab" data-tab="tab-matriz">
-                    <i class="fa-solid fa-industry"></i>
-                    <span>2. Estoque & Produção Matriz</span>
-                </button>
-                <button class="nav-tab" data-tab="tab-remessas">
-                    <i class="fa-solid fa-boxes-packing"></i>
-                    <span>3. Remessas & Trânsito CD_SP</span>
-                </button>
-                <button class="nav-tab" data-tab="tab-analise-matriz">
-                    <i class="fa-solid fa-chart-pie"></i>
-                    <span>4. Análise Matriz (BCG)</span>
-                </button>
-                <button class="nav-tab" data-tab="tab-depositos-matriz">
-                    <i class="fa-solid fa-warehouse"></i>
-                    <span>5. Depósitos da Matriz</span>
-                </button>
-                <button class="nav-tab" data-tab="tab-inteligencia-matriz">
-                    <i class="fa-solid fa-dna" style="color: #34d399;"></i>
-                    <span>6. Inteligência Matriz 🧬</span>
-                </button>
-                <button class="nav-tab" data-tab="tab-comite-decisao">
-                    <i class="fa-solid fa-users-gear" style="color: #c084fc;"></i>
-                    <span>🤝 Comitê de Decisão</span>
+                <!-- Botão Voltar quando dentro de um módulo -->
+                <button class="nav-tab" id="btn-voltar-hub-sidebar" onclick="navegarParaAba('tab-hub')" style="display: none; background: rgba(0, 212, 177, 0.12); border: 1px solid rgba(0, 212, 177, 0.4); color: var(--primary); font-weight: 700; margin-bottom: 6px;">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    <span>← Voltar ao Hub Principal</span>
                 </button>
 
-                <div style="padding: 14px 14px 4px; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.8px; color: #f59e0b; text-transform: uppercase;">
-                    MÓDULO 2: LOGÍSTICA & VENDAS
+                <!-- MÓDULO 1: DRP MATRIZ & CD -->
+                <div class="nav-module-group" id="nav-group-modulo-1">
+                    <div class="nav-section-title">
+                        MÓDULO 1: DRP MATRIZ & CD
+                    </div>
+                    <button class="nav-tab" data-tab="tab-cd-sp">
+                        <i class="fa-solid fa-truck-ramp-box"></i>
+                        <span>1. Reposição CD_SP</span>
+                    </button>
+                    <button class="nav-tab" data-tab="tab-matriz">
+                        <i class="fa-solid fa-industry"></i>
+                        <span>2. Estoque & Produção Matriz</span>
+                    </button>
+                    <button class="nav-tab" data-tab="tab-remessas">
+                        <i class="fa-solid fa-boxes-packing"></i>
+                        <span>3. Remessas & Trânsito CD_SP</span>
+                    </button>
+                    <button class="nav-tab" data-tab="tab-analise-matriz">
+                        <i class="fa-solid fa-chart-pie"></i>
+                        <span>4. Análise Matriz (BCG)</span>
+                    </button>
+                    <button class="nav-tab" data-tab="tab-depositos-matriz">
+                        <i class="fa-solid fa-warehouse"></i>
+                        <span>5. Depósitos da Matriz</span>
+                    </button>
+                    <button class="nav-tab" data-tab="tab-inteligencia-matriz">
+                        <i class="fa-solid fa-dna"></i>
+                        <span>6. Inteligência Matriz</span>
+                    </button>
+                    <button class="nav-tab" data-tab="tab-comite-decisao">
+                        <i class="fa-solid fa-users-gear"></i>
+                        <span>Comitê de Decisão</span>
+                    </button>
                 </div>
-                <button class="nav-tab" data-tab="tab-consignacao" style="background: rgba(16, 185, 129, 0.1); border-left: 3px solid #10b981;">
-                    <i class="fa-solid fa-arrow-right-arrow-left" style="color: #10b981;"></i>
-                    <span style="font-weight: 700; color: #10b981;">🚚 Consignação (Ida e Volta)</span>
-                </button>
-                <button class="nav-tab" data-tab="tab-eventos-mobile" onclick="abrirModuloEventosMobile()" style="background: rgba(14, 165, 233, 0.12); border-left: 3px solid #38bdf8;">
-                    <i class="fa-solid fa-mobile-screen-button" style="color: #38bdf8;"></i>
-                    <span style="font-weight: 700; color: #38bdf8;">📱 Stand & Eventos (Mobile)</span>
-                </button>
 
-                <div style="padding: 14px 14px 4px; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.8px; color: #a855f7; text-transform: uppercase;">
-                    MÓDULO 3: ASSINATURAS
+                <!-- MÓDULO 2: LOGÍSTICA & VENDAS -->
+                <div class="nav-module-group" id="nav-group-modulo-2">
+                    <div class="nav-section-title">
+                        MÓDULO 2: LOGÍSTICA & VENDAS
+                    </div>
+                    <button class="nav-tab" data-tab="tab-consignacao">
+                        <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                        <span>Consignação (Ida e Volta)</span>
+                    </button>
+                    <button class="nav-tab" data-tab="tab-eventos-mobile" onclick="abrirModuloEventosMobile()">
+                        <i class="fa-solid fa-mobile-screen-button"></i>
+                        <span>Stand & Eventos (Mobile)</span>
+                    </button>
                 </div>
-                <button class="nav-tab" data-tab="tab-assinaturas" style="background: rgba(168, 85, 247, 0.1); border-left: 3px solid #a855f7;">
-                    <i class="fa-solid fa-book-bible" style="color: #a855f7;"></i>
-                    <span style="font-weight: 700; color: #a855f7;">📖 1. Lotes & Remessas Diárias</span>
-                </button>
-                <button class="nav-tab" data-tab="tab-assinaturas-pedidos" style="background: rgba(168, 85, 247, 0.1); border-left: 3px solid #c084fc;">
-                    <i class="fa-solid fa-cart-plus" style="color: #c084fc;"></i>
-                    <span style="font-weight: 700; color: #c084fc;">📦 2. Pedidos Novos (Próximo Envio)</span>
-                </button>
-                <button class="nav-tab" data-tab="tab-combos-kit" style="background: rgba(245, 158, 11, 0.08); border-left: 3px solid #f59e0b;">
-                    <i class="fa-solid fa-boxes-packing" style="color: #f59e0b;"></i>
-                    <span style="font-weight: 600; color: #fcd34d;">🧩 3. Gestão de Combos & Kits</span>
-                </button>
+
+                <!-- MÓDULO 3: ASSINATURAS -->
+                <div class="nav-module-group" id="nav-group-modulo-3">
+                    <div class="nav-section-title">
+                        MÓDULO 3: ASSINATURAS
+                    </div>
+                    <button class="nav-tab" data-tab="tab-assinaturas">
+                        <i class="fa-solid fa-book-bible"></i>
+                        <span>1. Lotes & Remessas Diárias</span>
+                    </button>
+                    <button class="nav-tab" data-tab="tab-assinaturas-pedidos">
+                        <i class="fa-solid fa-cart-plus"></i>
+                        <span>2. Pedidos Novos (Próximo Envio)</span>
+                    </button>
+                    <button class="nav-tab" data-tab="tab-combos-kit">
+                        <i class="fa-solid fa-boxes-packing"></i>
+                        <span>3. Gestão de Combos & Kits</span>
+                    </button>
+                </div>
+
+                <!-- MÓDULO 4: PRODUTOS & IMPRESSÃO DE ETIQUETAS -->
+                <div class="nav-module-group" id="nav-group-modulo-4">
+                    <div class="nav-section-title">
+                        MÓDULO 4: PRODUTOS & ETIQUETAS
+                    </div>
+                    <button class="nav-tab" data-tab="tab-etiquetas">
+                        <i class="fa-solid fa-barcode"></i>
+                        <span>Impressão de Etiquetas</span>
+                    </button>
+                </div>
             </nav>
 
             <div class="filter-section">
@@ -175,7 +204,7 @@
                 <div class="status-indicator">
                     <span class="dot online"></span> Turso DB: 3.412 produtos
                 </div>
-                <small>Ambiente Netlify Dev Local</small>
+                <small>Hub Central DRP Omie</small>
             </div>
         </aside>
 
@@ -193,6 +222,9 @@
                     </div>
                 </div>
                 <div class="header-actions">
+                    <button class="btn btn-secondary" id="btn-top-back-hub" onclick="navegarParaAba('tab-hub')" title="Voltar ao Hub Principal" style="display: none; align-items: center; gap: 8px; font-weight: 600; padding: 8px 14px; border-radius: 8px;">
+                        <i class="fa-solid fa-house"></i> Voltar ao Hub Principal
+                    </button>
                     <button id="btn-sync-db" class="btn btn-primary">
                         <i class="fa-solid fa-rotate"></i> Sincronizar / Recarregar Dados 🔄
                     </button>
@@ -368,6 +400,27 @@
                                         </div>
                                     </div>
                                     <i class="fa-solid fa-arrow-right" style="color: #eab308;"></i>
+                                </button>
+                            </div>
+
+                            <!-- SEÇÃO 4: MÓDULO 4 PRODUTOS & IMPRESSÃO DE ETIQUETAS -->
+                            <div class="hub-section-title" style="margin-top: 28px; color: #38bdf8;">
+                                <i class="fa-solid fa-barcode" style="color: #38bdf8;"></i>
+                                PRODUTOS & IMPRESSÃO DE ETIQUETAS (MÓDULO 4)
+                            </div>
+                            
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                <button class="hub-action-btn btn-featured" onclick="navegarParaAba('tab-etiquetas')" style="padding: 18px 22px; background: linear-gradient(135deg, rgba(2, 132, 199, 0.25), rgba(3, 105, 161, 0.35)); border: 1px solid rgba(56, 189, 248, 0.4);">
+                                    <div class="hub-btn-content">
+                                        <i class="fa-solid fa-barcode" style="font-size: 1.4rem; color: #38bdf8;"></i>
+                                        <div>
+                                            <div style="font-size: 1.05rem; font-weight: 700; color: #ffffff;">Leitor & Impressão de Etiquetas Térmicas (Zebra / Argox)</div>
+                                            <div style="font-size: 0.8rem; color: #bae6fd; font-weight: 400;">Geração e impressão de etiquetas com código de barras, SKU, preço e descrição sincronizados com o estoque do Omie ERP</div>
+                                        </div>
+                                    </div>
+                                    <span class="badge" style="background: rgba(56, 189, 248, 0.3); color: #e0f2fe; font-size: 0.75rem; padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.5);">
+                                        Módulo 4 🏷️
+                                    </span>
                                 </button>
                             </div>
 
@@ -842,32 +895,27 @@
                         </div>
                     </div>
 
-                    <!-- Summary Cards Depósitos -->
+                    <!-- Summary Cards Depósitos (Passo 8: Depósito 1 unificado com Fracionado) -->
                     <div class="kpi-grid" style="margin-top: 20px;">
                         <div class="kpi-card" style="border-top: 3px solid #00cba9;">
                             <div class="kpi-title">TOTAL MATRIZ (REAL)</div>
                             <div class="kpi-value" id="kpi-dep-total-matriz">0</div>
                             <div class="kpi-sub">Estoque Total Omie</div>
                         </div>
-                        <div class="kpi-card" style="border-top: 3px solid #f59e0b;">
-                            <div class="kpi-title">FRACIONADO (PICKING)</div>
-                            <div class="kpi-value" id="kpi-dep-fracionado">0</div>
-                            <div class="kpi-sub">Pronto p/ expedição</div>
-                        </div>
                         <div class="kpi-card" style="border-top: 3px solid #3b82f6;">
-                            <div class="kpi-title">DEPÓSITO 1</div>
+                            <div class="kpi-title">DEPÓSITO 1 (FRACIONADO)</div>
                             <div class="kpi-value" id="kpi-dep-deposito1">0</div>
-                            <div class="kpi-sub">Estoque Armazenado</div>
+                            <div class="kpi-sub">Subtrai saídas (Total - Dep 2)</div>
                         </div>
                         <div class="kpi-card" style="border-top: 3px solid #8b5cf6;">
-                            <div class="kpi-title">DEPÓSITO 2</div>
+                            <div class="kpi-title">DEPÓSITO 2 (PALETES)</div>
                             <div class="kpi-value" id="kpi-dep-deposito2">0</div>
-                            <div class="kpi-sub">Contagem Inicial</div>
+                            <div class="kpi-sub">Reserva / Pulmão Fechado</div>
                         </div>
                         <div class="kpi-card" style="border-top: 3px solid #a855f7;">
-                            <div class="kpi-title">A LOCALIZAR (PENDENTE)</div>
+                            <div class="kpi-title">DIVERGÊNCIAS / A LOCALIZAR</div>
                             <div class="kpi-value" id="kpi-dep-alocalizar">0</div>
-                            <div class="kpi-sub">Total - Locais Contados</div>
+                            <div class="kpi-sub">Pendências de Contagem</div>
                         </div>
                     </div>
 
@@ -910,8 +958,7 @@
                                     <th onclick="ordenarPorColunaDeposito('sku')" style="cursor:pointer;" title="Clique para ordenar por SKU">SKU <span id="sort-icon-sku"></span></th>
                                     <th onclick="ordenarPorColunaDeposito('nome')" style="cursor:pointer;" title="Clique para ordenar por Nome">Produto (Matriz) <span id="sort-icon-nome"></span></th>
                                     <th onclick="ordenarPorColunaDeposito('totalMatriz')" style="cursor:pointer; text-align:center;" title="Clique para ordenar por Total Matriz">Total Matriz <span id="sort-icon-totalMatriz"></span></th>
-                                    <th onclick="ordenarPorColunaDeposito('fracionado')" style="cursor:pointer; text-align:center;" title="Clique para ordenar por Fracionado">Fracionado <span id="sort-icon-fracionado"></span></th>
-                                    <th onclick="ordenarPorColunaDeposito('deposito1')" style="cursor:pointer; text-align:center;" title="Clique para ordenar por Depósito 1">Depósito 1 <span id="sort-icon-deposito1"></span></th>
+                                    <th onclick="ordenarPorColunaDeposito('deposito1')" style="cursor:pointer; text-align:center;" title="Clique para ordenar por Depósito 1 (Fracionado)">Depósito 1 (Fracionado) <span id="sort-icon-deposito1"></span></th>
                                     <th onclick="ordenarPorColunaDeposito('deposito2')" style="cursor:pointer; text-align:center;" title="Clique para ordenar por Depósito 2">Depósito 2 <span id="sort-icon-deposito2">⬇️</span></th>
                                     <th onclick="ordenarPorColunaDeposito('aLocalizar')" style="cursor:pointer; text-align:center;" title="Clique para ordenar por A Localizar">A Localizar <span id="sort-icon-aLocalizar"></span></th>
                                     <th style="text-align:center;">Alerta / Assistência de Busca</th>
@@ -920,7 +967,7 @@
                             </thead>
                             <tbody id="tbody-depositos-matriz">
                                 <tr>
-                                    <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 25px;">
+                                    <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 25px;">
                                         <i class="fa-solid fa-spinner fa-spin"></i> Carregando sub-locais da Matriz...
                                     </td>
                                 </tr>
@@ -1079,7 +1126,7 @@
                             </thead>
                             <tbody id="tbody-inteligencia-matriz">
                                 <tr>
-                                    <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 25px;">
+                                    <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 25px;">
                                         <i class="fa-solid fa-spinner fa-spin"></i> Processando inteligência de produção da Matriz...
                                     </td>
                                 </tr>
@@ -1580,9 +1627,12 @@
                                 <label style="font-size: 0.82rem; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 6px;">
                                     <i class="fa-solid fa-folder-tree" style="color: #38bdf8;"></i> Remessa Alvo:
                                 </label>
-                                <select id="select-remessa-evento-alvo" class="form-control" style="background: #0f172a; color: #f8fafc; font-weight: 600;" onchange="selecionarRemessaEventoAlvo()">
-                                    <option value="0">➕ Criar Nova Remessa em Aberto</option>
-                                </select>
+<div style="display: flex; gap: 8px;">
+                                    <select id="select-remessa-evento-alvo" class="form-control" style="background: #0f172a; color: #f8fafc; font-weight: 600;" onchange="selecionarRemessaEventoAlvo()">
+                                        <option value="0">➕ Criar Nova Remessa em Aberto</option>
+                                    </select>
+                                    <button class="btn btn-secondary" onclick="carregarRemessasEventos()" title="Atualizar lista de remessas em aberto" style="padding: 0 12px; background: #1e293b; border-color: #334155;"><i class="fa-solid fa-arrows-rotate"></i></button>
+                                </div>
                             </div>
                             <div>
                                 <label style="font-size: 0.82rem; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 6px;">
@@ -2056,6 +2106,179 @@
                                     <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px;">Nenhum código de rastreamento registrado ainda.</td></tr>
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- ==========================================================================
+                 MÓDULO 4: PRODUTOS & IMPRESSÃO DE ETIQUETAS TÉRMICAS (70x50mm)
+                 ========================================================================== -->
+            <section id="tab-etiquetas" class="tab-content">
+                <!-- KPIs do Módulo 4 -->
+                <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 20px;">
+                    <div class="metric-card" style="border-left: 4px solid #38bdf8;">
+                        <div class="metric-icon" style="color: #38bdf8;"><i class="fa-solid fa-boxes-stacked"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-val" id="etq-kpi-selecionados">0</span>
+                            <span class="metric-lbl">Itens Selecionados</span>
+                        </div>
+                    </div>
+                    <div class="metric-card" style="border-left: 4px solid #10b981;">
+                        <div class="metric-icon" style="color: #10b981;"><i class="fa-solid fa-tags"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-val" id="etq-kpi-total-etiquetas">0</span>
+                            <span class="metric-lbl">Total de Etiquetas</span>
+                        </div>
+                    </div>
+                    <div class="metric-card" style="border-left: 4px solid #f59e0b;">
+                        <div class="metric-icon" style="color: #f59e0b;"><i class="fa-solid fa-ruler-combined"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-val" style="font-size: 1.1rem; padding-top: 4px;">70 × 50 mm</span>
+                            <span class="metric-lbl">Padrão Térmica (Zebra/Argox)</span>
+                        </div>
+                    </div>
+                    <div class="metric-card" style="border-left: 4px solid #a855f7;">
+                        <div class="metric-icon" style="color: #a855f7;"><i class="fa-solid fa-cloud-arrow-down"></i></div>
+                        <div class="metric-data">
+                            <span class="metric-val" id="etq-kpi-catalogo-total">2.829</span>
+                            <span class="metric-lbl">Estoque Omie Sincronizado</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Painel com Abas Internas: Estoque Manual vs XML NF-e -->
+                <div class="table-container" style="padding: 20px; margin-bottom: 20px; background: #0f172a; border: 1px solid #1e293b; border-radius: var(--radius-lg);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; border-bottom: 1px solid #1e293b; padding-bottom: 14px;">
+                        <!-- Sub-abas -->
+                        <div style="display: flex; gap: 8px;">
+                            <button id="btn-etq-subtab-estoque" class="btn btn-secondary active" style="font-weight: 700;">
+                                <i class="fa-solid fa-boxes-stacked"></i> 📦 Consulta de Estoque Omie
+                            </button>
+                            <button id="btn-etq-subtab-xml" class="btn btn-secondary" style="font-weight: 700;">
+                                <i class="fa-solid fa-file-invoice"></i> 📄 Importar XML de NF-e
+                            </button>
+                        </div>
+
+                        <!-- Ações Globais de Emissão -->
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button id="btn-etq-previa-modal" class="btn btn-secondary" style="border-color: #38bdf8; color: #38bdf8;">
+                                <i class="fa-solid fa-eye"></i> Prévia em Tela
+                            </button>
+                            <button id="btn-etq-gerar-pdf" class="btn btn-primary" style="background: #0284c7; border-color: #0284c7;">
+                                <i class="fa-solid fa-file-pdf"></i> Baixar PDF (70x50mm)
+                            </button>
+                            <button id="btn-etq-imprimir-direto" class="btn btn-primary" style="background: #10b981; border-color: #10b981;">
+                                <i class="fa-solid fa-print"></i> Imprimir Direto
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- SUBABA 1: CONSULTA DE ESTOQUE OMIE -->
+                    <div id="etq-subtab-estoque">
+                        <!-- Filtros e Barra de Ações Rápidas -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; align-items: flex-end;">
+                            <div>
+                                <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 4px;">🔍 Buscar SKU, Descrição ou Código de Barras:</label>
+                                <input type="text" id="etq-filtro-busca" placeholder="Ex: 002037 ou TEOLOGIA..." class="form-control" style="width: 100%;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 4px;">📁 Família de Produto:</label>
+                                <select id="etq-filtro-familia" class="form-control" style="width: 100%;">
+                                    <option value="">Todas as Famílias</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 4px;">🏬 Origem do Saldo:</label>
+                                <select id="etq-filtro-local" class="form-control" style="width: 100%;">
+                                    <option value="todos">Todos os Locais (Total)</option>
+                                    <option value="matriz" selected>Matriz (Geral)</option>
+                                    <option value="cd_sp">CD_SP (Reposição)</option>
+                                </select>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px; padding-bottom: 8px;">
+                                <input type="checkbox" id="etq-filtro-apenas-estoque" style="transform: scale(1.2); cursor: pointer;">
+                                <label for="etq-filtro-apenas-estoque" style="font-size: 0.85rem; color: #f8fafc; cursor: pointer; user-select: none;">Apenas estoque > 0</label>
+                            </div>
+                        </div>
+
+                        <!-- Barra de Seleção em Massa -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; padding: 10px 14px; background: rgba(15, 23, 42, 0.6); border-radius: var(--radius-sm); border: 1px solid #1e293b;">
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <button id="btn-etq-sel-todos" class="btn btn-secondary" style="font-size: 0.8rem; padding: 4px 10px;">
+                                    <i class="fa-solid fa-check-double"></i> Selecionar Todos Filtrados
+                                </button>
+                                <button id="btn-etq-limpar-sel" class="btn btn-secondary" style="font-size: 0.8rem; padding: 4px 10px;">
+                                    <i class="fa-solid fa-xmark"></i> Desmarcar Todos
+                                </button>
+                                <span style="font-size: 0.85rem; color: var(--text-muted); margin-left: 8px;">
+                                    Definir Qtd: 
+                                </span>
+                                <input type="number" id="etq-qtd-massa" min="1" value="1" style="width: 60px; text-align: center; padding: 3px; border-radius: 4px; border: 1px solid #334155; background: #0f172a; color: #fff;">
+                                <button id="btn-etq-aplicar-qtd-massa" class="btn btn-secondary" style="font-size: 0.8rem; padding: 4px 10px;">
+                                    Aplicar em Massa
+                                </button>
+                            </div>
+                            <div>
+                                <span id="etq-tabela-contador" style="font-size: 0.82rem; color: var(--text-muted);">Carregando produtos...</span>
+                            </div>
+                        </div>
+
+                        <!-- Tabela de Produtos -->
+                        <div style="max-height: 520px; overflow-y: auto; border: 1px solid #1e293b; border-radius: var(--radius-sm);">
+                            <table class="table-custom">
+                                <thead>
+                                    <tr>
+                                        <th width="45" style="text-align: center;">Sel.</th>
+                                        <th width="110">SKU</th>
+                                        <th>Descrição do Produto</th>
+                                        <th width="160">Família</th>
+                                        <th width="140">Saldo Estoque</th>
+                                        <th width="100" style="text-align: center;">Qtd Etiquetas</th>
+                                        <th width="90" style="text-align: center;">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-etiquetas-corpo">
+                                    <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">Carregando produtos do estoque...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- SUBABA 2: IMPORTAR XML DE NF-e -->
+                    <div id="etq-subtab-xml" style="display: none;">
+                        <div id="etq-xml-dropzone" style="border: 2px dashed #334155; border-radius: var(--radius-md); padding: 36px 20px; text-align: center; background: rgba(15, 23, 42, 0.5); cursor: pointer; transition: all 0.2s;">
+                            <i class="fa-solid fa-file-arrow-up" style="font-size: 2.8rem; color: #38bdf8; margin-bottom: 12px;"></i>
+                            <h4 style="margin-bottom: 6px; color: #f8fafc;">Arraste e solte o arquivo XML da Nota Fiscal (NF-e) aqui</h4>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">O sistema lerá todos os itens com SKU, Descrição, EAN e Quantidade Faturada</p>
+                            <input type="file" id="etq-xml-input" accept=".xml" style="display: none;">
+                            <button class="btn btn-secondary" onclick="document.getElementById('etq-xml-input').click()">
+                                <i class="fa-solid fa-folder-open"></i> Selecionar Arquivo XML
+                            </button>
+                        </div>
+
+                        <!-- Prévia dos Itens do XML Carregado -->
+                        <div id="etq-xml-preview-card" style="display: none; margin-top: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <h4 style="margin: 0; color: #10b981; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fa-solid fa-circle-check"></i> Itens Identificados na NF-e
+                                </h4>
+                                <span id="etq-xml-resumo-texto" style="font-size: 0.85rem; color: var(--text-muted);"></span>
+                            </div>
+                            <div style="max-height: 400px; overflow-y: auto; border: 1px solid #1e293b; border-radius: var(--radius-sm);">
+                                <table class="table-custom">
+                                    <thead>
+                                        <tr>
+                                            <th width="45" style="text-align: center;">Sel.</th>
+                                            <th width="120">Código (cProd)</th>
+                                            <th>Descrição (xProd)</th>
+                                            <th width="140">EAN / Código Barras</th>
+                                            <th width="110" style="text-align: center;">Qtd NF-e</th>
+                                            <th width="90" style="text-align: center;">Prévia</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabela-etiquetas-xml-corpo"></tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -3445,7 +3668,30 @@
         </div>
     </div>
 
-    <script src="app.js?v=20261024_v1"></script>
+    <script src="app.js?v=20261028_v8"></script>
+    <!-- Modal de Prévia de Etiquetas Térmicas (70x50mm) -->
+    <div id="modal-previa-etiqueta" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 9999; justify-content: center; align-items: center;">
+        <div class="modal-box" style="max-width: 900px; width: 95%; max-height: 85vh; background: #0b1120; border: 1px solid #38bdf8; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
+            <div class="modal-header" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-barcode"></i> Prévia de Etiquetas Térmicas (70 × 50 mm)
+                </h3>
+                <button id="btn-fechar-modal-previa-etq" style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div id="modal-previa-etiqueta-conteudo" style="padding: 20px; overflow-y: auto; flex: 1; display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; background: #060d19;">
+                <!-- Cards de preview gerados dinamicamente via JS -->
+            </div>
+            <div class="modal-footer" style="padding: 14px 20px; border-top: 1px solid #1e293b; display: flex; justify-content: flex-end; gap: 10px; background: #0f172a;">
+                <button class="btn btn-secondary" onclick="window.fecharModalPreviaEtiquetas()">Fechar</button>
+                <button class="btn btn-primary" id="btn-modal-baixar-pdf" style="display: flex; align-items: center; gap: 6px; background: #0284c7;">
+                    <i class="fa-solid fa-file-pdf"></i> Baixar PDF
+                </button>
+                <button class="btn btn-primary" id="btn-modal-imprimir" style="display: flex; align-items: center; gap: 6px; background: #10b981;">
+                    <i class="fa-solid fa-print"></i> Imprimir
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

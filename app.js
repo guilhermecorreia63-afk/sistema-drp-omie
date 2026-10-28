@@ -89,6 +89,7 @@ function initApp() {
     setupSidebarToggle();
     setupEventListeners();
     carregarProdutos();
+    window.navegarParaAba('tab-hub');
 }
 
 if (document.readyState === 'loading') {
@@ -127,11 +128,80 @@ window.navegarParaAba = function(tabId) {
     
     const tabContent = document.getElementById(tabId);
     if (tabContent) tabContent.classList.add('active');
-    
+
+    // Mapeamento das abas para os seus respectivos módulos
+    const MODULO_MAP = {
+        'tab-cd-sp': 'nav-group-modulo-1',
+        'tab-matriz': 'nav-group-modulo-1',
+        'tab-remessas': 'nav-group-modulo-1',
+        'tab-analise-matriz': 'nav-group-modulo-1',
+        'tab-depositos-matriz': 'nav-group-modulo-1',
+        'tab-inteligencia-matriz': 'nav-group-modulo-1',
+        'tab-comite-decisao': 'nav-group-modulo-1',
+        'tab-consignacao': 'nav-group-modulo-2',
+        'tab-eventos-mobile': 'nav-group-modulo-2',
+        'tab-assinaturas': 'nav-group-modulo-3',
+        'tab-assinaturas-pedidos': 'nav-group-modulo-3',
+        'tab-combos-kit': 'nav-group-modulo-3',
+        'tab-etiquetas': 'nav-group-modulo-4'
+    };
+
+    const sidebar = document.getElementById('sidebar');
+    const btnVoltarHub = document.getElementById('btn-voltar-hub-sidebar');
+    const btnNavHub = document.getElementById('btn-nav-hub');
+    const topBack = document.getElementById('btn-top-back-hub');
+    const targetGroup = MODULO_MAP[tabId];
+
+    // Ocultar ou exibir a barra de filtros DRP de acordo com o módulo ativo
+    const filterSection = document.querySelector('.filter-section');
+    if (filterSection) {
+        if (targetGroup === 'nav-group-modulo-1') {
+            filterSection.style.display = 'block';
+        } else {
+            filterSection.style.display = 'none';
+        }
+    }
+
+    if (tabId === 'tab-hub' || !targetGroup) {
+        // No Hub Principal: todos os módulos disponíveis
+        if (sidebar) {
+            sidebar.classList.remove('sidebar-module-mode');
+            sidebar.classList.add('sidebar-hub-mode');
+        }
+        document.querySelectorAll('.nav-module-group').forEach(grp => {
+            grp.classList.remove('active-module');
+            grp.style.display = 'block';
+        });
+        if (btnVoltarHub) btnVoltarHub.style.display = 'none';
+        if (btnNavHub) {
+            btnNavHub.style.display = 'flex';
+            btnNavHub.classList.add('active');
+        }
+        if (topBack) topBack.style.display = 'none';
+    } else {
+        // Dentro de um Módulo: exibe apenas o grupo daquele módulo e o botão Voltar ao Hub
+        if (sidebar) {
+            sidebar.classList.remove('sidebar-hub-mode');
+            sidebar.classList.add('sidebar-module-mode');
+        }
+        document.querySelectorAll('.nav-module-group').forEach(grp => {
+            if (grp.id === targetGroup) {
+                grp.classList.add('active-module');
+                grp.style.display = 'block';
+            } else {
+                grp.classList.remove('active-module');
+                grp.style.display = 'none';
+            }
+        });
+        if (btnNavHub) btnNavHub.style.display = 'none';
+        if (btnVoltarHub) btnVoltarHub.style.display = 'flex';
+        if (topBack) topBack.style.display = 'inline-flex';
+    }
+
     // Atualizar títulos
     if (tabId === 'tab-hub') {
         document.getElementById('page-heading').innerText = '🏠 Início — Hub de Operações';
-        document.getElementById('page-subheading').innerHTML = 'Selecione o módulo de trabalho: <strong>DRP Matriz & CD_SP</strong> ou <strong>Controle de Consignação</strong>.';
+        document.getElementById('page-subheading').innerHTML = 'Selecione o módulo de trabalho: <strong>DRP Matriz & CD_SP</strong>, <strong>Logística & Consignação</strong>, <strong>Assinaturas</strong> ou <strong>Impressão de Etiquetas</strong>.';
     } else if (tabId === 'tab-cd-sp') {
         document.getElementById('page-heading').innerText = '🚚 1. Reposição de Estoque CD_SP';
         document.getElementById('page-subheading').innerHTML = 'Vendas <strong>Sul e Sudeste</strong> | Estoque Alvo: (Demanda × (Dias + LeadTime)) + 20% Seg.';
@@ -191,6 +261,12 @@ window.navegarParaAba = function(tabId) {
         if (typeof carregarPedidosProximoEnvio === 'function') {
             carregarPedidosProximoEnvio();
         }
+    } else if (tabId === 'tab-etiquetas') {
+        document.getElementById('page-heading').innerText = '🏷️ Módulo 4 — Impressão de Etiquetas';
+        document.getElementById('page-subheading').innerHTML = 'Impressão de etiquetas térmicas com código de barras, SKU e descrição sincronizados com o estoque.';
+        if (typeof carregarModuloEtiquetas === 'function') {
+            carregarModuloEtiquetas();
+        }
     }
 };
 
@@ -200,7 +276,7 @@ function setupEventListeners() {
     document.querySelectorAll('.nav-tab').forEach(tab => {
         tab.addEventListener('click', (e) => {
             const tabId = tab.dataset.tab;
-            window.navegarParaAba(tabId);
+            if (tabId) window.navegarParaAba(tabId);
         });
     });
 
@@ -493,16 +569,24 @@ async function carregarProdutos() {
             salvarBlacklistServidor();
         }
 
-        // 3.5. Carregar lista de produtos de destaque / lançamentos para exibição no DRP
+        // 3.5. Carregar lista de produtos de destaque / lançamentos forçados para exibição no DRP
         try {
-            const respDestaque = await fetch('data/produtos_destaque_drp.json?_t=' + Date.now());
+            const respDestaque = await fetch('/api/destaques?_t=' + Date.now());
             if (respDestaque.ok) {
-                const listDestaque = await respDestaque.json();
-                state.destaqueDRP = new Set(listDestaque.map(s => String(s).trim()));
+                const dataDestaque = await respDestaque.json();
+                state.destaquesLista = dataDestaque.destaques || [];
+            } else {
+                const respFallback = await fetch('data/produtos_destaque_drp.json?_t=' + Date.now());
+                if (respFallback.ok) {
+                    const rawList = await respFallback.json();
+                    state.destaquesLista = rawList.map(item => typeof item === 'string' ? { sku: item, cd: true, matriz: false } : item);
+                }
             }
         } catch (eDest) {
-            console.warn('produtos_destaque_drp.json não encontrado:', eDest);
+            console.warn('Erro ao carregar destaques:', eDest);
+            state.destaquesLista = [];
         }
+        atualizarSetsDestaques();
 
         let resp = await fetch('/api/produtos?_t=' + Date.now());
         if (!resp.ok) {
@@ -625,6 +709,9 @@ async function carregarProdutos() {
         renderFamilias();
         render();
         carregarRemessasOmie();
+        if (typeof carregarModuloEtiquetas === 'function') {
+            carregarModuloEtiquetas();
+        }
     } catch (err) {
         console.warn('Fallback para produtos simulados:', err);
         state.produtos = [
@@ -764,10 +851,13 @@ function getProdutosFiltrados(modo = 'cd') {
 
         const skuNorm = String(p.sku || '').trim();
         const skuPad = skuNorm.padStart(6, '0');
-        const isDestaque = state.destaqueDRP && (state.destaqueDRP.has(skuNorm) || state.destaqueDRP.has(skuPad));
+        const isDestaqueCD = state.destaquesCD && (state.destaquesCD.has(skuNorm) || state.destaquesCD.has(skuPad));
+        const isDestaqueMatriz = state.destaquesMatriz && (state.destaquesMatriz.has(skuNorm) || state.destaquesMatriz.has(skuPad));
+        const isDestaque = modo === 'cd' ? isDestaqueCD : isDestaqueMatriz;
+
         // Regra 1: Produtos SEM movimentação no período NÃO entram na reposição (somente entram se tiverem estoque > 0 ou forem forçados/destaque pelo usuário)
-        if (vendas <= 0 && estEfetivoCD <= 0 && modo === 'cd' && !isDestaque) return false;
-        if (vendas <= 0 && p.matriz <= 0 && modo === 'matriz' && !isDestaque) return false;
+        if (vendas <= 0 && estEfetivoCD <= 0 && modo === 'cd' && !isDestaqueCD) return false;
+        if (vendas <= 0 && p.matriz <= 0 && modo === 'matriz' && !isDestaqueMatriz) return false;
 
         // Regra 2: Descarte de ruído para Camisas e Ícones com vendas inexpressivas (<= 2 un em 60/90d)
         if ((fam.includes('CAMISA') || fam.includes('ICONE')) && vendas <= 2 && state.periodoDias >= 60 && !isDestaque) {
@@ -857,6 +947,14 @@ function calcularNecessidade(p, periodo, abastecimento, modo = 'cd') {
     const lt = getLeadTimeFamilia(p.familia, modo);
     const alvo = calcularEstoqueAlvo(vendas, periodo, abastecimento, lt);
     const estoqueAtual = modo === 'cd' ? (getCDDisponivel(p) + (p.em_transito || 0)) : getMatrizDisponivel(p);
+
+    // Para itens de baixa rotatividade (<= 5 un/mês), se já cobrir 14+ dias de vendas, não força necessidade
+    const mediaDiaria = vendas / 30.0;
+    const diasCob = mediaDiaria > 0 ? (estoqueAtual / mediaDiaria) : 999;
+    if (vendas <= 5 && diasCob >= 14) {
+        return 0;
+    }
+
     return Math.max(0, Math.ceil(alvo - estoqueAtual));
 }
 
@@ -893,6 +991,16 @@ function definirStatus(estoque, estoqueAlvo, emProducao, vendas, statusEspecial 
 
     const alvo = Math.max(1, estoqueAlvo);
     const razao = estoque / alvo;
+
+    // Regra Inteligente para Baixa Rotatividade (Cauda Longa / Livros com poucas saídas):
+    // Se a demanda é baixa (vendas <= 5 no período de 30 dias), calcular cobertura em dias.
+    // Se o estoque atual cobre pelo menos 14 dias de vendas (cobertura segura frente ao lead time),
+    // o produto está protegido e não deve entrar em Alerta de pânico!
+    const mediaDiaria = vendas / 30.0;
+    const diasCobertura = mediaDiaria > 0 ? (estoque / mediaDiaria) : 999;
+    if (vendas <= 5 && diasCobertura >= 14) {
+        return { label: 'Estável', class: 'badge-estavel' };
+    }
 
     if (razao > 1.5) return { label: 'Excesso', class: 'badge-excesso' };
     if (razao >= 0.8) return { label: 'Estável', class: 'badge-estavel' };
@@ -1426,10 +1534,51 @@ function exportarBlacklistTXT() {
     URL.revokeObjectURL(url);
 }
 
-// Modal Destaques / Lançamentos Forçados CD_SP
+// ==========================================================================
+// PRODUTOS FORÇADOS / NOVOS LANÇAMENTOS (CD_SP & MATRIZ)
+// ==========================================================================
+function atualizarSetsDestaques() {
+    state.destaquesCD = new Set();
+    state.destaquesMatriz = new Set();
+    if (Array.isArray(state.destaquesLista)) {
+        state.destaquesLista.forEach(item => {
+            const skuNorm = String(item.sku || '').trim();
+            const skuPad = skuNorm.padStart(6, '0');
+            if (item.cd !== false) { // por padrão true se não especificado
+                state.destaquesCD.add(skuNorm);
+                state.destaquesCD.add(skuPad);
+            }
+            if (item.matriz) {
+                state.destaquesMatriz.add(skuNorm);
+                state.destaquesMatriz.add(skuPad);
+            }
+        });
+    }
+}
+
 function abrirModalDestaques() {
     const modal = document.getElementById('modal-destaques');
     if (modal) modal.classList.add('active');
+
+    // Popular datalist para autocompletar por SKU ou Nome
+    const datalist = document.getElementById('destaques-produtos-datalist');
+    if (datalist && datalist.children.length === 0 && state.produtos) {
+        const frag = document.createDocumentFragment();
+        state.produtos.forEach(p => {
+            if (p.ativo === false) return;
+            const opt = document.createElement('option');
+            opt.value = `${p.sku} - ${p.nome || ''}`;
+            frag.appendChild(opt);
+        });
+        datalist.appendChild(frag);
+    }
+
+    const searchInput = document.getElementById('destaques-search');
+    if (searchInput && !searchInput.dataset.listenerAttached) {
+        searchInput.dataset.listenerAttached = 'true';
+        searchInput.addEventListener('input', renderModalDestaques);
+    }
+
     try { renderModalDestaques(); } catch (e) { console.error(e); }
 }
 
@@ -1444,40 +1593,54 @@ function renderModalDestaques() {
     if (!container) return;
     container.innerHTML = '';
 
-    const busca = (document.getElementById('destaques-search')?.value || '').toLowerCase();
-    const skusDestaques = state.destaqueDRP ? Array.from(state.destaqueDRP) : [];
+    const busca = (document.getElementById('destaques-search')?.value || '').toLowerCase().trim();
+    const itensDestaques = Array.isArray(state.destaquesLista) ? state.destaquesLista : [];
 
     const elCont = document.getElementById('count-destaques');
-    if (elCont) elCont.innerText = skusDestaques.length;
+    if (elCont) elCont.innerText = itensDestaques.length;
 
-    if (skusDestaques.length === 0) {
-        container.innerHTML = '<p class="text-muted" style="text-align:center; padding: 20px;">Nenhum produto forçado no momento.</p>';
+    if (itensDestaques.length === 0) {
+        container.innerHTML = '<p class="text-muted" style="text-align:center; padding: 25px;">Nenhum produto forçado no momento.</p>';
         return;
     }
 
-    skusDestaques.forEach(sku => {
-        const skuNorm = String(sku).trim();
+    itensDestaques.forEach((item, index) => {
+        const skuNorm = String(item.sku || '').trim();
         const skuPad = skuNorm.padStart(6, '0');
-        const p = state.produtos.find(prod => String(prod.sku).trim() === skuNorm || String(prod.sku).trim() === skuPad) || { sku: skuNorm, nome: 'Produto Desconhecido' };
-        
-        if (busca && !skuNorm.toLowerCase().includes(busca) && !(p.nome || '').toLowerCase().includes(busca)) {
+        const p = state.produtos ? state.produtos.find(prod => String(prod.sku).trim() === skuNorm || String(prod.sku).trim() === skuPad) : null;
+        const nomeExibicao = item.nome || (p ? p.nome : 'Produto Cadastrado');
+
+        if (busca && !skuNorm.toLowerCase().includes(busca) && !nomeExibicao.toLowerCase().includes(busca)) {
             return;
         }
 
+        const badgeCD = item.cd !== false 
+            ? `<span class="badge" style="background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14,165,233,0.3); font-size: 0.7rem; padding: 2px 7px;"><i class="fa-solid fa-truck-ramp-box"></i> CD_SP</span>` 
+            : '';
+        const badgeMatriz = item.matriz 
+            ? `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); font-size: 0.7rem; padding: 2px 7px;"><i class="fa-solid fa-industry"></i> Matriz</span>` 
+            : '';
+
         const row = document.createElement('div');
         row.className = 'blacklist-row';
+        row.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); gap: 10px;';
         row.innerHTML = `
-            <div>
-                <strong>${p.sku}</strong> - <span>${p.nome}</span>
+            <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                    <strong style="color: #60a5fa; font-family: monospace; font-size: 0.9rem;">${skuNorm}</strong>
+                    ${badgeCD}
+                    ${badgeMatriz}
+                </div>
+                <div style="font-size: 0.82rem; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${nomeExibicao}</div>
             </div>
-            <button class="btn btn-sm btn-danger btn-remove-destaque" data-sku="${p.sku}">
-                <i class="fa-solid fa-trash"></i> Remover
+            <button class="btn btn-xs btn-danger btn-remove-destaque" data-idx="${index}" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; border-radius: 4px; padding: 5px 9px; cursor: pointer; white-space: nowrap;">
+                <i class="fa-solid fa-trash-can"></i> Remover
             </button>
         `;
 
         row.querySelector('.btn-remove-destaque').addEventListener('click', async () => {
-            state.destaqueDRP.delete(skuNorm);
-            state.destaqueDRP.delete(skuPad);
+            state.destaquesLista.splice(index, 1);
+            atualizarSetsDestaques();
             await salvarDestaquesServidor();
             renderModalDestaques();
             render();
@@ -1490,36 +1653,79 @@ function renderModalDestaques() {
 async function adicionarItemDestaque() {
     const input = document.getElementById('destaques-new-sku');
     if (!input) return;
-    const val = input.value.trim().toUpperCase();
+    let val = input.value.trim();
     if (!val) {
-        alert('Por favor, informe o SKU ou Código do produto.');
+        alert('Por favor, informe o SKU ou Nome do produto.');
         return;
     }
 
-    const valPad = val.padStart(6, '0');
-    const p = state.produtos.find(prod => String(prod.sku).trim().toUpperCase() === val || String(prod.sku).trim().toUpperCase() === valPad || String(prod.codigo || '').trim().toUpperCase() === val);
-    
-    const skuFinal = p ? String(p.sku).trim() : val;
-    if (!state.destaqueDRP) state.destaqueDRP = new Set();
-    state.destaqueDRP.add(skuFinal);
-    input.value = '';
+    // Se selecionou do datalist "000223 - Nome", pega apenas o SKU inicial
+    if (val.includes(' - ')) {
+        val = val.split(' - ')[0].trim();
+    }
+    const valUpper = val.toUpperCase();
+    const valPad = valUpper.padStart(6, '0');
 
+    // Encontrar produto no catálogo do DRP
+    const p = state.produtos ? state.produtos.find(prod => {
+        const pSku = String(prod.sku || '').trim().toUpperCase();
+        const pCod = String(prod.codigo || '').trim().toUpperCase();
+        const pNome = String(prod.nome || '').trim().toUpperCase();
+        return pSku === valUpper || pSku === valPad || pCod === valUpper || pNome.includes(valUpper);
+    }) : null;
+
+    const skuFinal = p ? String(p.sku).trim() : valUpper;
+    const nomeFinal = p ? String(p.nome || '').trim() : 'Produto Cadastrado';
+
+    const checkCD = document.getElementById('destaques-dest-cd')?.checked !== false;
+    const checkMatriz = document.getElementById('destaques-dest-matriz')?.checked !== false;
+
+    if (!checkCD && !checkMatriz) {
+        alert('Por favor, selecione ao menos um destino: CD_SP ou Matriz.');
+        return;
+    }
+
+    if (!Array.isArray(state.destaquesLista)) state.destaquesLista = [];
+
+    // Se já estiver na lista, atualiza os destinos
+    const idx = state.destaquesLista.findIndex(item => String(item.sku).trim().toUpperCase() === skuFinal.toUpperCase());
+    if (idx >= 0) {
+        state.destaquesLista[idx].cd = checkCD;
+        state.destaquesLista[idx].matriz = checkMatriz;
+        if (nomeFinal) state.destaquesLista[idx].nome = nomeFinal;
+    } else {
+        state.destaquesLista.unshift({
+            sku: skuFinal,
+            nome: nomeFinal,
+            cd: checkCD,
+            matriz: checkMatriz
+        });
+    }
+
+    input.value = '';
+    atualizarSetsDestaques();
     await salvarDestaquesServidor();
     renderModalDestaques();
     render();
-    alert(`Produto ${skuFinal} (${p ? p.nome : 'Adicionado'}) agora sempre aparecerá na Reposição CD_SP!`);
+
+    const destinosTexto = (checkCD && checkMatriz) ? 'CD_SP e Matriz' : (checkCD ? 'CD_SP' : 'Matriz');
+    alert(`Produto ${skuFinal} (${nomeFinal})\nForçado com sucesso para exibição em: ${destinosTexto}!`);
 }
 
 async function salvarDestaquesServidor() {
-    const lista = state.destaqueDRP ? Array.from(state.destaqueDRP) : [];
+    const lista = Array.isArray(state.destaquesLista) ? state.destaquesLista : [];
     try {
-        await fetch('/api/destaques', {
+        const resp = await fetch('/api/destaques', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ destaques: lista })
         });
+        const data = await resp.json();
+        if (!resp.ok || !data.success) {
+            console.warn('Erro ao salvar destaques no servidor:', data);
+        }
     } catch (e) {
-        console.warn('Erro ao salvar destaques no servidor:', e);
+        console.warn('Erro de rede ao salvar destaques:', e);
     }
 }
 
@@ -1670,14 +1876,16 @@ async function enviarRemessaOmie() {
         const pesoUn = p.peso_kg || 0.25;
         pesoTotal += (pesoUn * qtd);
         const vUnit = parseFloat((p.valor_unitario || p.preco_unitario || p.preco || 0).toString());
+        const subtotalItem = Math.round(qtd * vUnit * 100) / 100;
+        const desconto90 = Math.round(subtotalItem * 0.90 * 100) / 100;
 
-        produtosReq.append ? null : null; // Safe check
         produtosReq.push({
             cCodItInt: p.sku,
             nCodIt: 0,
             nCodProd: p.id_produto || 0,
             nQtde: qtd,
             nValUnit: vUnit,
+            nDesconto: desconto90,
             cCFOP: "6.152",
             codigo_local_estoque: 1794541746,
             infAdicItem: {
@@ -1728,13 +1936,13 @@ async function enviarRemessaOmie() {
             cCodCateg: "1.01.01", // Receitas Comercial
             cConsFinal: "S",
             cContato: "CD SP",
-            cDadosAdic: "Remessa Transferencia entre CD | Transportadora TRANSLATINO | Frete CIF | Destino: GUARULHOS MACEDO CNPJ 07.044.456/0092-30",
+            cDadosAdic: "Remessa Transferencia entre CD | Transportadora TRANSLATINO | Frete CIF | Destino: GUARULHOS MACEDO CNPJ 07.044.456/0092-30 | DESCONTO DE 90% NA NOTA FISCAL",
             cNumCtr: "",
             cPedido: "",
             nCodProj: 0
         },
         obs: {
-            cObs: "Remessa Transferencia entre CD | Transportadora TRANSLATINO | Frete CIF | Destino: GUARULHOS MACEDO CNPJ 07.044.456/0092-30||Fazer etiqueta com letras grandes e deixar a NF fora das caixas e quantidade de volumes:|A/C Sr. Gildo.|Entregar ao Tiberio|Comunidade Catolica Shalom|Translatino"
+            cObs: "Remessa Transferencia entre CD | Transportadora TRANSLATINO | Frete CIF | Destino: GUARULHOS MACEDO CNPJ 07.044.456/0092-30||Fazer etiqueta com letras grandes e deixar a NF fora das caixas e quantidade de volumes:|A/C Sr. Gildo.|Entregar ao Tiberio|Comunidade Catolica Shalom|Translatino||ATENÇÃO: APLICAR DESCONTO DE 90% NA NOTA FISCAL"
         },
         produtos: produtosReq
     };
@@ -3345,8 +3553,28 @@ function renderizarAbaAnaliseMatriz() {
         return;
     }
 
-    // 1. Filtrar produtos ativos e não-blacklist
-    const prodsAtivos = state.produtos.filter(p => p.ativo !== false && !state.blacklist.has(p.sku));
+    // 1. Filtrar produtos ativos, não-blacklist e não-LV. (com inclusão de Destaques Matriz)
+    const prodsAtivos = state.produtos.filter(p => {
+        const skuStr = String(p.sku || '').trim().toUpperCase();
+        const nomeStr = String(p.nome || p.descricao || '').trim().toUpperCase();
+        const famStr = String(p.familia || '').trim().toUpperCase();
+        const isDestaque = state.destaquesMatriz && (state.destaquesMatriz.has(p.sku) || state.destaquesMatriz.has(skuStr));
+
+        if (isDestaque) return true;
+        if (p.ativo === false || p.inativo === 'S') return false;
+        if (state.blacklist && (state.blacklist.has(p.sku) || state.blacklist.has(skuStr))) return false;
+
+        // Excluir produtos antigos/descontinuados LV.
+        if (
+            skuStr.startsWith('LV.') || skuStr.startsWith('LV-') || skuStr.includes('LV.') ||
+            nomeStr.startsWith('LV.') || nomeStr.startsWith('LV -') || nomeStr.startsWith('LV ') ||
+            famStr.startsWith('LV')
+        ) {
+            return false;
+        }
+
+        return true;
+    });
 
     // 2. Calcular Vendas Recentes e Anteriores por Produto
     const analisados = prodsAtivos.map(p => {
@@ -3557,11 +3785,31 @@ function renderizarAbaDepositosMatriz() {
     const filterStatus = document.getElementById('filter-status-deposito')?.value || 'TODOS';
 
     if (!state.produtos || state.produtos.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 25px;">Nenhum produto carregado.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 25px;">Nenhum produto carregado.</td></tr>`;
         return;
     }
 
-    const prodsAtivos = state.produtos.filter(p => p.ativo !== false && !state.blacklist.has(p.sku));
+    const prodsAtivos = state.produtos.filter(p => {
+        const skuStr = String(p.sku || '').trim().toUpperCase();
+        const nomeStr = String(p.nome || p.descricao || '').trim().toUpperCase();
+        const famStr = String(p.familia || '').trim().toUpperCase();
+        const isDestaque = state.destaquesMatriz && (state.destaquesMatriz.has(p.sku) || state.destaquesMatriz.has(skuStr));
+
+        if (isDestaque) return true;
+        if (p.ativo === false || p.inativo === 'S') return false;
+        if (state.blacklist && (state.blacklist.has(p.sku) || state.blacklist.has(skuStr))) return false;
+
+        // Excluir produtos antigos/descontinuados LV.
+        if (
+            skuStr.startsWith('LV.') || skuStr.startsWith('LV-') || skuStr.includes('LV.') ||
+            nomeStr.startsWith('LV.') || nomeStr.startsWith('LV -') || nomeStr.startsWith('LV ') ||
+            famStr.startsWith('LV')
+        ) {
+            return false;
+        }
+
+        return true;
+    });
 
     // Totais Consolidados p/ KPI Cards
     let sumTotalMatriz = 0;
@@ -3578,48 +3826,47 @@ function renderizarAbaDepositosMatriz() {
         const totalMatriz = p.matriz || 0;
         const sub = state.depositos[skuStr] || { fracionado: 0, deposito_1: 0, deposito_2: 0 };
         
-        const deposito1 = sub.deposito_1 || 0;
         const deposito2 = sub.deposito_2 || 0;
         
-        // FÓRMULA CENTRAL ATUALIZADA:
-        // Fracionado é o saldo remanescente do Estoque Físico Total da Matriz após separar o estoque nos Depósitos 1 e 2
-        // Fracionado = Total Matriz - (Depósito 1 + Depósito 2)
-        const fracionadoCalculado = totalMatriz - (deposito1 + deposito2);
-        const fracionado = Math.max(0, fracionadoCalculado);
+        // PASSO 8: Unificar Fracionado com Depósito 1
+        // Depósito 1 é o saldo operacional que subtrai automaticamente conforme ocorrem as saídas no estoque
+        // Depósito 1 = Total Matriz - Depósito 2 (Reserva/Paletes)
+        const deposito1Calculado = totalMatriz - deposito2;
+        const deposito1 = Math.max(0, deposito1Calculado);
+        const fracionado = deposito1;
         
-        // Divergência ocorre quando o total contado nos Depósitos 1 e 2 excede o Estoque Físico da Matriz
-        const temDivergencia = fracionadoCalculado < 0;
-        const aLocalizar = temDivergencia ? fracionadoCalculado : 0;
+        // Divergência ocorre quando a reserva do Depósito 2 excede o estoque físico total do Omie
+        const temDivergencia = deposito1Calculado < 0;
+        const aLocalizar = temDivergencia ? deposito1Calculado : 0;
 
         sumTotalMatriz += totalMatriz;
-        sumFracionado += fracionado;
         sumDep1 += deposito1;
         sumDep2 += deposito2;
         sumALocalizar += Math.abs(aLocalizar);
 
-        // Alerta de Reabastecimento: Fracionado <= 5 com unidades guardadas no Dep 1 ou Dep 2
-        const fracionadoZerado = fracionado <= 5 && totalMatriz > 0;
-        const temEstoqueContadoEmOutro = deposito2 > 0 || deposito1 > 0;
+        // Alerta de Reabastecimento: Depósito 1 baixo (<= 10 un) havendo saldo no Depósito 2
+        const dep1Baixo = deposito1 <= 10 && totalMatriz > 0;
+        const temEstoqueContadoEmOutro = deposito2 > 0;
 
         if (temDivergencia) {
-            divergencias.push({ p, aLocalizar, fracionado, deposito1, deposito2, totalMatriz });
+            divergencias.push({ p, aLocalizar, deposito1, deposito2, totalMatriz });
         }
 
-        if (fracionadoZerado && temEstoqueContadoEmOutro) {
-            const fonte = deposito2 > 0 ? `Depósito 2 (${deposito2} un)` : `Depósito 1 (${deposito1} un)`;
-            alertasPicking.push({ p, fracionado, fonte, deposito1, deposito2, totalMatriz });
+        if (dep1Baixo && temEstoqueContadoEmOutro) {
+            const fonte = `Depósito 2 (${deposito2} un)`;
+            alertasPicking.push({ p, deposito1, fonte, deposito2, totalMatriz });
         }
 
         return {
             p,
             totalMatriz,
-            fracionado,
-            fracionadoCalculado,
             deposito1,
+            deposito1Calculado,
+            fracionado,
             deposito2,
             aLocalizar,
             temDivergencia,
-            fracionadoZerado,
+            dep1Baixo,
             temEstoqueContadoEmOutro
         };
     });
@@ -3635,7 +3882,7 @@ function renderizarAbaDepositosMatriz() {
     const elALoc = document.getElementById('kpi-dep-alocalizar');
 
     if (elTotM) elTotM.innerText = sumTotalMatriz.toLocaleString('pt-BR');
-    if (elFrac) elFrac.innerText = sumFracionado.toLocaleString('pt-BR');
+    if (elFrac) elFrac.innerText = sumDep1.toLocaleString('pt-BR');
     if (elDep1) elDep1.innerText = sumDep1.toLocaleString('pt-BR');
     if (elDep2) elDep2.innerText = sumDep2.toLocaleString('pt-BR');
     if (elALoc) elALoc.innerText = sumALocalizar.toLocaleString('pt-BR');
@@ -3725,7 +3972,7 @@ function renderizarAbaDepositosMatriz() {
     });
 
     if (exibidos.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 25px;">Nenhum produto encontrado com os filtros selecionados.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 25px;">Nenhum produto encontrado com os filtros selecionados.</td></tr>`;
         return;
     }
 
@@ -3759,6 +4006,7 @@ function renderizarAbaDepositosMatriz() {
         const colorALocalizar = aLocalizar < 0 ? '#f87171' : (aLocalizar === 0 ? '#34d399' : '#c084fc');
         const colorFracionado = fracionado === 0 ? '#f87171' : (fracionado <= 5 ? '#f59e0b' : '#38bdf8');
 
+        const colorDep1 = deposito1 === 0 ? '#f87171' : (deposito1 <= 10 ? '#f59e0b' : '#38bdf8');
         return `
             <tr data-sku="${p.sku}">
                 <td><strong>${p.sku}</strong></td>
@@ -3766,20 +4014,20 @@ function renderizarAbaDepositosMatriz() {
                     <div style="font-weight:600; color:var(--text-main);">${p.nome || 'Produto sem nome'}</div>
                     <div style="font-size:0.75rem; color:var(--text-muted);">${p.familia || '-'}</div>
                 </td>
-                <td style="text-align:center; font-weight:700; color:var(--primary);">${totalMatriz} un</td>
-                <td style="text-align:center;">
-                    <span style="font-size:1.05rem; font-weight:700; color:${colorFracionado};">${fracionado} un</span>
-                    ${badgeEndFrac}
+                <td style="text-align:center; font-weight:700; color:var(--primary); font-size:1.05rem;">
+                    ${totalMatriz} un
                 </td>
                 <td style="text-align:center;">
-                    <input type="number" class="deposito-input dep-1" value="${deposito1}" min="0" onchange="atualizarContagemInline('${p.sku}')">
+                    <span style="font-size:1.05rem; font-weight:700; color:${colorDep1};">${deposito1} un</span>
+                    <div style="font-size:0.68rem; color:var(--text-muted); font-weight:400;">(Subtrai saídas)</div>
                     ${badgeEndDep1}
                 </td>
                 <td style="text-align:center;">
-                    <input type="number" class="deposito-input dep-2" value="${deposito2}" min="0" onchange="atualizarContagemInline('${p.sku}')">
+                    <input type="number" class="deposito-input dep-2" value="${deposito2}" min="0" onchange="atualizarContagemInline('${p.sku}')" style="width:70px; text-align:center; font-weight:700; background:#0f172a; color:#8b5cf6; border:1px solid rgba(139,92,246,0.4); border-radius:4px; padding:3px;" title="Estoque contado na Reserva / Paletes">
+                    <div style="font-size:0.68rem; color:var(--text-muted); font-weight:400;">(Reserva)</div>
                 </td>
-                <td style="text-align:center; font-weight:700; color:${colorALocalizar};">
-                    ${aLocalizar} un
+                <td style="text-align:center; font-weight:700; color:${colorALocalizar}; font-size:0.95rem;">
+                    ${aLocalizar === 0 ? '<span style="color:#34d399;">0 un</span>' : (aLocalizar < 0 ? `<span style="color:#f87171;">${aLocalizar} un</span>` : `${aLocalizar} un`)}
                 </td>
                 <td style="text-align:center;">
                     ${statusBadge}
@@ -3789,10 +4037,10 @@ function renderizarAbaDepositosMatriz() {
                         <button class="btn btn-sm btn-secondary" style="padding:4px 8px; background:rgba(245, 158, 11, 0.15); border:1px solid rgba(245, 158, 11, 0.4); color:#f59e0b;" onclick="abrirModalEndereco('${p.sku}', '${(p.nome || '').replace(/'/g, "\\'")}', '${p.id_produto || p.nCodProd || ''}')" title="Editar Endereço de Armazenamento no Omie ERP">
                             <i class="fa-solid fa-location-dot"></i> Endereço
                         </button>
-                        <button class="btn btn-sm btn-secondary" onclick="abrirModalTransferencia('${p.sku}', '${(p.nome || '').replace(/'/g, "\\'")}')" title="Transferir entre locais">
+                        <button class="btn btn-sm btn-secondary" onclick="abrirModalTransferencia('${p.sku}', '${(p.nome || '').replace(/'/g, "\\'")}')" title="Transferir da Reserva (Dep 2) para o Depósito 1">
                             <i class="fa-solid fa-arrow-right-arrow-left"></i> Transferir
                         </button>
-                        <button class="btn btn-sm btn-primary" onclick="salvarContagemRow('${p.sku}')" title="Salvar contagem">
+                        <button class="btn btn-sm btn-primary" onclick="salvarContagemRow('${p.sku}')" title="Salvar contagem da Reserva">
                             <i class="fa-solid fa-floppy-disk"></i>
                         </button>
                     </div>
@@ -3811,11 +4059,11 @@ function atualizarContagemInline(sku) {
     if (!p) return;
 
     const totalMatriz = p.matriz || 0;
-    const dep1 = parseInt(row.querySelector('.dep-1')?.value || 0);
     const dep2 = parseInt(row.querySelector('.dep-2')?.value || 0);
-    const frac = Math.max(0, totalMatriz - (dep1 + dep2));
+    // Depósito 1 é o saldo operacional que subtrai as saídas: Total Matriz - Depósito 2
+    const dep1 = Math.max(0, totalMatriz - dep2);
 
-    state.depositos[String(sku).trim()] = { fracionado: frac, deposito_1: dep1, deposito_2: dep2 };
+    state.depositos[String(sku).trim()] = { fracionado: dep1, deposito_1: dep1, deposito_2: dep2 };
     renderizarAbaDepositosMatriz();
 }
 
@@ -3826,9 +4074,9 @@ async function salvarContagemRow(sku) {
     const p = state.produtos.find(prod => String(prod.sku).trim() === String(sku).trim());
     const totalMatriz = p ? (p.matriz || 0) : 0;
 
-    const dep1 = parseInt(row.querySelector('.dep-1')?.value || 0);
     const dep2 = parseInt(row.querySelector('.dep-2')?.value || 0);
-    const frac = Math.max(0, totalMatriz - (dep1 + dep2));
+    const dep1 = Math.max(0, totalMatriz - dep2);
+    const frac = dep1;
 
     try {
         const resp = await fetch('/api/depositos/salvar', {
@@ -7148,6 +7396,8 @@ async function carregarRemessasEventos() {
     const sel = document.getElementById('select-remessa-evento-alvo');
     if (!sel) return;
 
+    sel.innerHTML = '<option value="0">⏳ Carregando remessas em aberto...</option>';
+
     try {
         const resp = await fetch('/api/consignacao/eventos/remessas');
         const data = await resp.json();
@@ -7158,8 +7408,10 @@ async function carregarRemessasEventos() {
         remessas.forEach(r => {
             const opt = document.createElement('option');
             opt.value = r.nCodRem;
-            const fatTxt = r.faturada === 'S' ? ' [Faturada]' : ' [Aberta]';
-            opt.textContent = `Remessa #${r.numero_remessa} (${r.data_previsao || ''}) - R$ ${(parseFloat(r.valor_total) || 0).toFixed(2)}${fatTxt}`;
+            const cli = r.nome_cliente ? ` | ${r.nome_cliente}` : '';
+            const dt = r.data_previsao ? ` | ${r.data_previsao}` : '';
+            const vlr = (parseFloat(r.valor_total) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            opt.textContent = `Remessa #${r.numero_remessa}${cli}${dt} — ${vlr}`;
             sel.appendChild(opt);
         });
 
@@ -7168,6 +7420,7 @@ async function carregarRemessasEventos() {
         }
     } catch (e) {
         console.error('Erro ao listar remessas de eventos:', e);
+        sel.innerHTML = '<option value="0">➕ Criar Nova Remessa em Aberto</option>';
     }
 }
 
@@ -7180,32 +7433,42 @@ async function selecionarRemessaEventoAlvo() {
 
     if (val === 0) {
         document.getElementById('input-nome-evento').value = 'Evento Geral 2026';
+        stateEvento.itens = [];
+        renderizarTabelaEvento();
+        recalcularTotaisEvento();
     } else {
         const rem = stateEvento.remessasDisponiveis.find(r => r.nCodRem === val);
-        if (rem) {
-            document.getElementById('input-nome-evento').value = `Remessa #${rem.numero_remessa}`;
-            // Carregar itens existentes da remessa
-            try {
-                const resp = await fetch(`/api/consignacao/unificar`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ remessas: [val], desconto_padrao_pct: 0 })
-                });
-                const data = await resp.json();
-                if (data.success && data.data && data.data.itens) {
-                    stateEvento.itens = data.data.itens.map(it => ({
-                        sku: it.sku,
-                        codigo_produto: it.codigo_produto,
-                        descricao: it.descricao,
-                        quantidade: it.qtd_enviada,
-                        preco_unitario: it.preco_unitario
-                    }));
-                    renderizarTabelaEvento();
-                    recalcularTotaisEvento();
-                }
-            } catch (err) {
-                console.error('Erro ao carregar itens da remessa existente:', err);
+        const nomeRem = rem ? `Remessa #${rem.numero_remessa} (${rem.nome_cliente || 'Cliente'})` : `Remessa #${val}`;
+        document.getElementById('input-nome-evento').value = nomeRem;
+
+        // Carregar itens existentes da remessa alvo para acrescentar novos produtos
+        try {
+            const btnTransmitir = document.getElementById('btn-transmitir-remessa-evento');
+            if (btnTransmitir) btnTransmitir.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Carregando itens da remessa...';
+
+            const resp = await fetch(`/api/consignacao/unificar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ remessas: [val], desconto_padrao_pct: 0 })
+            });
+            const data = await resp.json();
+            if (data.success && data.data && data.data.itens) {
+                stateEvento.itens = data.data.itens.map(it => ({
+                    sku: it.sku,
+                    codigo_produto: it.codigo_produto,
+                    descricao: it.descricao,
+                    quantidade: it.qtd_enviada,
+                    preco_unitario: it.preco_unitario
+                }));
+                renderizarTabelaEvento();
+                recalcularTotaisEvento();
+                alert(`✅ ${nomeRem} carregada com ${stateEvento.itens.length} produto(s) existente(s).\n\nTodos os novos produtos bipados ou adicionados serão ACRESCENTADOS a esta remessa!`);
             }
+        } catch (err) {
+            console.error('Erro ao carregar itens da remessa existente:', err);
+        } finally {
+            const btnTransmitir = document.getElementById('btn-transmitir-remessa-evento');
+            if (btnTransmitir) btnTransmitir.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Transmitir / Acrescentar ao Omie ERP';
         }
     }
 }
@@ -9645,13 +9908,21 @@ function renderizarTabelaRastreios(lista) {
         const loteRef = r.tipo_envio || r.lote_referencia || 'Lote 1 (Jan-Mar/2027)';
         const cidUf = (r.cidade_uf || '').toUpperCase();
 
-        const isEntregaPropria = cod.startsWith('ENTREGA_PROPRIA_') || 
-                                 cod.startsWith('ENTREGADOR_') || 
-                                 loteRef.toLowerCase().includes('entrega própria');
+        const isJT = cod.startsWith('JT_') || 
+                     loteRef.toLowerCase().includes('j&t') || 
+                     loteRef.toLowerCase().includes('jt express');
+
+        const isEntregaPropria = !isJT && (
+            cod.startsWith('ENTREGA_PROPRIA_') || 
+            cod.startsWith('ENTREGADOR_') || 
+            loteRef.toLowerCase().includes('entrega própria')
+        );
 
         let badgeStatus = `<span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); font-size: 0.72rem; white-space: nowrap;"><i class="fa-solid fa-truck-fast"></i> Em Trânsito</span>`;
         if (st.includes('ENTREG')) {
             badgeStatus = `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); font-size: 0.72rem; white-space: nowrap;"><i class="fa-solid fa-circle-check"></i> Entregue</span>`;
+        } else if (isJT) {
+            badgeStatus = `<span class="badge" style="background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249,115,22,0.3); font-size: 0.72rem; white-space: nowrap;"><i class="fa-solid fa-truck-ramp-box"></i> Enviado</span>`;
         } else if (isEntregaPropria) {
             badgeStatus = `<span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); font-size: 0.72rem; white-space: nowrap;"><i class="fa-solid fa-truck-ramp-box"></i> Enviado</span>`;
         } else if (st.includes('AGUARDANDO')) {
@@ -9682,7 +9953,32 @@ function renderizarTabelaRastreios(lista) {
                 <i class="fa-solid fa-box-archive" style="font-size: 0.8rem;"></i> ${cod}
             </a>
         `;
-        if (isEntregaPropria) {
+        if (isJT) {
+            if (cod.startsWith('JT_MANUAL_')) {
+                codDisplay = `
+                    <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+                        <span class="badge" style="background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249,115,22,0.3); font-size: 0.75rem; padding: 4px 8px; border-radius: 4px;" title="Envio via transportadora J&T Express">
+                            <i class="fa-solid fa-truck"></i> J&T Express
+                        </span>
+                        <button class="btn btn-xs" onclick="editarCodigoRastreioJT(${r.id}, '${safePed}', '')" style="background: rgba(249,115,22,0.1); border: 1px dashed rgba(249,115,22,0.4); color: #fdba74; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" title="Clique para informar o código de rastreio J&T Express">
+                            <i class="fa-solid fa-pen-to-square"></i> Inserir Rastreio
+                        </button>
+                    </div>
+                `;
+            } else {
+                codDisplay = `
+                    <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+                        <a href="https://www.jtexpress.com.br/trajectoryQuery?bills=${cod}" target="_blank" rel="noopener noreferrer" style="color: #fb923c; font-weight: 700; text-decoration: underline; display: inline-flex; align-items: center; gap: 5px; font-size: 0.85rem;" title="Rastrear diretamente na J&T Express">
+                            <i class="fa-solid fa-truck"></i> ${cod} <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.65rem;"></i>
+                        </a>
+                        <div style="display: inline-flex; align-items: center; gap: 6px;">
+                            <span class="badge" style="background: rgba(249, 115, 22, 0.12); color: #fb923c; font-size: 0.68rem; padding: 1px 5px; border-radius: 3px;">J&T Express</span>
+                            <a href="javascript:void(0)" onclick="editarCodigoRastreioJT(${r.id}, '${safePed}', '${cod}')" style="color: #94a3b8; font-size: 0.7rem; text-decoration: underline;" title="Alterar código J&T"><i class="fa-solid fa-pen"></i> Alterar</a>
+                        </div>
+                    </div>
+                `;
+            }
+        } else if (isEntregaPropria) {
             codDisplay = `
                 <span class="badge" style="background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14,165,233,0.3); font-size: 0.75rem; padding: 4px 8px; border-radius: 4px;" title="Envio direto em Fortaleza por entregador próprio">
                     <i class="fa-solid fa-motorcycle"></i> Entregador Próprio
@@ -9704,7 +10000,7 @@ function renderizarTabelaRastreios(lista) {
             </button>
         `;
 
-        if (isEntregaPropria) {
+        if (isEntregaPropria || isJT) {
             if (st.includes('ENTREG')) {
                 acaoBtn = `
                     <button class="btn btn-xs" onclick="alternarStatusEntregaPropria(${r.id}, 'Enviado')" style="background: rgba(148, 163, 184, 0.15); border: 1px solid rgba(148,163,184,0.3); color: #94a3b8; border-radius: 4px; padding: 4px 8px; font-size: 0.72rem; margin-right: 4px; cursor: pointer;" title="Voltar para status Enviado">
@@ -9713,7 +10009,7 @@ function renderizarTabelaRastreios(lista) {
                 `;
             } else {
                 acaoBtn = `
-                    <button class="btn btn-xs" onclick="alternarStatusEntregaPropria(${r.id}, 'Entregue')" style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #34d399; border-radius: 4px; padding: 4px 8px; font-size: 0.72rem; margin-right: 4px; font-weight: 600; cursor: pointer;" title="Marcar como entregue pelo entregador">
+                    <button class="btn btn-xs" onclick="alternarStatusEntregaPropria(${r.id}, 'Entregue')" style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #34d399; border-radius: 4px; padding: 4px 8px; font-size: 0.72rem; margin-right: 4px; font-weight: 600; cursor: pointer;" title="Marcar como entregue">
                         <i class="fa-solid fa-check"></i> Marcar Entregue
                     </button>
                 `;
@@ -9774,6 +10070,36 @@ async function alternarStatusEntregaPropria(id, novoStatus) {
     }
 }
 window.alternarStatusEntregaPropria = alternarStatusEntregaPropria;
+
+async function editarCodigoRastreioJT(id, numeroPedido, codigoAtual) {
+    const promptMsg = codigoAtual 
+        ? `Alterar código de rastreio J&T Express (Pedido #${numeroPedido}):` 
+        : `Informe o código de rastreamento da transportadora J&T Express para o Pedido #${numeroPedido} (ex: 888...):`;
+    const novo = prompt(promptMsg, codigoAtual || '');
+    if (novo === null) return;
+    const codigoLimpo = (novo || '').trim().toUpperCase();
+    if (!codigoLimpo) {
+        alert('Por favor, digite um código de rastreio válido.');
+        return;
+    }
+    try {
+        const resp = await fetch('/api/assinaturas/atualizar_codigo_rastreio', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: id, codigo_rastreio: codigoLimpo })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.success) {
+            mostrarToast('Código J&T Express salvo com sucesso!', 'sucesso');
+            await carregarRastreiosAssinaturas();
+        } else {
+            alert('Erro ao salvar código: ' + (data.message || 'Falha'));
+        }
+    } catch (e) {
+        alert('Erro de conexão ao salvar código: ' + e.message);
+    }
+}
+window.editarCodigoRastreioJT = editarCodigoRastreioJT;
 
 // ==========================================
 // SUBPASTA DE RASTREIO & HISTÓRICO DE ENVIOS
@@ -10286,3 +10612,866 @@ window.fecharModalConfigurarNovoLote = fecharModalConfigurarNovoLote;
 window.aoMudarPresetNovoLote = aoMudarPresetNovoLote;
 window.executarAtivacaoNovoLote = executarAtivacaoNovoLote;
 
+
+
+/* ==========================================================================
+   Módulo 4: Impressão de Etiquetas Térmicas (70mm x 50mm)
+   Substituição nativa do Streamlit leitor-etiquetas-main
+   ========================================================================== */
+
+const LOGO_ETIQUETA_BASE64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAACUCAMAAAANv/M2AAAAt1BMVEUCSZf///8BSZcARprv9PYAR5bo8fXJ2+QoVJsAN5GMqcLN2+ORr8hefK4NUZQAK4/J1eElTptAXp3Y4+g2ZqIBSpUAQpD///sAPJAAQJcAQJMAMYoALY41YZ4AOpEWTpZVc6kAGn9kj7Wqw9Szy9l2mLz1///b6+6aq8eBnrq62OUADYGetstef6oOSoy3x9c8bqQvYZarvtaJmrxvjLYrWJkAGoxMcqKNpMQAAIJKa6elwswPV4/y6S70AAAGp0lEQVR4nO2cDXOiOByHSULwvbqlIRAUtPW1i6W6unreff/PdYC2RatWEkK2d/xmujOdVXiMD/+EJFTTyhQW+A1/ypS5FtV+lk6XyTuq/SydLpN3VPtZOv1fDcRCEfii+bwiBGLb9SyBsK6HCIKE4/ycIdgdPD41TJEMR1Y3+uz8ENkCNacXjIF4Oj0hSzIF1UaTHJCj0OkPi2RvbA6nMduOAc0HmoYviBTgNHZnNDpbPtCAPv9EfBxZkIk1ykPnjwReUkJkhnhzI6923kefO1mtzugTYS9GTj6/hYYQyXUaWZVcieMYfYeD5PZgv5M7MwB1R2KxxtAKJDCD0M8odZb67Hdn+RaOQzpVLM1p6L3KQAagUpU3AmEL4/tBW8t8ax0/9O0usb6khk6g5TgN2Rbk3K2koaWEID+UQiwTGqK1+cdA3+wSvtdlQstxWjK0lBB0DroiNkil+0u7YOimCHIUM/nM0pw+Dz0TG/R19uMvaU5fgP4lwjy+H75DS8l56PCHQB0cr35WVECb7pT3SqR0ygZjynUhijlt9EiFlzrQUBe8QxfotN7qLjiZQxs7CyUlDyxtd8ZBTGnTRsTb7n8rGrrjI+spO7Q+Y5hAt8MJLeZ05IeF1hmHfxQYcxtBDd0ZH9AFOj2mWwthf5htoD28t+MZXu9R52xpMWgKJlUC0WB2+00NNVvthBFbb99Q0U4DMGJYI7VNeMPkQvx1NLaWh+MJR9/ZmYfhVtFOAzD57UMNOv6qccPd2HC0tmEyH43vnO3bELFgp+PM7XgNBtvVxy+m+fT6xrcwIcnELvb9ShpaSi5BR1bfOTEGgU77rmPQi+29dV32scKC34q0CuionwjYGwiqPWw75+Sm1Fx1j9aEsPfxuuKdpkCfM6jtCwKxbLIKjJPWpoAOe7aGP44HNTf4eI0Cp6OTkv1iT9II2EHr1QSkuSmt+OzobMTb6MfQUnINGjx7qa8eRtyD3tPHqyPtB+h4WQX3TCCgRx7QFNRZeomKEMhqvaV5aEuq95mfPhaEcHn0TRXudJLx1sMnr7e8XbBfbqRTC6b/D96160fSK3E6ph65x4cjBDNrkSzsmg/WcTu155SeQkvJF9AAND12emqIkqWDppd2B2psdPJWZdAUNNefqONVdINu0utAGNqj0wMpcjopcJ1Xz0f46H0RYquS9IP73yNp2nX9tMtU5XSSyeivT8ckziIlB3Tc5udeXp3TSWNXdujEEUxQuoTPJ2eGJiqh4+hByzoiwCTV7+BqoJ8ZUClz+j1GgPHF42C/deaGUqnT+0YMalcOjGxWPwstJbdC08rv65tOsDsXLnn5QgMa3qEvtpxgZ3nyJkVO08PVZUyrhyvv4nEI8U57F4VOUzD+e319yxrEXnswaPdOJhwU6UF13Vxu3PbL1c2BiO3qFWMyrJ9p6QKhk8Ga3giD1Y64DiKYXGpoSLDdm57/yAU7TakxHLV6yLPjAcbVY2Avnhm5CF2g0xTMGIt4YaqFzxUPjO3B08WpnMKdHu/S3XYkAUKOw/YbdxFDKNnA6+FqspnvAnbxF2LDSt2XWLZnrfubVpR+nN1uF/07/xWY16bMFNTpZdLUsdKOu/u1DDum8Z54y7Fh6AeVrkEXW6fpuOnGHTexupvGp/H9TVFQpykI4h3nziv3NkM1ncuSWWzDv1lIydiDgtBvCWxwUjX2aFwtDzdAS8nNdy4l9IXkfo/ICa3wHpEfWkpKaFHo0mkBaCmRCr3+jtDf0elQ+4ZOT1kmlD8C2mjZcpglQtOO//Xpj6Peabqyye0cf4jTzx6R9WifHOjoxmEykPcQpaSWpubiq/nsM1HpdNTO4UM8qZaBQ73T47mGMlFkzBloqusGf3Qz3LRtuc+6f4LWw+389YE/PdZ1iHZxPvtqeJ1+ajk2447FLCu7y6JOj5BdE87nXQs55xh64bKHbV00c00ydRo63kbj5vBUs37PCc3j9BBhjc0qDdEEflFOU2D0GcQIVYVD+GoHBzSgMxcTv1r9IRTfxxhL/xsI79ANn7BNRzgh4WfO7vSGwdSOXP4sWHF1+rkNIe5tm6KZWbLliJcv99D6+gUT5rXF0q3VPMkXYRxI/PiRNlqPLp9dSzR9DYow3+w0wQ/DsRFUNadlfj2G+yojO8O5uZ2GGsT+7h5hyOY5/BWHrSfQ0Jm4CUZxmXJe/rkTjO/JvwoP0BAnI5yYXTRCSnN7pfKnTJlrUe1n6XSZvKPaz9LpMnlHtZ+l02Xyjmo/S6fL5B3Vfv5PnP4XNz3PDL0G+wgAAAAASUVORK5CYII=';
+
+const stateEtiquetas = {
+    modo: 'estoque', // 'estoque' ou 'xml'
+    selecionadosEstoque: {}, // { [sku]: { nome, codigo, qtd, estoqueMatriz, estoqueCD, familia, preco } }
+    itensXML: [], // [ { id, nome, codigo, barcode, qtd, selecionado: true } ]
+    filtroTexto: '',
+    filtroFamilia: '',
+    filtroApenasEstoque: false,
+    filtroLocal: 'todos',
+    inicializado: false
+};
+
+function carregarModuloEtiquetas() {
+    configurarEventosEtiquetas();
+    popularFiltroFamiliasEtiquetas();
+    renderizarTabelaEtiquetasEstoque();
+    atualizarKPIsEtiquetas();
+}
+
+function configurarEventosEtiquetas() {
+    if (stateEtiquetas.inicializado) return;
+    stateEtiquetas.inicializado = true;
+
+    // Subabas
+    const btnSubEstoque = document.getElementById('btn-etq-subtab-estoque');
+    const btnSubXml = document.getElementById('btn-etq-subtab-xml');
+    const subEstoque = document.getElementById('etq-subtab-estoque');
+    const subXml = document.getElementById('etq-subtab-xml');
+
+    if (btnSubEstoque && btnSubXml) {
+        btnSubEstoque.addEventListener('click', () => {
+            btnSubEstoque.classList.add('active');
+            btnSubXml.classList.remove('active');
+            if (subEstoque) subEstoque.style.display = 'block';
+            if (subXml) subXml.style.display = 'none';
+            stateEtiquetas.modo = 'estoque';
+            atualizarKPIsEtiquetas();
+        });
+
+        btnSubXml.addEventListener('click', () => {
+            btnSubXml.classList.add('active');
+            btnSubEstoque.classList.remove('active');
+            if (subXml) subXml.style.display = 'block';
+            if (subEstoque) subEstoque.style.display = 'none';
+            stateEtiquetas.modo = 'xml';
+            atualizarKPIsEtiquetas();
+        });
+    }
+
+    // Filtros de Estoque
+    const inputBusca = document.getElementById('etq-filtro-busca');
+    if (inputBusca) {
+        inputBusca.addEventListener('input', (e) => {
+            stateEtiquetas.filtroTexto = (e.target.value || '').trim().toLowerCase();
+            renderizarTabelaEtiquetasEstoque();
+        });
+    }
+
+    const selectFam = document.getElementById('etq-filtro-familia');
+    if (selectFam) {
+        selectFam.addEventListener('change', (e) => {
+            stateEtiquetas.filtroFamilia = e.target.value;
+            renderizarTabelaEtiquetasEstoque();
+        });
+    }
+
+    const checkApenasEstoque = document.getElementById('etq-filtro-apenas-estoque');
+    if (checkApenasEstoque) {
+        checkApenasEstoque.addEventListener('change', (e) => {
+            stateEtiquetas.filtroApenasEstoque = e.target.checked;
+            renderizarTabelaEtiquetasEstoque();
+        });
+    }
+
+    const selectLocal = document.getElementById('etq-filtro-local');
+    if (selectLocal) {
+        selectLocal.addEventListener('change', (e) => {
+            stateEtiquetas.filtroLocal = e.target.value;
+            renderizarTabelaEtiquetasEstoque();
+        });
+    }
+
+    // Seleção em Massa
+    const btnSelTodos = document.getElementById('btn-etq-sel-todos');
+    if (btnSelTodos) {
+        btnSelTodos.addEventListener('click', selecionarTodosFiltradosEtiquetas);
+    }
+
+    const btnLimparSel = document.getElementById('btn-etq-limpar-sel');
+    if (btnLimparSel) {
+        btnLimparSel.addEventListener('click', limparSelecaoEtiquetas);
+    }
+
+    const btnAplicarQtdMassa = document.getElementById('btn-etq-aplicar-qtd-massa');
+    if (btnAplicarQtdMassa) {
+        btnAplicarQtdMassa.addEventListener('click', aplicarQtdEmMassaEtiquetas);
+    }
+
+    // Upload XML e Dropzone
+    const inputXml = document.getElementById('etq-xml-input');
+    const dropzone = document.getElementById('etq-xml-dropzone');
+
+    if (inputXml) {
+        inputXml.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                processarArquivoXML(e.target.files[0]);
+            }
+        });
+    }
+
+    if (dropzone) {
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.style.borderColor = '#38bdf8';
+            dropzone.style.background = 'rgba(56, 189, 248, 0.08)';
+        });
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.style.borderColor = '#334155';
+            dropzone.style.background = 'rgba(15, 23, 42, 0.5)';
+        });
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.style.borderColor = '#334155';
+            dropzone.style.background = 'rgba(15, 23, 42, 0.5)';
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                processarArquivoXML(e.dataTransfer.files[0]);
+            }
+        });
+    }
+
+    // Ações Principais
+    const btnPrevia = document.getElementById('btn-etq-previa-modal');
+    if (btnPrevia) {
+        btnPrevia.addEventListener('click', abrirPreviaEtiquetas);
+    }
+
+    const btnGerarPdf = document.getElementById('btn-etq-gerar-pdf');
+    if (btnGerarPdf) {
+        btnGerarPdf.addEventListener('click', gerarPDFEtiquetas);
+    }
+
+    const btnImprimirDireto = document.getElementById('btn-etq-imprimir-direto');
+    if (btnImprimirDireto) {
+        btnImprimirDireto.addEventListener('click', imprimirEtiquetasDireto);
+    }
+
+    // Modal
+    const btnFecharModal = document.getElementById('btn-fechar-modal-previa-etq');
+    if (btnFecharModal) {
+        btnFecharModal.addEventListener('click', fecharModalPreviaEtiquetas);
+    }
+
+    const btnModalBaixarPdf = document.getElementById('btn-modal-baixar-pdf');
+    if (btnModalBaixarPdf) {
+        btnModalBaixarPdf.addEventListener('click', gerarPDFEtiquetas);
+    }
+
+    const btnModalImprimir = document.getElementById('btn-modal-imprimir');
+    if (btnModalImprimir) {
+        btnModalImprimir.addEventListener('click', imprimirEtiquetasDireto);
+    }
+}
+
+function popularFiltroFamiliasEtiquetas() {
+    const kpiTotalCat = document.getElementById('etq-kpi-catalogo-total');
+    if (kpiTotalCat && state.produtos && Array.isArray(state.produtos)) {
+        kpiTotalCat.innerText = state.produtos.length.toLocaleString('pt-BR');
+    }
+    const select = document.getElementById('etq-filtro-familia');
+    if (!select || !state.produtos || !Array.isArray(state.produtos)) return;
+
+    const valorAtual = select.value;
+    const familias = new Set();
+    state.produtos.forEach(p => {
+        const f = (p.familia || p.descricao_familia || '').trim();
+        if (f) familias.add(f);
+    });
+
+    const ordenadas = Array.from(familias).sort((a, b) => a.localeCompare(b));
+    let html = '<option value="">Todas as Famílias</option>';
+    ordenadas.forEach(fam => {
+        html += `<option value="${fam}">${fam}</option>`;
+    });
+    select.innerHTML = html;
+    if (valorAtual) select.value = valorAtual;
+}
+
+function obterProdutosEtiquetasFiltrados() {
+    if (!state.produtos || !Array.isArray(state.produtos)) return [];
+
+    const texto = stateEtiquetas.filtroTexto;
+    const fam = stateEtiquetas.filtroFamilia;
+    const apenasEstoque = stateEtiquetas.filtroApenasEstoque;
+    const local = stateEtiquetas.filtroLocal;
+
+    return state.produtos.filter(p => {
+        const sku = String(p.sku || p.codigo || '').trim();
+        const nome = String(p.nome || p.descricao || '').trim();
+        const codigoBarras = String(p.codigo_barras || p.ean || '').trim();
+        const familia = String(p.familia || p.descricao_familia || '').trim();
+
+        // Regra Passo 2: Ignorar descontinuados LV.
+        if (sku.toUpperCase().startsWith('LV.') || nome.toUpperCase().startsWith('LV.')) {
+            return false;
+        }
+
+        if (texto) {
+            const bateSku = sku.toLowerCase().includes(texto);
+            const bateNome = nome.toLowerCase().includes(texto);
+            const bateEan = codigoBarras.toLowerCase().includes(texto);
+            if (!bateSku && !bateNome && !bateEan) return false;
+        }
+
+        if (fam && familia !== fam) {
+            return false;
+        }
+
+        const estMatriz = Number(p.matriz ?? p.matriz_fisico ?? p.saldo_matriz ?? p.estoque_fisico ?? 0);
+        const estCD = Number(p.cd_sp ?? p.cd_sp_fisico ?? p.saldo_cd_sp ?? p.estoque_cd_sp ?? 0);
+        const estTotal = estMatriz + estCD;
+
+        if (apenasEstoque) {
+            if (local === 'matriz' && estMatriz <= 0) return false;
+            if (local === 'cd_sp' && estCD <= 0) return false;
+            if (local === 'todos' && estTotal <= 0) return false;
+        }
+
+        return true;
+    });
+}
+
+function renderizarTabelaEtiquetasEstoque() {
+    const tbody = document.getElementById('tabela-etiquetas-corpo');
+    const contador = document.getElementById('etq-tabela-contador');
+    if (!tbody) return;
+
+    const lista = obterProdutosEtiquetasFiltrados();
+
+    if (contador) {
+        contador.innerText = `Mostrando ${lista.length} produto(s)`;
+    }
+
+    if (lista.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #94a3b8; padding: 25px;">Nenhum produto encontrado com os filtros selecionados.</td></tr>`;
+        return;
+    }
+
+    // Renderizar linhas (com limite de 200 para fluidez caso lista muito grande)
+    const limite = 200;
+    const visiveis = lista.slice(0, limite);
+
+    let html = '';
+    visiveis.forEach(p => {
+        const sku = String(p.sku || p.codigo || '').trim();
+        const nome = String(p.nome || p.descricao || '').trim();
+        const familia = String(p.familia || p.descricao_familia || '-').trim();
+        const estMatriz = Number(p.matriz ?? p.matriz_fisico ?? p.saldo_matriz ?? p.estoque_fisico ?? 0);
+        const estCD = Number(p.cd_sp ?? p.cd_sp_fisico ?? p.saldo_cd_sp ?? p.estoque_cd_sp ?? 0);
+        const preco = Number(p.valor_unitario ?? p.preco_venda ?? 0);
+
+        const sel = stateEtiquetas.selecionadosEstoque[sku];
+        const isChecked = !!sel;
+        const qtdAtual = sel ? sel.qtd : 1;
+
+        html += `
+            <tr style="${isChecked ? 'background: rgba(56, 189, 248, 0.08);' : ''}">
+                <td style="text-align: center;">
+                    <input type="checkbox" 
+                           class="etq-row-check" 
+                           data-sku="${sku}" 
+                           ${isChecked ? 'checked' : ''} 
+                           onchange="window.toggleItemEtiquetaEstoque('${sku}', this.checked)"
+                           style="transform: scale(1.15); cursor: pointer;">
+                </td>
+                <td style="font-family: monospace; font-weight: 700; color: #38bdf8;">${sku}</td>
+                <td style="font-weight: 600; color: #f8fafc;">${nome}</td>
+                <td style="font-size: 0.82rem; color: #94a3b8;">${familia}</td>
+                <td style="font-size: 0.85rem;">
+                    <span style="color: #10b981; font-weight: 600;">Matriz: ${estMatriz}</span> | 
+                    <span style="color: #f59e0b; font-weight: 600;">CD: ${estCD}</span>
+                </td>
+                <td style="text-align: center;">
+                    <input type="number" 
+                           min="1" 
+                           value="${qtdAtual}" 
+                           style="width: 65px; text-align: center; padding: 4px; border-radius: 4px; border: 1px solid #334155; background: #0f172a; color: #fff; font-weight: 700;"
+                           onchange="window.alterarQtdEtiquetaEstoque('${sku}', this.value)">
+                </td>
+                <td style="text-align: center;">
+                    <button class="btn-action" style="padding: 4px 10px; font-size: 0.78rem; background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8; border-radius: 4px; cursor: pointer;"
+                            onclick="window.previaItemUnico('${sku}')">
+                        <i class="fa-solid fa-eye"></i> Ver
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+
+    if (lista.length > limite) {
+        html += `<tr><td colspan="7" style="text-align: center; color: #eab308; padding: 10px; font-size: 0.82rem;">Exibindo os primeiros ${limite} produtos. Refine sua pesquisa para ver produtos específicos.</td></tr>`;
+    }
+
+    tbody.innerHTML = html;
+}
+
+window.toggleItemEtiquetaEstoque = function(sku, checked) {
+    if (checked) {
+        const prod = state.produtos.find(p => String(p.sku || p.codigo || '').trim() === sku);
+        if (prod) {
+            const inputQtd = document.querySelector(`input[onchange*="'${sku}'"]`);
+            const qtd = inputQtd ? parseInt(inputQtd.value, 10) || 1 : 1;
+            stateEtiquetas.selecionadosEstoque[sku] = {
+                sku: sku,
+                codigo: sku,
+                nome: prod.nome || prod.descricao || sku,
+                codigo_barras: prod.codigo_barras || prod.ean || sku,
+                familia: prod.familia || prod.descricao_familia || '',
+                preco: Number(prod.preco_venda || prod.valor_unitario || 0),
+                qtd: Math.max(1, qtd)
+            };
+        }
+    } else {
+        delete stateEtiquetas.selecionadosEstoque[sku];
+    }
+    atualizarKPIsEtiquetas();
+    const tr = window.event && window.event.target ? window.event.target.closest('tr') : null;
+    if (tr) {
+        tr.style.background = checked ? 'rgba(56, 189, 248, 0.08)' : '';
+    }
+};
+
+window.alterarQtdEtiquetaEstoque = function(sku, valor) {
+    const qtd = Math.max(1, parseInt(valor, 10) || 1);
+    if (stateEtiquetas.selecionadosEstoque[sku]) {
+        stateEtiquetas.selecionadosEstoque[sku].qtd = qtd;
+    } else {
+        const check = document.querySelector(`input[data-sku="${sku}"]`);
+        if (check) check.checked = true;
+        window.toggleItemEtiquetaEstoque(sku, true);
+        if (stateEtiquetas.selecionadosEstoque[sku]) {
+            stateEtiquetas.selecionadosEstoque[sku].qtd = qtd;
+        }
+    }
+    atualizarKPIsEtiquetas();
+};
+
+function selecionarTodosFiltradosEtiquetas() {
+    const lista = obterProdutosEtiquetasFiltrados();
+    const qtdInput = document.getElementById('etq-qtd-massa');
+    const qtdPadrao = qtdInput ? Math.max(1, parseInt(qtdInput.value, 10) || 1) : 1;
+
+    lista.forEach(prod => {
+        const sku = String(prod.sku || prod.codigo || '').trim();
+        stateEtiquetas.selecionadosEstoque[sku] = {
+            sku: sku,
+            codigo: sku,
+            nome: prod.nome || prod.descricao || sku,
+            codigo_barras: prod.codigo_barras || prod.ean || sku,
+            familia: prod.familia || prod.descricao_familia || '',
+            preco: Number(prod.preco_venda || prod.valor_unitario || 0),
+            qtd: qtdPadrao
+        };
+    });
+
+    renderizarTabelaEtiquetasEstoque();
+    atualizarKPIsEtiquetas();
+}
+
+function limparSelecaoEtiquetas() {
+    stateEtiquetas.selecionadosEstoque = {};
+    renderizarTabelaEtiquetasEstoque();
+    atualizarKPIsEtiquetas();
+}
+
+function aplicarQtdEmMassaEtiquetas() {
+    const qtdInput = document.getElementById('etq-qtd-massa');
+    const novaQtd = qtdInput ? Math.max(1, parseInt(qtdInput.value, 10) || 1) : 1;
+
+    const chaves = Object.keys(stateEtiquetas.selecionadosEstoque);
+    if (chaves.length === 0) {
+        alert('Selecione primeiro os produtos que deseja alterar a quantidade.');
+        return;
+    }
+
+    chaves.forEach(sku => {
+        stateEtiquetas.selecionadosEstoque[sku].qtd = novaQtd;
+    });
+
+    renderizarTabelaEtiquetasEstoque();
+    atualizarKPIsEtiquetas();
+}
+
+// Upload e Leitura de NF-e XML
+function processarArquivoXML(arquivo) {
+    if (!arquivo || !arquivo.name.toLowerCase().endsWith('.xml')) {
+        alert('Por favor, selecione um arquivo válido de NF-e com extensão .xml');
+        return;
+    }
+
+    const leitor = new FileReader();
+    leitor.onload = function(e) {
+        const conteudo = e.target.result;
+        try {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(conteudo, 'text/xml');
+
+            const parseError = xmlDoc.getElementsByTagName('parsererror');
+            if (parseError.length > 0) {
+                throw new Error('Falha ao processar estrutura do XML da NF-e.');
+            }
+
+            const dets = xmlDoc.getElementsByTagName('det');
+            if (!dets || dets.length === 0) {
+                throw new Error('Nenhum item de produto (<det>) encontrado no arquivo XML.');
+            }
+
+            const itensExtraidos = [];
+            for (let i = 0; i < dets.length; i++) {
+                const det = dets[i];
+                const prod = det.getElementsByTagName('prod')[0];
+                if (!prod) continue;
+
+                const getTagText = (tag) => {
+                    const el = prod.getElementsByTagName(tag)[0];
+                    return el ? (el.textContent || '').trim() : '';
+                };
+
+                const cProd = getTagText('cProd');
+                const xProd = getTagText('xProd');
+                const cEAN = getTagText('cEAN');
+                const qCom = Math.max(1, Math.round(parseFloat(getTagText('qCom')) || 1));
+                const vUnCom = parseFloat(getTagText('vUnCom')) || 0;
+
+                const codigoBarras = (cEAN && cEAN !== 'SEM GTIN' && cEAN.length >= 8) ? cEAN : cProd;
+
+                itensExtraidos.push({
+                    id: 'xml_' + (i + 1),
+                    sku: cProd,
+                    codigo: cProd,
+                    nome: xProd,
+                    codigo_barras: codigoBarras,
+                    qtd: qCom,
+                    preco: vUnCom,
+                    selecionado: true
+                });
+            }
+
+            if (itensExtraidos.length === 0) {
+                throw new Error('Não foi possível extrair produtos válidos desta NF-e.');
+            }
+
+            stateEtiquetas.itensXML = itensExtraidos;
+            renderizarTabelaEtiquetasXML(arquivo.name);
+            atualizarKPIsEtiquetas();
+
+        } catch (err) {
+            console.error('Erro ao ler XML NF-e:', err);
+            alert('❌ Erro ao ler XML: ' + err.message);
+        }
+    };
+    leitor.readAsText(arquivo, 'UTF-8');
+}
+
+function renderizarTabelaEtiquetasXML(nomeArquivo) {
+    const card = document.getElementById('etq-xml-preview-card');
+    const tbody = document.getElementById('tabela-etiquetas-xml-corpo');
+    const resumo = document.getElementById('etq-xml-resumo-texto');
+
+    if (card) card.style.display = 'block';
+    if (resumo) {
+        const totalPcs = stateEtiquetas.itensXML.reduce((acc, it) => acc + (it.selecionado ? it.qtd : 0), 0);
+        resumo.innerHTML = `NF-e: <strong>${nomeArquivo || 'Arquivo XML'}</strong> | <strong>${stateEtiquetas.itensXML.length}</strong> itens identificados | <strong>${totalPcs}</strong> etiquetas prontas para emissão.`;
+    }
+
+    if (!tbody) return;
+
+    let html = '';
+    stateEtiquetas.itensXML.forEach((it, idx) => {
+        html += `
+            <tr style="${it.selecionado ? 'background: rgba(56, 189, 248, 0.08);' : ''}">
+                <td style="text-align: center;">
+                    <input type="checkbox" 
+                           ${it.selecionado ? 'checked' : ''} 
+                           onchange="window.toggleItemEtiquetaXML(${idx}, this.checked)"
+                           style="transform: scale(1.15); cursor: pointer;">
+                </td>
+                <td style="font-family: monospace; font-weight: 700; color: #38bdf8;">${it.codigo}</td>
+                <td style="font-weight: 600; color: #f8fafc;">${it.nome}</td>
+                <td style="font-family: monospace; font-size: 0.85rem; color: #94a3b8;">${it.codigo_barras}</td>
+                <td style="text-align: center;">
+                    <input type="number" 
+                           min="1" 
+                           value="${it.qtd}" 
+                           style="width: 65px; text-align: center; padding: 4px; border-radius: 4px; border: 1px solid #334155; background: #0f172a; color: #fff; font-weight: 700;"
+                           onchange="window.alterarQtdEtiquetaXML(${idx}, this.value)">
+                </td>
+                <td style="text-align: center;">
+                    <button class="btn-action" style="padding: 4px 10px; font-size: 0.78rem; background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8; border-radius: 4px; cursor: pointer;"
+                            onclick="window.previaItemXMLUnico(${idx})">
+                        <i class="fa-solid fa-eye"></i> Ver
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    tbody.innerHTML = html;
+}
+
+window.toggleItemEtiquetaXML = function(idx, checked) {
+    if (stateEtiquetas.itensXML[idx]) {
+        stateEtiquetas.itensXML[idx].selecionado = checked;
+        atualizarKPIsEtiquetas();
+    }
+};
+
+window.alterarQtdEtiquetaXML = function(idx, valor) {
+    if (stateEtiquetas.itensXML[idx]) {
+        stateEtiquetas.itensXML[idx].qtd = Math.max(1, parseInt(valor, 10) || 1);
+        atualizarKPIsEtiquetas();
+    }
+};
+
+function obterListaEtiquetasParaImpressao() {
+    let lista = [];
+    if (stateEtiquetas.modo === 'xml') {
+        lista = stateEtiquetas.itensXML.filter(it => it.selecionado);
+    } else {
+        lista = Object.values(stateEtiquetas.selecionadosEstoque);
+    }
+    return lista;
+}
+
+function atualizarKPIsEtiquetas() {
+    const kpiItens = document.getElementById('etq-kpi-selecionados');
+    const kpiTotalEtiquetas = document.getElementById('etq-kpi-total-etiquetas');
+
+    const lista = obterListaEtiquetasParaImpressao();
+    const totalItens = lista.length;
+    const totalEtiquetas = lista.reduce((acc, it) => acc + (parseInt(it.qtd, 10) || 1), 0);
+
+    if (kpiItens) kpiItens.innerText = totalItens;
+    if (kpiTotalEtiquetas) kpiTotalEtiquetas.innerText = totalEtiquetas;
+}
+
+// Modal de Prévia
+function abrirPreviaEtiquetas() {
+    const lista = obterListaEtiquetasParaImpressao();
+    if (lista.length === 0) {
+        alert('Selecione ao menos 1 produto ou importe um XML de NF-e para visualizar as etiquetas.');
+        return;
+    }
+
+    const modal = document.getElementById('modal-previa-etiqueta');
+    const container = document.getElementById('modal-previa-etiqueta-conteudo');
+    if (!modal || !container) return;
+
+    const totalEtiquetas = lista.reduce((acc, it) => acc + (parseInt(it.qtd, 10) || 1), 0);
+    const limitePrevia = 12;
+    let exibidas = 0;
+
+    let html = '';
+    const itemsBarcodeToRender = [];
+
+    for (let i = 0; i < lista.length; i++) {
+        const item = lista[i];
+        const qtd = parseInt(item.qtd, 10) || 1;
+
+        for (let q = 0; q < qtd; q++) {
+            if (exibidas >= limitePrevia) break;
+            const svgId = `etq-preview-svg-${exibidas}`;
+            const barcodeVal = item.codigo_barras || item.codigo || item.sku;
+
+            html += `
+                <div class="etiqueta-card-preview">
+                    <div class="etiqueta-header">
+                        <img src="${LOGO_ETIQUETA_BASE64}" class="etiqueta-logo" alt="Logo">
+                        <span class="etiqueta-brand-text">EDIÇÕES SHALOM</span>
+                    </div>
+                    <div class="etiqueta-body">
+                        <div class="etiqueta-descricao" title="${item.nome}">${item.nome}</div>
+                        <div class="etiqueta-info-row">
+                            <span>REF: <strong>${item.codigo || item.sku}</strong></span>
+                            <span>FABRICADO NO BRASIL</span>
+                        </div>
+                    </div>
+                    <div class="etiqueta-barcode-container">
+                        <svg id="${svgId}"></svg>
+                    </div>
+                </div>
+            `;
+
+            itemsBarcodeToRender.push({ svgId: svgId, valor: barcodeVal });
+            exibidas++;
+        }
+        if (exibidas >= limitePrevia) break;
+    }
+
+    if (totalEtiquetas > limitePrevia) {
+        html += `
+            <div style="grid-column: 1 / -1; text-align: center; color: #94a3b8; padding: 15px; font-size: 0.9rem;">
+                <i class="fa-solid fa-circle-info" style="color: #38bdf8;"></i> 
+                Exibindo prévia das primeiras <strong>${limitePrevia}</strong> etiquetas de um total de <strong>${totalEtiquetas}</strong>.
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
+    modal.style.display = 'flex';
+
+    setTimeout(() => {
+        itemsBarcodeToRender.forEach(item => {
+            const el = document.getElementById(item.svgId);
+            if (el && typeof JsBarcode === 'function') {
+                try {
+                    JsBarcode(el, String(item.valor), {
+                        format: 'CODE128',
+                        width: 1.6,
+                        height: 38,
+                        displayValue: true,
+                        fontSize: 10,
+                        margin: 2
+                    });
+                } catch (err) {
+                    console.warn('Erro ao gerar código de barras para', item.valor, err);
+                }
+            }
+        });
+    }, 50);
+}
+
+window.previaItemUnico = function(sku) {
+    const prod = state.produtos.find(p => String(p.sku || p.codigo || '').trim() === sku);
+    if (!prod) return;
+
+    stateEtiquetas.selecionadosEstoque[sku] = {
+        sku: sku,
+        codigo: sku,
+        nome: prod.nome || prod.descricao || sku,
+        codigo_barras: prod.codigo_barras || prod.ean || sku,
+        familia: prod.familia || prod.descricao_familia || '',
+        preco: Number(prod.preco_venda || prod.valor_unitario || 0),
+        qtd: 1
+    };
+    stateEtiquetas.modo = 'estoque';
+    atualizarKPIsEtiquetas();
+    abrirPreviaEtiquetas();
+};
+
+window.previaItemXMLUnico = function(idx) {
+    if (!stateEtiquetas.itensXML[idx]) return;
+    stateEtiquetas.itensXML.forEach((it, i) => {
+        it.selecionado = (i === idx);
+    });
+    stateEtiquetas.modo = 'xml';
+    atualizarKPIsEtiquetas();
+    renderizarTabelaEtiquetasXML();
+    abrirPreviaEtiquetas();
+};
+
+function fecharModalPreviaEtiquetas() {
+    const modal = document.getElementById('modal-previa-etiqueta');
+    if (modal) modal.style.display = 'none';
+}
+
+// Geração de PDF Térmico 70mm x 50mm com jsPDF
+async function gerarPDFEtiquetas() {
+    const lista = obterListaEtiquetasParaImpressao();
+    if (lista.length === 0) {
+        alert('Selecione ao menos 1 produto ou importe um XML de NF-e para gerar o PDF.');
+        return;
+    }
+
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+        alert('Biblioteca jsPDF não carregada. Verifique a conexão com a internet.');
+        return;
+    }
+
+    const btnGerarPdf = document.getElementById('btn-etq-gerar-pdf');
+    const origHtml = btnGerarPdf ? btnGerarPdf.innerHTML : '';
+    if (btnGerarPdf) {
+        btnGerarPdf.disabled = true;
+        btnGerarPdf.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gerando PDF...';
+    }
+
+    try {
+        const { jsPDF } = window.jspdf;
+        // 70mm largura x 50mm altura (Landscape)
+        const doc = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: [70, 50]
+        });
+
+        const gerarBarcodeDataUrl = (codigo) => {
+            const canvas = document.createElement('canvas');
+            JsBarcode(canvas, String(codigo), {
+                format: 'CODE128',
+                width: 2,
+                height: 40,
+                displayValue: true,
+                fontSize: 11,
+                margin: 4
+            });
+            return canvas.toDataURL('image/png');
+        };
+
+        let primeiraPagina = true;
+
+        for (const item of lista) {
+            const qtd = parseInt(item.qtd, 10) || 1;
+            const barcodeVal = item.codigo_barras || item.codigo || item.sku;
+            const barcodeDataUrl = gerarBarcodeDataUrl(barcodeVal);
+
+            for (let q = 0; q < qtd; q++) {
+                if (!primeiraPagina) {
+                    doc.addPage([70, 50], 'landscape');
+                }
+                primeiraPagina = false;
+
+                // 1. Borda da etiqueta (2mm de margem)
+                doc.setDrawColor(0, 0, 0);
+                doc.setLineWidth(0.3);
+                doc.rect(2, 2, 66, 46);
+
+                // 2. Linha divisória horizontal centralizada
+                doc.setLineWidth(0.2);
+                doc.line(2, 25, 68, 25);
+
+                // 3. Logo no topo esquerdo
+                try {
+                    doc.addImage(LOGO_ETIQUETA_BASE64, 'PNG', 4, 4, 15, 15);
+                } catch (eLogo) {
+                    console.warn('Erro ao inserir logo no PDF', eLogo);
+                }
+
+                // 4. Nome / Descrição do Produto (Topo direito)
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(8);
+                const linhasNome = doc.splitTextToSize((item.nome || '').toUpperCase(), 46);
+                doc.text(linhasNome, 21, 8);
+
+                // 5. Linha de Informações (Abaixo da divisória)
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(7.5);
+                doc.text(`REF: ${item.codigo || item.sku}`, 4, 29);
+
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(7);
+                doc.text('FABRICADO NO BRASIL', 42, 29);
+
+                // 6. Código de Barras (Parte inferior)
+                try {
+                    doc.addImage(barcodeDataUrl, 'PNG', 9, 32, 52, 14);
+                } catch (eBar) {
+                    console.warn('Erro ao inserir código de barras no PDF', eBar);
+                }
+            }
+        }
+
+        const nomeArquivo = stateEtiquetas.modo === 'xml' ? 'etiquetas_nfe_70x50.pdf' : 'etiquetas_estoque_70x50.pdf';
+        doc.save(nomeArquivo);
+
+    } catch (err) {
+        console.error('Erro ao gerar PDF de etiquetas:', err);
+        alert('❌ Falha ao gerar PDF de etiquetas: ' + err.message);
+    } finally {
+        if (btnGerarPdf) {
+            btnGerarPdf.disabled = false;
+            btnGerarPdf.innerHTML = origHtml;
+        }
+    }
+}
+
+// Impressão Direta na Impressora Térmica via Navegador
+function imprimirEtiquetasDireto() {
+    const lista = obterListaEtiquetasParaImpressao();
+    if (lista.length === 0) {
+        alert('Selecione ao menos 1 produto ou importe um XML de NF-e para imprimir.');
+        return;
+    }
+
+    let printArea = document.getElementById('area-impressao-etiquetas');
+    if (!printArea) {
+        printArea = document.createElement('div');
+        printArea.id = 'area-impressao-etiquetas';
+        document.body.appendChild(printArea);
+    }
+
+    printArea.innerHTML = '';
+    const itemsBarcodeToRender = [];
+    let etiquetaIndex = 0;
+
+    lista.forEach(item => {
+        const qtd = parseInt(item.qtd, 10) || 1;
+        const barcodeVal = item.codigo_barras || item.codigo || item.sku;
+
+        for (let q = 0; q < qtd; q++) {
+            const svgId = `etq-print-svg-${etiquetaIndex}`;
+            const div = document.createElement('div');
+            div.className = 'etiqueta-print-item';
+            div.innerHTML = `
+                <div class="etiqueta-header">
+                    <img src="${LOGO_ETIQUETA_BASE64}" class="etiqueta-logo" alt="Logo">
+                    <span class="etiqueta-brand-text">EDIÇÕES SHALOM</span>
+                </div>
+                <div class="etiqueta-body">
+                    <div class="etiqueta-descricao">${item.nome}</div>
+                    <div class="etiqueta-info-row">
+                        <span>REF: <strong>${item.codigo || item.sku}</strong></span>
+                        <span>FABRICADO NO BRASIL</span>
+                    </div>
+                </div>
+                <div class="etiqueta-barcode-container">
+                    <svg id="${svgId}"></svg>
+                </div>
+            `;
+            printArea.appendChild(div);
+            itemsBarcodeToRender.push({ svgId: svgId, valor: barcodeVal });
+            etiquetaIndex++;
+        }
+    });
+
+    // Renderizar códigos de barra
+    itemsBarcodeToRender.forEach(item => {
+        const el = document.getElementById(item.svgId);
+        if (el && typeof JsBarcode === 'function') {
+            try {
+                JsBarcode(el, String(item.valor), {
+                    format: 'CODE128',
+                    width: 1.8,
+                    height: 42,
+                    displayValue: true,
+                    fontSize: 10,
+                    margin: 2
+                });
+            } catch (err) {
+                console.warn('Erro ao renderizar código de barras para impressão', err);
+            }
+        }
+    });
+
+    setTimeout(() => {
+        window.print();
+    }, 200);
+}
+
+// Exportar globalmente
+window.carregarModuloEtiquetas = carregarModuloEtiquetas;
+window.abrirPreviaEtiquetas = abrirPreviaEtiquetas;
+window.fecharModalPreviaEtiquetas = fecharModalPreviaEtiquetas;
+window.gerarPDFEtiquetas = gerarPDFEtiquetas;
+window.imprimirEtiquetasDireto = imprimirEtiquetasDireto;
+window.selecionarTodosFiltradosEtiquetas = selecionarTodosFiltradosEtiquetas;
+window.limparSelecaoEtiquetas = limparSelecaoEtiquetas;
+window.aplicarQtdEmMassaEtiquetas = aplicarQtdEmMassaEtiquetas;

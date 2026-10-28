@@ -90,6 +90,25 @@ def extrair_base_e_tamanho(nome_prod: str) -> tuple[str, str]:
 
     return nome_up, ""
 
+def carregar_destaques_matriz() -> set:
+    """Carrega SKUs forçados para a Matriz a partir do arquivo de destaques."""
+    try:
+        json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'produtos_destaque_drp.json')
+        if os.path.exists(json_path):
+            with open(json_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                dest = set()
+                for item in data:
+                    if isinstance(item, str):
+                        dest.add(item.strip().upper())
+                    elif isinstance(item, dict):
+                        if item.get('matriz', True):
+                            dest.add(str(item.get('sku', '')).strip().upper())
+                return dest
+    except Exception:
+        pass
+    return set()
+
 def obter_remessas_por_sku(produtos: List[Dict[str, Any]] = None) -> Dict[str, float]:
     """
     Calcula a soma de remessas/transferências enviadas pela Matriz para o CD_SP
@@ -197,47 +216,72 @@ def calcular_inteligencia_matriz(produtos: List[Dict[str, Any]]) -> Dict[str, An
     # 2. Carregar Lotes Manuais Customizados
     lotes_manuais = carregar_lotes_manuais()
 
-    # 3. Carregar Remessas CD_SP
+    # 3. Carregar Remessas CD_SP e Destaques Matriz
     remessas_cd_sp = obter_remessas_por_sku(produtos)
+    destaques_matriz = carregar_destaques_matriz()
 
-    # 4. Filtrar produtos fora da Blacklist e fora de COMBOS / KITS (100% de exclusão)
+    # 4. Filtrar produtos inativos, produtos antigos LV., Blacklist e COMBOS/KITS
     produtos_validos = []
     for p in produtos:
         sku = str(p.get("sku", "")).strip().upper()
         nome = (p.get("nome") or p.get("descricao") or "").strip().upper()
         fam = (p.get("familia") or "").strip().upper()
+        inativo = str(p.get("inativo", "N")).upper() == "S" or p.get("ativo") is False
 
-        # Filtrar COMBOS, KITS e PRESENTE DA FAMÍLIA (não entram na reposição/análise)
-        is_combo = (
-            "COMBO" in fam or "COMBOS" in fam or
-            "COMBO" in nome or "COMBOS" in nome or
-            "KIT" in fam or "KITS" in fam or
-            "CONJUNTO" in fam or "CONJUNTO" in nome or
-            "PRESENTE DA FAM" in nome
+        # Verifica se o produto foi forçado pelo usuário para a Matriz
+        eh_destaque = (
+            sku in destaques_matriz or 
+            sku.zfill(6) in destaques_matriz or 
+            re.sub(r'[^0-9]', '', sku) in destaques_matriz
         )
-        if is_combo:
-            continue
 
-        if sku.startswith('PRD'):
-            digits = re.sub(r'[^0-9]', '', sku)
-            digits_pad = digits.zfill(5) if digits else ""
-            is_blacklisted = (
-                sku in blacklist_prd or
-                (digits and f"PRD{digits}" in blacklist_prd) or
-                (digits_pad and f"PRD{digits_pad}" in blacklist_prd)
-            )
-        else:
-            sku_pad = sku.zfill(6)
-            digits = re.sub(r'[^0-9]', '', sku)
-            is_blacklisted = (
-                sku in blacklist_norm or
-                sku_pad in blacklist_norm or
-                (digits and digits in blacklist_norm) or
-                (digits and digits.zfill(6) in blacklist_norm)
-            )
+        # Se não for produto forçado, aplicar filtros rígidos de exclusão
+        if not eh_destaque:
+            # 4.1. Excluir inativos
+            if inativo:
+                continue
 
-        if is_blacklisted:
-            continue
+            # 4.2. Excluir produtos antigos/descontinuados LV. (solicitado pelo usuário)
+            if (
+                sku.startswith("LV.") or sku.startswith("LV-") or "LV." in sku or
+                nome.startswith("LV.") or nome.startswith("LV -") or nome.startswith("LV ") or
+                fam.startswith("LV")
+            ):
+                continue
+
+            # 4.3. Filtrar COMBOS, KITS e PRESENTE DA FAMÍLIA (não entram na reposição/análise)
+            is_combo = (
+                "COMBO" in fam or "COMBOS" in fam or
+                "COMBO" in nome or "COMBOS" in nome or
+                "KIT" in fam or "KITS" in fam or
+                "CONJUNTO" in fam or "CONJUNTO" in nome or
+                "PRESENTE DA FAM" in nome
+            )
+            if is_combo:
+                continue
+
+            # 4.4. Filtrar Blacklist
+            if sku.startswith('PRD'):
+                digits = re.sub(r'[^0-9]', '', sku)
+                digits_pad = digits.zfill(5) if digits else ""
+                is_blacklisted = (
+                    sku in blacklist_prd or
+                    (digits and f"PRD{digits}" in blacklist_prd) or
+                    (digits_pad and f"PRD{digits_pad}" in blacklist_prd)
+                )
+            else:
+                sku_pad = sku.zfill(6)
+                digits = re.sub(r'[^0-9]', '', sku)
+                is_blacklisted = (
+                    sku in blacklist_norm or
+                    sku_pad in blacklist_norm or
+                    (digits and digits in blacklist_norm) or
+                    (digits and digits.zfill(6) in blacklist_norm)
+                )
+
+            if is_blacklisted:
+                continue
+
         produtos_validos.append(p)
 
     # 5. Agrupar produtos por Família para Curva ABC Relativa

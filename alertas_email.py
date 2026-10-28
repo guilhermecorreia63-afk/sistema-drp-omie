@@ -150,22 +150,26 @@ def gerar_relatorio_sintetico():
         est_efetivo_cd = int(p.get("cd_sp_disponivel") if p.get("cd_sp_disponivel") is not None else (p.get("cd_sp", 0) or 0)) + int(p.get("em_transito", 0) or 0)
         if vendas_ss > 0:
             alvo_cd = (vendas_ss / 30.0) * (30 + 7) * 1.20
+            dias_cob_cd = (est_efetivo_cd / (vendas_ss / 30.0)) if vendas_ss > 0 else 999
             if est_efetivo_cd <= 0:
                 p_cd = dict(p)
                 p_cd["tipo_alerta"] = "RUPTURA"
                 rupturas_cd.append(p_cd)
                 grupos_cd.setdefault(fam, []).append(p_cd)
             elif est_efetivo_cd / (alvo_cd or 1) < 0.8:
-                p_cd = dict(p)
-                p_cd["tipo_alerta"] = "ALERTA"
-                alertas_cd.append(p_cd)
-                grupos_cd.setdefault(fam, []).append(p_cd)
+                # Se for baixa demanda (<= 5 un/mês) e tem cobertura de 14+ dias, não gera falso alerta
+                if not (vendas_ss <= 5 and dias_cob_cd >= 14):
+                    p_cd = dict(p)
+                    p_cd["tipo_alerta"] = "ALERTA"
+                    alertas_cd.append(p_cd)
+                    grupos_cd.setdefault(fam, []).append(p_cd)
 
         # 2. Matriz
         vendas_geral = p.get("vendas_geral_30d", 0) or 0
         est_matriz = int(p.get("matriz_disponivel") if p.get("matriz_disponivel") is not None else (p.get("matriz", 0) or 0))
         if vendas_geral > 0:
             alvo_mat = (vendas_geral / 30.0) * (30 + 15) * 1.20
+            dias_cob_mat = (est_matriz / (vendas_geral / 30.0)) if vendas_geral > 0 else 999
             if est_matriz <= 0 and p.get("status_especial") != "Sem Estoque Discipulado":
                 p_mat = dict(p)
                 p_mat["tipo_alerta"] = "RUPTURA"
@@ -174,12 +178,14 @@ def gerar_relatorio_sintetico():
                 if em_prod:
                     total_em_producao_ruptura += 1
             elif est_matriz / (alvo_mat or 1) < 0.8:
-                p_mat = dict(p)
-                p_mat["tipo_alerta"] = "ALERTA"
-                alertas_matriz.append(p_mat)
-                grupos_matriz.setdefault(fam, []).append(p_mat)
-                if em_prod:
-                    total_em_producao_ruptura += 1
+                # Se for baixa demanda (<= 5 un/mês) e tem cobertura de 14+ dias, não gera falso alerta
+                if not (vendas_geral <= 5 and dias_cob_mat >= 14):
+                    p_mat = dict(p)
+                    p_mat["tipo_alerta"] = "ALERTA"
+                    alertas_matriz.append(p_mat)
+                    grupos_matriz.setdefault(fam, []).append(p_mat)
+                    if em_prod:
+                        total_em_producao_ruptura += 1
 
         # 3. Projeção Velas Férias
         if "VELA" in fam or "VELA" in nome_up:

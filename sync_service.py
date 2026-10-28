@@ -65,6 +65,16 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
                 marca = (pm.get("marca") or "").strip() or "Edições Shalom"
                 fam = (pm.get("descricao_familia") or "GERAL").upper()
                 nome = pm.get("descricao", "")
+                sku_upper = sku.upper()
+                nome_upper = (nome or "").upper()
+
+                # Ignorar produtos antigos/descontinuados LV.
+                if (
+                    sku_upper.startswith("LV.") or sku_upper.startswith("LV-") or "LV." in sku_upper or
+                    nome_upper.startswith("LV.") or nome_upper.startswith("LV -") or nome_upper.startswith("LV ") or
+                    fam.startswith("LV")
+                ):
+                    continue
                 id_prod = pm.get("codigo_produto", 0)
                 peso = float(pm.get("peso_bruto", 0.1) or 0.1)
 
@@ -120,6 +130,13 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
                 tot_pags = res.get("nTotPaginas", 1)
                 for item in res.get("produtos", []):
                     sku = str(item.get("cCodigo", "")).strip()
+                    sku_upper = sku.upper()
+                    nome_item = str(item.get("cDescricao") or sku).upper()
+                    if (
+                        sku_upper.startswith("LV.") or sku_upper.startswith("LV-") or "LV." in sku_upper or
+                        nome_item.startswith("LV.") or nome_item.startswith("LV -") or nome_item.startswith("LV ")
+                    ):
+                        continue
                     cod_prod = item.get("nCodProd")
                     saldo_disp = int(item.get("nSaldo") if item.get("nSaldo") is not None else item.get("saldo", 0))
                     saldo_res = int(item.get("nReservado") if item.get("nReservado") is not None else item.get("reservado", 0))
@@ -175,6 +192,13 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
                 tot_pags = res.get("nTotPaginas", 1)
                 for item in res.get("produtos", []):
                     sku = str(item.get("cCodigo", "")).strip()
+                    sku_upper = sku.upper()
+                    nome_item = str(item.get("cDescricao") or sku).upper()
+                    if (
+                        sku_upper.startswith("LV.") or sku_upper.startswith("LV-") or "LV." in sku_upper or
+                        nome_item.startswith("LV.") or nome_item.startswith("LV -") or nome_item.startswith("LV ")
+                    ):
+                        continue
                     cod_prod = item.get("nCodProd")
                     saldo_disp = int(item.get("nSaldo") if item.get("nSaldo") is not None else item.get("saldo", 0))
                     saldo_res = int(item.get("nReservado") if item.get("nReservado") is not None else item.get("reservado", 0))
@@ -386,7 +410,39 @@ def sincronizar_dados_seletivo(tipo_sync: str = "TUDO"):
         except Exception as e:
             print(f"[SYNC] Erro ao mesclar vendas do ControleDRP: {e}")
 
-    lista_final = list(produtos_by_sku.values())
+    # Carregar destaques para preservar produtos forçados caso existam
+    destaques_preservar = set()
+    try:
+        caminho_destaques = os.path.join("data", "produtos_destaque_drp.json")
+        if os.path.exists(caminho_destaques):
+            with open(caminho_destaques, "r", encoding="utf-8") as f_d:
+                data_d = json.load(f_d)
+                for item_d in data_d:
+                    s_d = item_d.get("sku", "") if isinstance(item_d, dict) else item_d
+                    if s_d:
+                        destaques_preservar.add(str(s_d).strip().upper())
+    except Exception:
+        pass
+
+    lista_final = []
+    for p in produtos_by_sku.values():
+        sku_val = str(p.get("sku", "")).strip().upper()
+        nome_val = str(p.get("nome", "")).strip().upper()
+        fam_val = str(p.get("familia", "")).strip().upper()
+        inativo_val = str(p.get("inativo", "N")).upper() == "S" or p.get("ativo") is False
+
+        eh_destaque = sku_val in destaques_preservar
+
+        if not eh_destaque:
+            if inativo_val:
+                continue
+            if (
+                sku_val.startswith("LV.") or sku_val.startswith("LV-") or "LV." in sku_val or
+                nome_val.startswith("LV.") or nome_val.startswith("LV -") or nome_val.startswith("LV ") or
+                fam_val.startswith("LV")
+            ):
+                continue
+        lista_final.append(p)
 
     # 4. Gravar lista atualizada em data/produtos_turso.json
     caminho_json = os.path.join("data", "produtos_turso.json")

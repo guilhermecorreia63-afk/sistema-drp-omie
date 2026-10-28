@@ -149,6 +149,27 @@ body {
     margin: 16px 0;
 }
 
+.nav-section-title {
+    padding: 12px 14px 4px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.nav-module-group {
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.sidebar-module-mode #btn-nav-hub {
+    display: none !important;
+}
+
+.sidebar-hub-mode #btn-voltar-hub-sidebar {
+    display: none !important;
+}
+
 .nav-tab {
     display: flex;
     align-items: center;
@@ -1406,3 +1427,124 @@ body {
 
 
 
+
+
+/* ==========================================================================
+   Módulo 4: Impressão de Etiquetas Térmicas (70mm x 50mm)
+   ========================================================================== */
+.etiqueta-card-preview {
+    width: 280px;
+    height: 200px;
+    background: #ffffff;
+    color: #000000;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    user-select: none;
+    position: relative;
+}
+
+.etiqueta-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 4px;
+}
+
+.etiqueta-logo {
+    max-height: 24px;
+    max-width: 90px;
+    object-fit: contain;
+}
+
+.etiqueta-brand-text {
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #1e293b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.etiqueta-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 4px 0;
+}
+
+.etiqueta-descricao {
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.15;
+    color: #0f172a;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.etiqueta-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.65rem;
+    color: #334155;
+    font-weight: 600;
+}
+
+.etiqueta-barcode-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-top: 2px;
+}
+
+.etiqueta-barcode-container svg {
+    max-width: 100%;
+    height: 48px;
+}
+
+@media print {
+    body > *:not(#area-impressao-etiquetas) {
+        display: none !important;
+    }
+    #area-impressao-etiquetas {
+        display: block !important;
+        position: absolute;
+        top: 0;
+        left: 0;
+        margin: 0;
+        padding: 0;
+        width: 70mm;
+    }
+    @page {
+        size: 70mm 50mm;
+        margin: 0;
+    }
+    .etiqueta-print-item {
+        width: 70mm;
+        height: 50mm;
+        page-break-after: always;
+        break-after: page;
+        box-sizing: border-box;
+        padding: 3mm 4mm;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        background: #fff !important;
+        color: #000 !important;
+        overflow: hidden;
+    }
+}

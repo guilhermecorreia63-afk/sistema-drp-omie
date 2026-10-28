@@ -54,6 +54,43 @@ PARCELAS_CADASTRO = [
     {"codigo": "999", "descricao": "Informar número de parcelas"}
 ]
 
+DATA_CORTE_INICIO_FLUXO = "23/10/2026"
+
+def classificar_transportadora_pedido(p: Dict[str, Any]) -> tuple:
+    """
+    Identifica a modalidade/transportadora do pedido no Omie:
+    Retorna (codigo_tipo, label):
+    - JT_EXPRESS, 'J&T Express': Códigos 1854970300, 1962318541, obs J&T Express
+    - CORREIOS, 'Correios': Códigos 1980947090, 1817912309, obs Correios/PAC/Sedex/Impresso
+    - ENTREGA_PROPRIA, 'Entregador Próprio': Código 1854969807 (Roberto Souza), obs Souza/Motoboy, ou Fortaleza/RMF sem transportadora externa
+    """
+    frete = p.get("frete", {}) or {}
+    cod_transp = frete.get("codigo_transportadora")
+    obs = str(p.get("observacoes", {}).get("obs_venda", "") or "")
+    info_adic = str(p.get("informacoes_adicionais", {}).get("dados_adicionais_nf", "") or "")
+    texto_geral = f"{obs} {info_adic}".upper()
+
+    outros = p.get("informacoes_adicionais", {}).get("outros_detalhes", {}) or {}
+    cid = str(outros.get("cCidadeOd") or "").upper()
+    uf = str(outros.get("cEstadoOd") or "").upper()
+
+    # 1. J&T Express (não tem API automática atualmente, fluxo manual como Fortaleza com área de rastreio)
+    if cod_transp in [1854970300, 1962318541] or "J&T" in texto_geral or "JT EXPRESS" in texto_geral:
+        return "JT_EXPRESS", "J&T Express"
+
+    # 2. Correios (EMPRESA BRASILEIRA DE CORREIOS E TELEGRAFOS)
+    if cod_transp in [1980947090, 1817912309] or any(k in texto_geral for k in ["CORREIOS", "SEDEX", "PAC", "IMPRESSO"]):
+        return "CORREIOS", "Correios"
+
+    # 3. Entregador Próprio / Fortaleza
+    if cod_transp == 1854969807 or any(k in texto_geral for k in ["SOUZA", "ENTREGADOR", "MOTOBOY", "ENTREGA PROPRIA"]):
+        return "ENTREGA_PROPRIA", "Entregador Próprio"
+
+    if uf == "CE" and any(m in cid for m in ["FORTALEZA", "MARACANAU", "MARACANAÚ", "EUSEBIO", "EUSÉBIO", "CAUCAIA"]):
+        return "ENTREGA_PROPRIA", "Entregador Próprio"
+
+    return "CORREIOS", "Correios"
+
 class PedidosAssinaturasService:
     def __init__(self):
         self.client = OmieClient("MATRIZ")
@@ -320,7 +357,11 @@ class PedidosAssinaturasService:
         """
         from datetime import timedelta
         dias = dias_atras if dias_atras is not None else dias_retroativos
-        data_inicio = (datetime.now() - timedelta(days=dias)).strftime("%d/%m/%Y")
+        dt_corte = datetime.strptime(DATA_CORTE_INICIO_FLUXO, "%d/%m/%Y")
+        dt_calc = datetime.now() - timedelta(days=dias)
+        if dt_calc < dt_corte:
+            dt_calc = dt_corte
+        data_inicio = dt_calc.strftime("%d/%m/%Y")
         
         combos_map = {
             "000223": {"sku": "000223", "id": 1863902383, "nome": "Kit Assinatura Pão da Vida (Padrão)"},
@@ -370,6 +411,17 @@ class PedidosAssinaturasService:
                     cod_ped = int(cab.get("codigo_pedido") or 0)
                     cod_cli = int(cab.get("codigo_cliente") or 0)
                     etapa = str(cab.get("etapa") or "")
+
+                    # Se for varredura geral (sem pedido específico), garantir que não puxa pedidos antes de 23/10/2026
+                    if not numero_pedido_especifico:
+                        data_ped_str = str(cab.get("data_previsao") or p.get("infoCadastro", {}).get("dInc") or "").strip()
+                        if len(data_ped_str) >= 10:
+                            try:
+                                dt_p = datetime.strptime(data_ped_str[:10], "%d/%m/%Y")
+                                if dt_p < dt_corte:
+                                    continue
+                            except Exception:
+                                pass
 
                     # Verificar se contém combo de assinatura
                     itens = p.get("itens", []) or p.get("det", [])
@@ -443,6 +495,9 @@ class PedidosAssinaturasService:
                     total_contratado = 12 * qtd_assinaturas
                     obs = f"Importado automaticamente do Omie (Pedido #{num_ped} - Etapa {etapa})"
 
+                    # Classificar transportadora do pedido (J&T Express, Entregador Próprio ou Correios)
+                    forma_envio_detectada, label_transp = classificar_transportadora_pedido(p)
+
                     # Upsert no Turso DB
                     check_df = db.executar_query("SELECT id FROM assinaturas_pedidos_proximo_envio WHERE codigo_pedido_omie = :cod_ped OR numero_pedido = :num_ped", {
                         "cod_ped": cod_ped,
@@ -467,6 +522,7 @@ class PedidosAssinaturasService:
                                 valor_total = :v_tot,
                                 observacao = :obs,
                                 periodo_envio = :periodo,
+                                forma_envio = :forma_envio,
                                 exemplares_entregues = :entregues,
                                 total_exemplares_contratados = :tot_cont,
                                 status_assinatura = 'ATIVO'
@@ -477,6 +533,7 @@ class PedidosAssinaturasService:
                             "comp": comp, "bairro": bairro, "cid": cid, "uf": uf, "cep": cep,
                             "qtd": qtd_assinaturas, "sku": combo_identificado,
                             "v_tot": val_total, "obs": obs, "periodo": periodo_envio,
+                            "forma_envio": forma_envio_detectada,
                             "entregues": exemplares_iniciais, "tot_cont": total_contratado,
                             "id": existente_id
                         }, is_select=False)
@@ -494,7 +551,7 @@ class PedidosAssinaturasService:
                                 :rua, :num, :comp, :bairro, :cid, :uf, :cep,
                                 :qtd, :periodo, :obs, :agora,
                                 'Comercial', '1807684664', 1800980891, '000',
-                                'CORREIOS', 0.0, :v_tot, :sku, 'IMPORTADO_FATURADO_OMIE',
+                                :forma_envio, 0.0, :v_tot, :sku, 'IMPORTADO_FATURADO_OMIE',
                                 :entregues, :tot_cont, 'ATIVO'
                             )
                         """
@@ -503,7 +560,8 @@ class PedidosAssinaturasService:
                             "nome": cli_nome, "cpf": cpf_cnpj, "rua": rua, "num": num,
                             "comp": comp, "bairro": bairro, "cid": cid, "uf": uf, "cep": cep,
                             "qtd": qtd_assinaturas, "periodo": periodo_envio, "obs": obs,
-                            "agora": agora, "v_tot": val_total, "sku": combo_identificado,
+                            "agora": agora, "forma_envio": forma_envio_detectada,
+                            "v_tot": val_total, "sku": combo_identificado,
                             "entregues": exemplares_iniciais, "tot_cont": total_contratado
                         }, is_select=False)
 

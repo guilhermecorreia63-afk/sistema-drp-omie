@@ -1147,9 +1147,73 @@ class ConsignacaoService:
 
     CLIENTE_EVENTOS_ID = 2266589781
 
+    _remessas_eventos_cache = None
+    _remessas_eventos_cache_time = 0
+
     def listar_remessas_eventos(self) -> List[Dict[str, Any]]:
-        """Lista as remessas em aberto do cliente EVENTOS (ID 2266589781)."""
-        return self.listar_remessas_cliente(self.CLIENTE_EVENTOS_ID)
+        """
+        Lista todas as remessas em aberto recentes (não canceladas e não faturadas),
+        permitindo ao operador selecionar qualquer remessa ativa para acrescentar produtos.
+        Inclui cache em memória de 60s para respostas instantâneas.
+        """
+        agora = time.time()
+        if ConsignacaoService._remessas_eventos_cache and (agora - ConsignacaoService._remessas_eventos_cache_time < 60):
+            return ConsignacaoService._remessas_eventos_cache
+
+        try:
+            # 1. Obter total de páginas no Omie
+            init_res = self.client.executar('produtos/remessa/', 'ListarRemessas', [{'nPagina': 1, 'nRegistrosPorPagina': 50}])
+            tot_pags = init_res.get('nTotalPaginas', 1)
+
+            remessas_encontradas = []
+            clientes_cache = {}
+
+            # 2. Varrer as últimas páginas recentes (onde estão as remessas em andamento)
+            pag_inicio = max(1, tot_pags - 2)
+            for p in range(tot_pags, pag_inicio - 1, -1):
+                res = self.client.executar('produtos/remessa/', 'ListarRemessas', [{'nPagina': p, 'nRegistrosPorPagina': 50}])
+                for r in res.get('remessas', []):
+                    c = r.get('cabec', {})
+                    # Filtrar apenas remessas válidas (não canceladas e não faturadas/etapa final)
+                    if c.get('cCancelado') != 'S' and c.get('cEtapa') != '10':
+                        n_cli = c.get('nCodCli')
+                        nome_cli = "Cliente"
+                        if n_cli:
+                            if n_cli in clientes_cache:
+                                nome_cli = clientes_cache[n_cli]
+                            else:
+                                try:
+                                    c_info = self.client.executar('geral/clientes/', 'ConsultarCliente', [{'codigo_cliente_omie': n_cli}])
+                                    nome_cli = c_info.get('nome_fantasia') or c_info.get('razao_social') or f"Cli {n_cli}"
+                                    clientes_cache[n_cli] = nome_cli
+                                except Exception:
+                                    nome_cli = f"Cli {n_cli}"
+
+                        d_prev = c.get('dPrevisao') or c.get('dDtEmissao') or ''
+                        remessas_encontradas.append({
+                            "nCodRem": c.get('nCodRem'),
+                            "numero_remessa": str(c.get('cNumeroRemessa') or ''),
+                            "nCodCli": n_cli,
+                            "nome_cliente": nome_cli,
+                            "data_previsao": d_prev,
+                            "valor_total": float(c.get('nValorTotal') or 0.0),
+                            "etapa": c.get('cEtapa'),
+                            "faturada": 'S' if c.get('cEtapa') == '10' else 'N'
+                        })
+
+            # Ordenar da mais nova para a mais antiga
+            remessas_encontradas.sort(
+                key=lambda x: int(x['numero_remessa']) if str(x['numero_remessa']).isdigit() else 0,
+                reverse=True
+            )
+
+            ConsignacaoService._remessas_eventos_cache = remessas_encontradas
+            ConsignacaoService._remessas_eventos_cache_time = agora
+            return remessas_encontradas
+
+        except Exception as e:
+            print(f"[CONSIGNACAO] Erro ao listar remessas em aberto para eventos: {e}")
+            return []
 
     def salvar_remessa_evento(self, dados: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -1208,7 +1272,8 @@ class ConsignacaoService:
                 infAdic = rem_existente.get("infAdic", {})
 
                 cabec["codigo_cenario_impostos"] = CENARIO_FISCAL_5917
-                cabec["nCodCli"] = self.CLIENTE_EVENTOS_ID
+                # Preserva cliente original se for alteração de remessa existente, senão usa CLIENTE_EVENTOS_ID
+                cabec["nCodCli"] = rem_existente.get("cabec", {}).get("nCodCli") or self.CLIENTE_EVENTOS_ID
 
                 payload_alterar = {
                     "cabec": cabec,

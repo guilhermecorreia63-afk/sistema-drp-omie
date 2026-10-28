@@ -697,7 +697,20 @@ def carregar_produtos_cache(force_refresh: bool = False) -> list:
                 raw_j = row.get("dados_json")
                 if raw_j and isinstance(raw_j, str):
                     try:
-                        produtos.append(json.loads(raw_j))
+                        p_obj = json.loads(raw_j)
+                        sku_c = str(p_obj.get("sku", "")).strip().upper()
+                        nome_c = str(p_obj.get("nome") or p_obj.get("descricao") or "").strip().upper()
+                        fam_c = str(p_obj.get("familia") or "").strip().upper()
+                        inativo_c = str(p_obj.get("inativo", "N")).upper() == "S" or p_obj.get("ativo") is False
+                        if inativo_c:
+                            continue
+                        if (
+                            sku_c.startswith("LV.") or sku_c.startswith("LV-") or "LV." in sku_c or
+                            nome_c.startswith("LV.") or nome_c.startswith("LV -") or nome_c.startswith("LV ") or
+                            fam_c.startswith("LV")
+                        ):
+                            continue
+                        produtos.append(p_obj)
                     except Exception:
                         pass
             if len(produtos) > 100:
