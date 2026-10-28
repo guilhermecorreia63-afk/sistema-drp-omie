@@ -1,0 +1,14 @@
+# Pastas e arquivos que não devem ser empacotados no build da Vercel
+data/
+scratch/
+*.log
+*.db
+*.sqlite
+*.sqlite3
+portifolio_guilherme/
+leitor-etiquetas-main/
+*.pdf
+*.xlsx
+*.csv
+.vscode/
+.idea/
