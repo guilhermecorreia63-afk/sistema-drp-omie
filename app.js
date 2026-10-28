@@ -6613,28 +6613,31 @@ async function gerarEspelhoConsignacaoPDF() {
     doc.text(`Cliente: ${cli.nome_fantasia || cli.razao_social} | CNPJ/CPF: ${cli.cnpj_cpf || '-'}`, 14, 21);
     doc.text(`Remessas Unificadas: ${remsNums} | Emissão: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 14, 27);
 
-    // 2. Resumo Financeiro Box
+    // 2. Resumo Financeiro Box (5 Colunas)
     doc.setFillColor(241, 245, 249);
     doc.rect(14, 38, 182, 18, 'F');
     doc.setDrawColor(203, 213, 225);
     doc.rect(14, 38, 182, 18, 'S');
 
-    doc.setFontSize(8);
+    doc.setFontSize(7.5);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(30, 41, 59);
-    doc.text("TOTAL ENVIADO", 20, 44);
-    doc.text("DEVOLVIDO (FÍSICO)", 62, 44);
-    doc.text("PEÇAS VENDIDAS", 112, 44);
-    doc.text("FATURAMENTO LÍQUIDO", 152, 44);
+    doc.setTextColor(71, 85, 105);
+    doc.text("TOTAL ENVIADO", 18, 44);
+    doc.text("DEVOLVIDO (FÍSICO)", 54, 44);
+    doc.text("PEÇAS VENDIDAS", 92, 44);
+    doc.text("DESCONTO TOTAL", 126, 44);
+    doc.text("FATURAMENTO LÍQUIDO", 158, 44);
 
-    doc.setFontSize(11);
+    doc.setFontSize(10.5);
     doc.setTextColor(15, 23, 42);
-    doc.text(String(stateConsignacao.totalEnviado || 0), 20, 51);
-    doc.text(String(stateConsignacao.totalRetorno || 0), 62, 51);
+    doc.text(String(stateConsignacao.totalEnviado || 0), 18, 51);
+    doc.text(String(stateConsignacao.totalRetorno || 0), 54, 51);
     doc.setTextColor(22, 163, 74);
-    doc.text(String(stateConsignacao.totalVendido || 0), 112, 51);
+    doc.text(String(stateConsignacao.totalVendido || 0), 92, 51);
+    doc.setTextColor(217, 119, 6);
+    doc.text(`R$ ${(stateConsignacao.valorTotalDesconto || 0).toFixed(2).replace('.', ',')}`, 126, 51);
     doc.setTextColor(2, 132, 199);
-    doc.text(`R$ ${(stateConsignacao.valorTotalLiquido || 0).toFixed(2).replace('.', ',')}`, 152, 51);
+    doc.text(`R$ ${(stateConsignacao.valorTotalLiquido || 0).toFixed(2).replace('.', ',')}`, 158, 51);
 
     // 3. Tabela de Itens Vendidos
     let y = 65;
@@ -6650,12 +6653,13 @@ async function gerarEspelhoConsignacaoPDF() {
     doc.setFontSize(7.5);
     doc.setTextColor(255, 255, 255);
     doc.text("SKU", 16, y + 4.2);
-    doc.text("Título / Descrição", 36, y + 4.2);
-    doc.text("Enviado", 115, y + 4.2);
-    doc.text("Retorno", 130, y + 4.2);
-    doc.text("Vendido", 145, y + 4.2);
-    doc.text("Preço Capa", 160, y + 4.2);
-    doc.text("Total Líq.", 180, y + 4.2);
+    doc.text("Título / Descrição", 35, y + 4.2);
+    doc.text("Env.", 100, y + 4.2, { align: 'center' });
+    doc.text("Ret.", 114, y + 4.2, { align: 'center' });
+    doc.text("Vend.", 128, y + 4.2, { align: 'center' });
+    doc.text("Preço Capa", 150, y + 4.2, { align: 'right' });
+    doc.text("Desc. %", 168, y + 4.2, { align: 'center' });
+    doc.text("Total Líq.", 194, y + 4.2, { align: 'right' });
 
     y += 6;
     doc.setFont('helvetica', 'normal');
@@ -6677,16 +6681,20 @@ async function gerarEspelhoConsignacaoPDF() {
                 doc.rect(14, y, 182, 5.5, 'F');
             }
 
-            const descTrunc = it.descricao.length > 46 ? it.descricao.substring(0, 46) + '...' : it.descricao;
+            const descTrunc = it.descricao.length > 36 ? it.descricao.substring(0, 36) + '...' : it.descricao;
+            const descPct = parseFloat(it.desconto_pct) || 0;
 
             doc.text(it.sku, 16, y + 3.8);
-            doc.text(descTrunc, 36, y + 3.8);
-            doc.text(String(it.qtd_enviada), 118, y + 3.8, { align: 'center' });
-            doc.text(String(it.qtd_retorno), 134, y + 3.8, { align: 'center' });
+            doc.text(descTrunc, 35, y + 3.8);
+            doc.text(String(it.qtd_enviada), 100, y + 3.8, { align: 'center' });
+            doc.text(String(it.qtd_retorno), 114, y + 3.8, { align: 'center' });
             doc.setFont('helvetica', 'bold');
-            doc.text(String(it.qtd_vendida), 149, y + 3.8, { align: 'center' });
+            doc.text(String(it.qtd_vendida), 128, y + 3.8, { align: 'center' });
             doc.setFont('helvetica', 'normal');
-            doc.text(`R$ ${it.preco_unitario.toFixed(2).replace('.', ',')}`, 170, y + 3.8, { align: 'right' });
+            doc.text(`R$ ${it.preco_unitario.toFixed(2).replace('.', ',')}`, 150, y + 3.8, { align: 'right' });
+            doc.setTextColor(217, 119, 6);
+            doc.text(`${descPct.toFixed(0)}%`, 168, y + 3.8, { align: 'center' });
+            doc.setTextColor(30, 41, 59);
             doc.setFont('helvetica', 'bold');
             doc.text(`R$ ${it.valor_total_liquido.toFixed(2).replace('.', ',')}`, 194, y + 3.8, { align: 'right' });
             doc.setFont('helvetica', 'normal');
@@ -6838,7 +6846,7 @@ async function confirmarIntegracaoOmieConsignacao() {
             let infoMsg = '✅ Acerto integrado no Omie com sucesso!\n\n';
             if (data.pedido_venda) {
                 const numPedClean = String(data.pedido_venda.numero_pedido || '').replace(/^0+/, '');
-                infoMsg += `• Pedido de Venda Gerado no Omie: #${numPedClean} (${data.pedido_venda.descricao_status || 'OK'})\n`;
+                infoMsg += `• Pedido de Venda Gerado no Omie: #${numPedClean} (Etapa 20: Produtos Reservados e Movimentação de Estoque: SIM)\n`;
                 const inpPedManual = document.getElementById('input-pedido-manual-consignacao');
                 if (inpPedManual) inpPedManual.value = numPedClean;
             }
@@ -6846,7 +6854,8 @@ async function confirmarIntegracaoOmieConsignacao() {
                 const devsOficiais = data.devolucoes.filter(d => d.tipo !== 'MANUAL_NAO_FATURADA');
                 const devsManuais = data.devolucoes.filter(d => d.tipo === 'MANUAL_NAO_FATURADA');
                 if (devsOficiais.length > 0) {
-                    infoMsg += `• Remessas com Devolução Registrada (CFOP 1.917): ${devsOficiais.map(d => '#' + d.numero_remessa).join(', ')}\n`;
+                    infoMsg += `\n📦 REMESSAS FATURADAS (DEVOLUÇÃO FISCAL):\n` +
+                               devsOficiais.map(d => `• Remessa #${d.numero_remessa}: Devolução registrada no Omie (CFOP 1.917) com retorno físico ao estoque.\n`).join('');
                 }
                 if (devsManuais.length > 0) {
                     infoMsg += `\n⚠️ REMESSAS MANUAIS (NÃO FATURADAS):\n` +

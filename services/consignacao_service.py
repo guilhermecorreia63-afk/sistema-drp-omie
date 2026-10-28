@@ -951,12 +951,15 @@ class ConsignacaoService:
                             "quantidade": qtd,
                             "valor_unitario": preco_tab,
                             "percentual_desconto": desc_pct,
-                            "tipo_desconto": "P"
+                            "tipo_desconto": "P",
+                            "codigo_local_estoque": LOCAL_ESTOQUE_MATRIZ,
+                            "reservado": "S"
                         },
                         "inf_adic": {
                             "codigo_categoria_item": CATEGORIA_COMERCIAL_PADRAO,
                             "codigo_cenario_impostos_item": str(CENARIO_VENDA_CONSIGNACAO),
-                            "codigo_local_estoque": LOCAL_ESTOQUE_MATRIZ
+                            "codigo_local_estoque": LOCAL_ESTOQUE_MATRIZ,
+                            "nao_movimentar_estoque": "N"
                         }
                     })
 
