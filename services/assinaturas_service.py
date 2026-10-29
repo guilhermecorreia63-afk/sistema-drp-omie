@@ -39,6 +39,7 @@ PRODUTOS_LITURGIA = {
         "id_matriz": 2147282282,
         "descricao": "LITURGIA DIARIA JANEIRO - 2027",
         "peso_kg": 0.100,
+        "valor_unitario": 7.50,
         "mes_nome": "Janeiro 2027"
     },
     "fev27": {
@@ -46,6 +47,7 @@ PRODUTOS_LITURGIA = {
         "id_matriz": 2147282526,
         "descricao": "LITURGIA DIARIA FEVEREIRO - 2027",
         "peso_kg": 0.100,
+        "valor_unitario": 7.50,
         "mes_nome": "Fevereiro 2027"
     },
     "mar27": {
@@ -53,11 +55,17 @@ PRODUTOS_LITURGIA = {
         "id_matriz": 2147282582,
         "descricao": "LITURGIA DIARIA MARÇO - 2027",
         "peso_kg": 0.100,
+        "valor_unitario": 7.50,
         "mes_nome": "Março 2027"
     }
 }
 
 # Dados Fiscais e Logística
+def obter_valor_unitario_liturgia(chave_mes):
+    """Retorna o valor de venda real do produto (R$ 7,50 para liturgias) movimentando estoque."""
+    p_info = PRODUTOS_LITURGIA.get(chave_mes, {})
+    return float(p_info.get("valor_unitario") or 7.50)
+
 CLIENTE_EDICOES_SHALOM_ID = 1854959029
 TRANSPORTADORA_ROBERTO_ID = 1854969807
 CATEGORIA_RECEITA_COMERCIAL = "1.01.01"
@@ -298,6 +306,9 @@ def mesclar_pedidos_turso_nas_assinaturas(clientes_processados):
                 "is_renovacao": False,
                 "data_registro_base": str(r.get("criado_em") or "")[:10],
                 "origem_pedido_omie": num_ped,
+                "status_assinatura": "ATIVO",
+                "ja_recebidos_antes": 1,
+                "restantes_apos_lote": 8,
                 "ciclos_info": ciclos_info
             }
             clientes_processados.append(item)
@@ -920,7 +931,7 @@ def gerar_remessa_baixa_omie(grupo_id, conta="MATRIZ"):
             "num_item": num_item,
             "codigo_produto": PRODUTOS_LITURGIA["jan27"]["id_matriz"],
             "quantidade": q_jan,
-            "valor_unitario": 0.01,
+            "valor_unitario": obter_valor_unitario_liturgia("jan27"),
             "cfop": "5949"
         })
         num_item += 1
@@ -930,7 +941,7 @@ def gerar_remessa_baixa_omie(grupo_id, conta="MATRIZ"):
             "num_item": num_item,
             "codigo_produto": PRODUTOS_LITURGIA["fev27"]["id_matriz"],
             "quantidade": q_fev,
-            "valor_unitario": 0.01,
+            "valor_unitario": obter_valor_unitario_liturgia("fev27"),
             "cfop": "5949"
         })
         num_item += 1
@@ -940,7 +951,7 @@ def gerar_remessa_baixa_omie(grupo_id, conta="MATRIZ"):
             "num_item": num_item,
             "codigo_produto": PRODUTOS_LITURGIA["mar27"]["id_matriz"],
             "quantidade": q_mar,
-            "valor_unitario": 0.01,
+            "valor_unitario": obter_valor_unitario_liturgia("mar27"),
             "cfop": "5949"
         })
         num_item += 1
@@ -1082,7 +1093,7 @@ def gerar_remessa_paroquia_omie(cliente_dados, valor_frete=None, transportadora_
             "num_item": num_item,
             "codigo_produto": PRODUTOS_LITURGIA["jan27"]["id_matriz"],
             "quantidade": q_jan,
-            "valor_unitario": 0.01,
+            "valor_unitario": obter_valor_unitario_liturgia("jan27"),
             "cfop": cfop
         })
         num_item += 1
@@ -1092,7 +1103,7 @@ def gerar_remessa_paroquia_omie(cliente_dados, valor_frete=None, transportadora_
             "num_item": num_item,
             "codigo_produto": PRODUTOS_LITURGIA["fev27"]["id_matriz"],
             "quantidade": q_fev,
-            "valor_unitario": 0.01,
+            "valor_unitario": obter_valor_unitario_liturgia("fev27"),
             "cfop": cfop
         })
         num_item += 1
@@ -1102,7 +1113,7 @@ def gerar_remessa_paroquia_omie(cliente_dados, valor_frete=None, transportadora_
             "num_item": num_item,
             "codigo_produto": PRODUTOS_LITURGIA["mar27"]["id_matriz"],
             "quantidade": q_mar,
-            "valor_unitario": 0.01,
+            "valor_unitario": obter_valor_unitario_liturgia("mar27"),
             "cfop": cfop
         })
         num_item += 1

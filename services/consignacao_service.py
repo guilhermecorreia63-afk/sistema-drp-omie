@@ -20,7 +20,8 @@ import database as db
 from omie_client import OmieClient
 
 # ID do cenário fiscal oficial no Omie para Venda Mercadoria (Consignação sem contrato / 1818515488)
-CENARIO_VENDA_CONSIGNACAO = 1818515488 
+CENARIO_VENDA_CONSIGNACAO = 1818515488
+CENARIO_FISCAL_5917 = 0
 # ID da categoria comercial padrão Matriz
 CATEGORIA_COMERCIAL_PADRAO = "1.01.01"
 # Categoria padrão para o Retorno de Remessa (Nota de Entrada): Compras de Mercadorias para Revenda

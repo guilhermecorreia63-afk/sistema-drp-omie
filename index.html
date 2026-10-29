@@ -221,7 +221,20 @@
                         <p id="page-subheading">Vendas <strong>Sul e Sudeste</strong> | Estoque Alvo: (Demanda × (Dias + LeadTime)) + 20% Seg.</p>
                     </div>
                 </div>
-                <div class="header-actions">
+                <div class="header-actions" style="display: flex; align-items: center; gap: 10px;">
+                    <!-- Usuário Logado & Gestão de Acessos -->
+                    <div id="user-badge-header" style="display: flex; align-items: center; gap: 8px; background: rgba(15, 23, 42, 0.85); border: 1px solid #334155; padding: 5px 12px; border-radius: 20px;">
+                        <i class="fa-solid fa-circle-user" style="color: #38bdf8; font-size: 1.15rem;"></i>
+                        <span id="user-logged-name" style="font-size: 0.85rem; font-weight: 700; color: #f8fafc;">Carregando...</span>
+                        <span id="user-logged-profile" class="badge" style="font-size: 0.7rem; padding: 2px 7px; background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4);">Admin</span>
+                        <button id="btn-admin-usuarios-modal" class="btn-icon" onclick="abrirModalGestaoUsuarios()" title="Gerenciar Usuários e Permissões" style="background: none; border: none; color: #f59e0b; cursor: pointer; padding: 2px 4px; display: inline-flex;">
+                            <i class="fa-solid fa-users-gear"></i>
+                        </button>
+                        <button class="btn-icon" onclick="logoutUsuario()" title="Sair / Trocar Usuário" style="background: none; border: none; color: #f87171; cursor: pointer; padding: 2px 4px; display: inline-flex;">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                        </button>
+                    </div>
+
                     <button class="btn btn-secondary" id="btn-top-back-hub" onclick="navegarParaAba('tab-hub')" title="Voltar ao Hub Principal" style="display: none; align-items: center; gap: 8px; font-weight: 600; padding: 8px 14px; border-radius: 8px;">
                         <i class="fa-solid fa-house"></i> Voltar ao Hub Principal
                     </button>
@@ -1629,7 +1642,7 @@
                                 </label>
 <div style="display: flex; gap: 8px;">
                                     <select id="select-remessa-evento-alvo" class="form-control" style="background: #0f172a; color: #f8fafc; font-weight: 600;" onchange="selecionarRemessaEventoAlvo()">
-                                        <option value="0">➕ Criar Nova Remessa em Aberto</option>
+                                        <option value="0">✨ [CRIAR NOVA REMESSA] Cliente EVENTOS (Em Aberto)</option>
                                     </select>
                                     <button class="btn btn-secondary" onclick="carregarRemessasEventos()" title="Atualizar lista de remessas em aberto" style="padding: 0 12px; background: #1e293b; border-color: #334155;"><i class="fa-solid fa-arrows-rotate"></i></button>
                                 </div>
@@ -1930,13 +1943,16 @@
                     </div>
                 </div>
 
-                <!-- SUB-NAVEGAÇÃO: 1. ASSINANTES & PRÓXIMOS ENVIOS | 2. RASTREIO CORREIOS -->
-                <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 10px; padding: 6px; margin-bottom: 20px; display: flex; gap: 8px;">
-                    <button id="btn-subaba-passo2-assinantes" class="btn-subaba-passo2 active" onclick="trocarSubAbaPasso2('assinantes')" style="flex: 1; padding: 10px 16px; border-radius: 8px; border: none; background: #a855f7; color: #ffffff; font-size: 0.88rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <!-- SUB-NAVEGAÇÃO: 1. ASSINANTES | 2. RASTREIO CORREIOS | 3. VENCIMENTOS & RENOVAÇÃO -->
+                <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 10px; padding: 6px; margin-bottom: 20px; display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button id="btn-subaba-passo2-assinantes" class="btn-subaba-passo2 active" onclick="trocarSubAbaPasso2('assinantes')" style="flex: 1; min-width: 200px; padding: 10px 16px; border-radius: 8px; border: none; background: #a855f7; color: #ffffff; font-size: 0.88rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
                         <i class="fa-solid fa-users"></i> 1. Gestão de Assinantes & Próximos Ciclos
                     </button>
-                    <button id="btn-subaba-passo2-rastreio" class="btn-subaba-passo2" onclick="trocarSubAbaPasso2('rastreio')" style="flex: 1; padding: 10px 16px; border-radius: 8px; border: none; background: transparent; color: #94a3b8; font-size: 0.88rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <button id="btn-subaba-passo2-rastreio" class="btn-subaba-passo2" onclick="trocarSubAbaPasso2('rastreio')" style="flex: 1; min-width: 200px; padding: 10px 16px; border-radius: 8px; border: none; background: transparent; color: #94a3b8; font-size: 0.88rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
                         <i class="fa-solid fa-truck-fast" style="color: #38bdf8;"></i> 2. Rastreio & Histórico de Postagens
+                    </button>
+                    <button id="btn-subaba-passo2-vencimentos" class="btn-subaba-passo2" onclick="trocarSubAbaPasso2('vencimentos')" style="flex: 1; min-width: 200px; padding: 10px 16px; border-radius: 8px; border: none; background: transparent; color: #94a3b8; font-size: 0.88rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <i class="fa-solid fa-phone-volume" style="color: #22c55e;"></i> 3. Vencimentos & Renovação (<span id="badge-count-vencendo">0</span>)
                     </button>
                 </div>
 
@@ -2109,6 +2125,100 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- SUB-ABA 3: CLIENTES VENCENDO E VENCIDOS (RENOVAÇÃO VIA WHATSAPP E E-MAIL) -->
+                <div id="painel-passo2-vencimentos" style="display: none;">
+                    <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95)); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 12px; padding: 18px 24px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                                <span style="font-size: 1.4rem;">📞</span>
+                                <h2 style="font-size: 1.25rem; font-weight: 700; color: #f8fafc; margin: 0;">Vencimentos & Renovação de Assinaturas</h2>
+                                <span class="badge" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4); font-size: 0.75rem; padding: 4px 8px; border-radius: 6px;">WhatsApp & E-mail Direto</span>
+                            </div>
+                            <p style="margin: 0; font-size: 0.85rem; color: #cbd5e1;">
+                                Assinantes com ciclo de 12 meses concluído ou finalizando nos próximos envios. Clique no botão de WhatsApp para abrir conversa direta com mensagem pronta ou no E-mail para contato comercial.
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="btn btn-sm btn-secondary" onclick="carregarVencimentosAssinaturas()">
+                                <i class="fa-solid fa-rotate"></i> Atualizar Lista
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Cards de Contagem Rápida -->
+                    <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 20px;">
+                        <div class="metric-card" style="border-left: 4px solid #ef4444; cursor: pointer;" onclick="filtrarVencimentos('conclui_lote')">
+                            <div class="metric-icon" style="color: #ef4444;"><i class="fa-solid fa-flag-checkered"></i></div>
+                            <div class="metric-data">
+                                <span class="metric-val" id="kpi-vencimentos-conclui">0</span>
+                                <span class="metric-lbl">Conclui no Lote (12/12)</span>
+                            </div>
+                        </div>
+                        <div class="metric-card" style="border-left: 4px solid #f59e0b; cursor: pointer;" onclick="filtrarVencimentos('vencendo')">
+                            <div class="metric-icon" style="color: #f59e0b;"><i class="fa-solid fa-clock"></i></div>
+                            <div class="metric-data">
+                                <span class="metric-val" id="kpi-vencimentos-vencendo">0</span>
+                                <span class="metric-lbl">Vencendo em Breve (1-3 un)</span>
+                            </div>
+                        </div>
+                        <div class="metric-card" style="border-left: 4px solid #10b981; cursor: pointer;" onclick="filtrarVencimentos('ativo')">
+                            <div class="metric-icon" style="color: #10b981;"><i class="fa-solid fa-circle-check"></i></div>
+                            <div class="metric-data">
+                                <span class="metric-val" id="kpi-vencimentos-ativos">0</span>
+                                <span class="metric-lbl">Em Andamento (Novos/4+ un)</span>
+                            </div>
+                        </div>
+                        <div class="metric-card" style="border-left: 4px solid #38bdf8; cursor: pointer;" onclick="filtrarVencimentos('todos')">
+                            <div class="metric-icon" style="color: #38bdf8;"><i class="fa-solid fa-users"></i></div>
+                            <div class="metric-data">
+                                <span class="metric-val" id="kpi-vencimentos-total">0</span>
+                                <span class="metric-lbl">Total no Lote 2027</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Barra de Busca e Filtros Rápidos -->
+                    <div class="table-controls" style="background: rgba(15, 23, 42, 0.7); padding: 14px 18px; border-radius: 10px; border: 1px solid #334155; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                        <div style="display: flex; align-items: center; gap: 10px; flex: 1; max-width: 480px;">
+                            <i class="fa-solid fa-magnifying-glass" style="color: #94a3b8;"></i>
+                            <input type="text" id="input-busca-vencimento" placeholder="Buscar por Nome, CPF ou Cidade..." oninput="filtrarTabelaVencimentosLocal()" style="background: #0b1120; border: 1px solid #334155; color: #fff; padding: 8px 14px; border-radius: 6px; width: 100%; font-size: 0.88rem;">
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <span style="font-size: 0.85rem; color: #94a3b8;">Filtrar Status:</span>
+                            <select id="select-filtro-vencimento" onchange="carregarVencimentosAssinaturas(this.value)" style="background: #0b1120; border: 1px solid #334155; color: #f8fafc; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">
+                                <option value="todos">Todos os Assinantes do Lote</option>
+                                <option value="conclui_lote" selected>🏁 Conclui no Lote Atual (12/12 Entregues)</option>
+                                <option value="vencendo">⚠️ Vencendo em Breve (1 a 3 restantes)</option>
+                                <option value="ativo">✅ Em Andamento (Novos / 4+ restantes)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Tabela de Vencimentos & Ações de Contato -->
+                    <div class="table-responsive" style="max-height: 65vh; overflow-y: auto; border: 1px solid #334155; border-radius: 10px; background: #0b1120;">
+                        <table class="data-table" style="width: 100%; margin: 0; font-size: 0.85rem;">
+                            <thead style="position: sticky; top: 0; z-index: 10; background: #0f172a; box-shadow: 0 2px 6px rgba(0,0,0,0.5);">
+                                <tr>
+                                    <th width="50" style="text-align: center;">#</th>
+                                    <th>Assinante</th>
+                                    <th width="140">CPF / CNPJ</th>
+                                    <th width="140">Cidade / UF</th>
+                                    <th width="80" style="text-align: center;">Qtd Ass.</th>
+                                    <th width="110" style="text-align: center;">Ciclo Atual</th>
+                                    <th width="140" style="text-align: center;">Status do Contrato</th>
+                                    <th width="180">Telefone / WhatsApp</th>
+                                    <th width="180">E-mail</th>
+                                    <th width="140" style="text-align: center;">Contato Rápido</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-assinaturas-vencimentos">
+                                <tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 30px;"><i class="fa-solid fa-spinner fa-spin"></i> Carregando lista de vencimentos...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
             </section>
             <!-- ==========================================================================
                  MÓDULO 4: PRODUTOS & IMPRESSÃO DE ETIQUETAS TÉRMICAS (70x50mm)
@@ -3668,7 +3778,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=20261028_v8"></script>
+    <script src="app.js?v=20261029_v1"></script>
     <!-- Modal de Prévia de Etiquetas Térmicas (70x50mm) -->
     <div id="modal-previa-etiqueta" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 9999; justify-content: center; align-items: center;">
         <div class="modal-box" style="max-width: 900px; width: 95%; max-height: 85vh; background: #0b1120; border: 1px solid #38bdf8; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
@@ -3692,6 +3802,146 @@
             </div>
         </div>
     </div>
+
+    <!-- =========================================================================
+         MODAL DE AUTENTICAÇÃO / LOGIN
+         ========================================================================= -->
+    <div id="modal-login-app" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(5, 10, 20, 0.92); backdrop-filter: blur(8px); z-index: 99999; justify-content: center; align-items: center;">
+        <div class="modal-box" style="max-width: 420px; width: 92%; background: linear-gradient(145deg, #0f172a, #0b1120); border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 16px; box-shadow: 0 25px 60px rgba(0,0,0,0.8); overflow: hidden;">
+            <div style="background: linear-gradient(135deg, #0284c7, #0369a1); padding: 22px 24px; text-align: center; color: #fff;">
+                <div style="width: 54px; height: 54px; margin: 0 auto 12px; background: rgba(255,255,255,0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; border: 1px solid rgba(255,255,255,0.3);">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h3 style="margin: 0; font-size: 1.3rem; font-weight: 800; letter-spacing: 0.5px;">Acesso ao Sistema DRP</h3>
+                <p style="margin: 4px 0 0; font-size: 0.85rem; color: #bae6fd;">Hub de Operações & Assinaturas Omie</p>
+            </div>
+            <div style="padding: 24px;">
+                <form id="form-login-app" onsubmit="event.preventDefault(); executarLoginApp();">
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #94a3b8; margin-bottom: 6px;">
+                            <i class="fa-solid fa-user" style="color: #38bdf8;"></i> Nome de Usuário / Login
+                        </label>
+                        <input type="text" id="login-usuario-input" class="form-control" placeholder="ex: admin ou vendedora1" required autofocus style="background: #020617; border: 1px solid #334155; color: #fff; padding: 11px 14px; border-radius: 8px; width: 100%; font-size: 0.95rem;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #94a3b8; margin-bottom: 6px;">
+                            <i class="fa-solid fa-key" style="color: #38bdf8;"></i> Senha de Acesso
+                        </label>
+                        <input type="password" id="login-senha-input" class="form-control" placeholder="••••••••" required style="background: #020617; border: 1px solid #334155; color: #fff; padding: 11px 14px; border-radius: 8px; width: 100%; font-size: 0.95rem;">
+                    </div>
+                    <div id="login-erro-alerta" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; color: #fca5a5; padding: 10px 14px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 16px;"></div>
+                    <button type="submit" id="btn-entrar-login" class="btn btn-primary w-100" style="background: linear-gradient(135deg, #0284c7, #0284c7); font-size: 1rem; font-weight: 700; padding: 12px; border-radius: 8px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);">
+                        <i class="fa-solid fa-arrow-right-to-bracket"></i> Entrar no Sistema
+                    </button>
+                </form>
+            </div>
+            <div style="background: #020617; padding: 12px 20px; border-top: 1px solid #1e293b; text-align: center; font-size: 0.75rem; color: #64748b;">
+                Edições Shalom &bull; Controle de Acessos por Módulo
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         MODAL DE GESTÃO DE USUÁRIOS E PERMISSÕES (ADMIN)
+         ========================================================================= -->
+    <div id="modal-gestao-usuarios" class="modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); z-index: 9999; justify-content: center; align-items: center;">
+        <div class="modal-box modal-lg" style="max-width: 800px; width: 95%; max-height: 90vh; background: #0b1120; border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 14px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.7);">
+            <div class="modal-header" style="background: linear-gradient(135deg, #1e293b, #0f172a); border-bottom: 1px solid #334155; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; color: #f8fafc; font-size: 1.15rem; display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-users-gear" style="color: #f59e0b;"></i>
+                    Gestão de Usuários & Permissões por Módulo
+                </h3>
+                <button class="modal-close" onclick="fecharModalGestaoUsuarios()" style="background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px; overflow-y: auto; flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <span style="font-size: 0.85rem; color: #94a3b8;">Gerencie os acessos de cada colaborador aos módulos do sistema.</span>
+                    <button class="btn btn-sm btn-primary" onclick="abrirFormularioNovoUsuario()" style="background: #f59e0b; border-color: #d97706; color: #000; font-weight: 700;">
+                        <i class="fa-solid fa-user-plus"></i> Novo Usuário
+                    </button>
+                </div>
+
+                <!-- Formulário de Criação / Edição de Usuário (Recolhível) -->
+                <div id="form-usuario-container" style="display: none; background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 18px; margin-bottom: 20px;">
+                    <h4 id="form-usuario-titulo" style="margin: 0 0 14px; color: #f8fafc; font-size: 1rem;">Novo Usuário</h4>
+                    <form id="form-usuario-crud" onsubmit="event.preventDefault(); salvarUsuarioCrud();">
+                        <input type="hidden" id="crud-user-id" value="">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 14px;">
+                            <div>
+                                <label style="font-size: 0.8rem; color: #94a3b8; display: block; margin-bottom: 4px;">Nome Completo:</label>
+                                <input type="text" id="crud-user-nome" required class="form-control" placeholder="ex: Ana Paula" style="background: #020617; border: 1px solid #334155; color: #fff; padding: 8px 12px; border-radius: 6px; width: 100%;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.8rem; color: #94a3b8; display: block; margin-bottom: 4px;">Login de Acesso:</label>
+                                <input type="text" id="crud-user-login" required class="form-control" placeholder="ex: anapaula" style="background: #020617; border: 1px solid #334155; color: #fff; padding: 8px 12px; border-radius: 6px; width: 100%;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.8rem; color: #94a3b8; display: block; margin-bottom: 4px;">Senha (ou nova senha):</label>
+                                <input type="password" id="crud-user-senha" class="form-control" placeholder="••••••••" style="background: #020617; border: 1px solid #334155; color: #fff; padding: 8px 12px; border-radius: 6px; width: 100%;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.8rem; color: #94a3b8; display: block; margin-bottom: 4px;">Perfil:</label>
+                                <select id="crud-user-perfil" class="form-control" style="background: #020617; border: 1px solid #334155; color: #fff; padding: 8px 12px; border-radius: 6px; width: 100%;">
+                                    <option value="comercial">Comercial / Vendedora</option>
+                                    <option value="admin">Administrador</option>
+                                    <option value="operacional">Operacional</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Módulos Permitidos -->
+                        <div style="background: #020617; border: 1px solid #1e293b; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px;">
+                            <label style="font-size: 0.82rem; font-weight: 700; color: #cbd5e1; display: block; margin-bottom: 8px;">
+                                <i class="fa-solid fa-shield-halved" style="color: #38bdf8;"></i> Módulos Liberados para este Usuário:
+                            </label>
+                            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: #f8fafc; cursor: pointer;">
+                                    <input type="checkbox" id="chk-mod-1" value="1"> 1. DRP Matriz & CD
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: #f8fafc; cursor: pointer;">
+                                    <input type="checkbox" id="chk-mod-2" value="2"> 2. Logística & Vendas
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: #f8fafc; cursor: pointer;">
+                                    <input type="checkbox" id="chk-mod-3" value="3" checked> 3. Assinaturas Pão da Vida
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: #f8fafc; cursor: pointer;">
+                                    <input type="checkbox" id="chk-mod-4" value="4"> 4. Etiquetas Térmicas
+                                </label>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                            <button type="button" class="btn btn-secondary" onclick="fecharFormularioUsuario()">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" style="background: #10b981; border-color: #059669; font-weight: 700;">Salvar Usuário</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Tabela de Usuários Cadastrados -->
+                <div class="table-responsive" style="border: 1px solid #334155; border-radius: 10px;">
+                    <table class="data-table" style="width: 100%; margin: 0; font-size: 0.85rem;">
+                        <thead>
+                            <tr style="background: #0f172a;">
+                                <th width="50" style="text-align: center;">ID</th>
+                                <th>Nome</th>
+                                <th>Login</th>
+                                <th width="120">Perfil</th>
+                                <th>Módulos Permitidos</th>
+                                <th width="120" style="text-align: center;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-usuarios-cadastrados">
+                            <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 25px;"><i class="fa-solid fa-spinner fa-spin"></i> Carregando usuários...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 12px 20px; border-top: 1px solid #1e293b; display: flex; justify-content: flex-end; background: #0f172a;">
+                <button class="btn btn-secondary" onclick="fecharModalGestaoUsuarios()">Fechar</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 
 </html>

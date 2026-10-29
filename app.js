@@ -90,6 +90,9 @@ function initApp() {
     setupEventListeners();
     carregarProdutos();
     window.navegarParaAba('tab-hub');
+    if (typeof verificarAutenticacaoApp === 'function') {
+        verificarAutenticacaoApp();
+    }
 }
 
 if (document.readyState === 'loading') {
@@ -7404,23 +7407,47 @@ async function carregarRemessasEventos() {
         const remessas = data.remessas || [];
         stateEvento.remessasDisponiveis = remessas;
 
-        sel.innerHTML = '<option value="0">➕ Criar Nova Remessa em Aberto</option>';
-        remessas.forEach(r => {
-            const opt = document.createElement('option');
-            opt.value = r.nCodRem;
-            const cli = r.nome_cliente ? ` | ${r.nome_cliente}` : '';
-            const dt = r.data_previsao ? ` | ${r.data_previsao}` : '';
-            const vlr = (parseFloat(r.valor_total) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            opt.textContent = `Remessa #${r.numero_remessa}${cli}${dt} — ${vlr}`;
-            sel.appendChild(opt);
-        });
+        sel.innerHTML = '<option value="0">✨ [CRIAR NOVA REMESSA] Cliente EVENTOS (Em Aberto)</option>';
+        
+        // Separar remessas do cliente EVENTOS vs outras remessas em aberto
+        const remEventos = remessas.filter(r => r.nCodCli === 2266589781);
+        const outrasRem = remessas.filter(r => r.nCodCli !== 2266589781);
+
+        if (remEventos.length > 0) {
+            const grpEvt = document.createElement('optgroup');
+            grpEvt.label = "📌 Remessas do Cliente EVENTOS em Aberto";
+            remEventos.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r.nCodRem;
+                const dt = r.data_previsao ? ` | ${r.data_previsao}` : '';
+                const vlr = (parseFloat(r.valor_total) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                opt.textContent = `Remessa #${r.numero_remessa} (${r.nome_cliente || 'EVENTOS'})${dt} — ${vlr}`;
+                grpEvt.appendChild(opt);
+            });
+            sel.appendChild(grpEvt);
+        }
+
+        if (outrasRem.length > 0) {
+            const grpOutras = document.createElement('optgroup');
+            grpOutras.label = "📋 Outras Remessas em Aberto para Acrescentar";
+            outrasRem.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r.nCodRem;
+                const cli = r.nome_cliente ? ` | ${r.nome_cliente}` : '';
+                const dt = r.data_previsao ? ` | ${r.data_previsao}` : '';
+                const vlr = (parseFloat(r.valor_total) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                opt.textContent = `Remessa #${r.numero_remessa}${cli}${dt} — ${vlr}`;
+                grpOutras.appendChild(opt);
+            });
+            sel.appendChild(grpOutras);
+        }
 
         if (stateEvento.remessaAlvoId > 0) {
             sel.value = stateEvento.remessaAlvoId;
         }
     } catch (e) {
         console.error('Erro ao listar remessas de eventos:', e);
-        sel.innerHTML = '<option value="0">➕ Criar Nova Remessa em Aberto</option>';
+        sel.innerHTML = '<option value="0">✨ [CRIAR NOVA REMESSA] Cliente EVENTOS (Em Aberto)</option>';
     }
 }
 
@@ -7760,6 +7787,13 @@ function recalcularTotaisEvento() {
     if (btnTrans) {
         btnTrans.disabled = (totPecas === 0);
         btnTrans.style.opacity = (totPecas === 0) ? '0.5' : '1';
+        if (stateEvento.remessaAlvoId > 0) {
+            btnTrans.innerHTML = '<i class="fa-solid fa-plus-circle"></i> Acrescentar à Remessa #' + stateEvento.remessaAlvoId + ' no Omie';
+            btnTrans.style.background = 'linear-gradient(135deg, #059669, #10b981)';
+        } else {
+            btnTrans.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Criar Nova Remessa de Eventos no Omie';
+            btnTrans.style.background = 'linear-gradient(135deg, #0ea5e9, #0284c7)';
+        }
     }
 }
 
@@ -9809,40 +9843,46 @@ window.executarLancamentoPedidoVendaOmie = executarLancamentoPedidoVendaOmie;
 function trocarSubAbaPasso2(subaba) {
     const btnAssinantes = document.getElementById('btn-subaba-passo2-assinantes');
     const btnRastreio = document.getElementById('btn-subaba-passo2-rastreio');
+    const btnVencimentos = document.getElementById('btn-subaba-passo2-vencimentos');
     const painelAssinantes = document.getElementById('painel-passo2-assinantes');
     const painelRastreio = document.getElementById('painel-passo2-rastreio');
+    const painelVencimentos = document.getElementById('painel-passo2-vencimentos');
+
+    // Reseta todos os botões e painéis
+    [btnAssinantes, btnRastreio, btnVencimentos].forEach(b => {
+        if (b) {
+            b.style.background = 'transparent';
+            b.style.color = '#94a3b8';
+            b.classList.remove('active');
+        }
+    });
+    [painelAssinantes, painelRastreio, painelVencimentos].forEach(p => {
+        if (p) p.style.display = 'none';
+    });
 
     if (subaba === 'rastreio') {
-        if (painelAssinantes) painelAssinantes.style.display = 'none';
         if (painelRastreio) painelRastreio.style.display = 'block';
-
         if (btnRastreio) {
             btnRastreio.style.background = 'linear-gradient(135deg, #0284c7, #2563eb)';
             btnRastreio.style.color = '#fff';
-            btnRastreio.style.border = 'none';
+            btnRastreio.classList.add('active');
         }
-        if (btnAssinantes) {
-            btnAssinantes.style.background = 'transparent';
-            btnAssinantes.style.color = 'var(--text-muted)';
-            btnAssinantes.style.border = 'none';
-        }
-
         carregarRastreiosAssinaturas();
+    } else if (subaba === 'vencimentos') {
+        if (painelVencimentos) painelVencimentos.style.display = 'block';
+        if (btnVencimentos) {
+            btnVencimentos.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+            btnVencimentos.style.color = '#fff';
+            btnVencimentos.classList.add('active');
+        }
+        carregarVencimentosAssinaturas('conclui_lote');
     } else {
         if (painelAssinantes) painelAssinantes.style.display = 'block';
-        if (painelRastreio) painelRastreio.style.display = 'none';
-
         if (btnAssinantes) {
             btnAssinantes.style.background = 'linear-gradient(135deg, #a855f7, #6366f1)';
             btnAssinantes.style.color = '#fff';
-            btnAssinantes.style.border = 'none';
+            btnAssinantes.classList.add('active');
         }
-        if (btnRastreio) {
-            btnRastreio.style.background = 'transparent';
-            btnRastreio.style.color = 'var(--text-muted)';
-            btnRastreio.style.border = 'none';
-        }
-
         carregarPedidosProximoEnvio();
     }
 }
@@ -11475,3 +11515,578 @@ window.imprimirEtiquetasDireto = imprimirEtiquetasDireto;
 window.selecionarTodosFiltradosEtiquetas = selecionarTodosFiltradosEtiquetas;
 window.limparSelecaoEtiquetas = limparSelecaoEtiquetas;
 window.aplicarQtdEmMassaEtiquetas = aplicarQtdEmMassaEtiquetas;
+
+
+// =========================================================================
+// SISTEMA DE AUTENTICAÇÃO, CONTROLE DE PERMISSÕES & GESTÃO DE USUÁRIOS
+// =========================================================================
+
+let usuarioLogado = null;
+
+function verificarAutenticacaoApp() {
+    try {
+        const salvo = sessionStorage.getItem('drp_usuario_logado') || localStorage.getItem('drp_usuario_logado');
+        if (salvo) {
+            usuarioLogado = JSON.parse(salvo);
+            atualizarInterfaceUsuarioLogado();
+            aplicarPermissoesModulos();
+            return;
+        }
+    } catch (e) {
+        console.error('Erro ao ler usuário salvo:', e);
+    }
+    // Não logado: abre modal de login
+    abrirModalLoginApp();
+}
+
+function abrirModalLoginApp() {
+    const modal = document.getElementById('modal-login-app');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+        const loginInp = document.getElementById('login-usuario-input');
+        if (loginInp) loginInp.focus();
+    }
+}
+
+function fecharModalLoginApp() {
+    const modal = document.getElementById('modal-login-app');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+    }
+}
+
+async function executarLoginApp() {
+    const loginInp = document.getElementById('login-usuario-input');
+    const senhaInp = document.getElementById('login-senha-input');
+    const erroEl = document.getElementById('login-erro-alerta');
+    const btn = document.getElementById('btn-entrar-login');
+
+    const login = loginInp ? loginInp.value.trim() : '';
+    const senha = senhaInp ? senhaInp.value.trim() : '';
+
+    if (!login || !senha) {
+        if (erroEl) {
+            erroEl.innerText = 'Preencha o usuário e a senha.';
+            erroEl.style.display = 'block';
+        }
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Autenticando...';
+    }
+    if (erroEl) erroEl.style.display = 'none';
+
+    try {
+        const resp = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ login, senha })
+        });
+        const data = await resp.json();
+
+        if (resp.ok && data.success) {
+            usuarioLogado = data.usuario;
+            sessionStorage.setItem('drp_usuario_logado', JSON.stringify(usuarioLogado));
+            fecharModalLoginApp();
+            atualizarInterfaceUsuarioLogado();
+            aplicarPermissoesModulos();
+
+            // Se for comercial com acesso apenas ao Módulo 3, abre direto o Módulo 3
+            if (usuarioLogado.modulos_permitidos && usuarioLogado.modulos_permitidos.length === 1 && usuarioLogado.modulos_permitidos[0] === 3) {
+                window.navegarParaAba('tab-assinaturas');
+            }
+        } else {
+            if (erroEl) {
+                erroEl.innerText = data.message || 'Usuário ou senha incorretos.';
+                erroEl.style.display = 'block';
+            }
+        }
+    } catch (e) {
+        if (erroEl) {
+            erroEl.innerText = 'Erro ao conectar ao servidor: ' + e.message;
+            erroEl.style.display = 'block';
+        }
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Entrar no Sistema';
+        }
+    }
+}
+
+function logoutUsuario() {
+    if (confirm('Deseja realmente sair do sistema?')) {
+        usuarioLogado = null;
+        sessionStorage.removeItem('drp_usuario_logado');
+        localStorage.removeItem('drp_usuario_logado');
+        window.location.reload();
+    }
+}
+
+function atualizarInterfaceUsuarioLogado() {
+    if (!usuarioLogado) return;
+    const nomeEl = document.getElementById('user-logged-name');
+    const profEl = document.getElementById('user-logged-profile');
+    const btnAdmin = document.getElementById('btn-admin-usuarios-modal');
+
+    if (nomeEl) nomeEl.innerText = usuarioLogado.nome || usuarioLogado.login;
+    if (profEl) {
+        profEl.innerText = usuarioLogado.perfil === 'admin' ? 'Admin' : 'Comercial';
+        if (usuarioLogado.perfil === 'admin') {
+            profEl.style.background = 'rgba(56, 189, 248, 0.2)';
+            profEl.style.color = '#38bdf8';
+        } else {
+            profEl.style.background = 'rgba(168, 85, 247, 0.2)';
+            profEl.style.color = '#d8b4fe';
+        }
+    }
+    // Somente admin pode ver botão de gerenciar usuários
+    if (btnAdmin) {
+        btnAdmin.style.display = usuarioLogado.perfil === 'admin' ? 'inline-flex' : 'none';
+    }
+}
+
+function aplicarPermissoesModulos() {
+    if (!usuarioLogado) return;
+    const modsPermitidos = usuarioLogado.modulos_permitidos || [1, 2, 3, 4];
+    const isAdmin = usuarioLogado.perfil === 'admin' || modsPermitidos.includes(1) && modsPermitidos.includes(2) && modsPermitidos.includes(3) && modsPermitidos.includes(4);
+
+    // Mapeamento dos grupos na Sidebar e no Hub
+    const modGroupsSidebar = {
+        1: document.getElementById('nav-group-modulo-1'),
+        2: document.getElementById('nav-group-modulo-2'),
+        3: document.getElementById('nav-group-modulo-3'),
+        4: document.getElementById('nav-group-modulo-4')
+    };
+
+    // Bloqueia ou exibe na Sidebar
+    for (let m = 1; m <= 4; m++) {
+        const el = modGroupsSidebar[m];
+        if (el) {
+            el.style.display = (isAdmin || modsPermitidos.includes(m)) ? 'block' : 'none';
+        }
+    }
+
+    // Se usuário só tem permissão para 1 módulo (ex: vendedora só Módulo 3), redireciona se tentar entrar em outro
+    const curTab = document.querySelector('.tab-content.active');
+    if (curTab && !isAdmin) {
+        const id = curTab.id;
+        const modDaAba = (id.includes('assinaturas') || id === 'tab-combos-kit') ? 3 :
+                         (id.includes('consignacao') || id.includes('eventos')) ? 2 :
+                         (id.includes('etiquetas')) ? 4 : 1;
+        if (!modsPermitidos.includes(modDaAba)) {
+            if (modsPermitidos.includes(3)) window.navegarParaAba('tab-assinaturas');
+            else if (modsPermitidos.includes(2)) window.navegarParaAba('tab-consignacao');
+            else if (modsPermitidos.includes(4)) window.navegarParaAba('tab-etiquetas');
+        }
+    }
+}
+
+// =========================================================================
+// CRUD DE USUÁRIOS (ADMIN)
+// =========================================================================
+
+async function abrirModalGestaoUsuarios() {
+    const modal = document.getElementById('modal-gestao-usuarios');
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+        carregarUsuariosCadastrados();
+    }
+}
+
+function fecharModalGestaoUsuarios() {
+    const modal = document.getElementById('modal-gestao-usuarios');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+    }
+}
+
+async function carregarUsuariosCadastrados() {
+    const tbody = document.getElementById('tbody-usuarios-cadastrados');
+    if (!tbody) return;
+    try {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;"><i class="fa-solid fa-spinner fa-spin"></i> Carregando usuários...</td></tr>';
+        const resp = await fetch('/api/usuarios');
+        const data = await resp.json();
+
+        if (!resp.ok || !data.success) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #ef4444; padding: 20px;">${data.message || 'Erro ao carregar usuários.'}</td></tr>`;
+            return;
+        }
+
+        const users = data.usuarios || [];
+        if (users.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">Nenhum usuário cadastrado.</td></tr>';
+            return;
+        }
+
+        const moduloNomes = { 1: "1. DRP Matriz/CD", 2: "2. Consignação", 3: "3. Assinaturas", 4: "4. Etiquetas" };
+
+        tbody.innerHTML = users.map(u => {
+            const mods = String(u.modulos_permitidos || '').split(',').map(m => m.trim()).filter(Boolean);
+            const badgesMods = mods.map(m => {
+                const cor = m === '3' ? '#a855f7' : (m === '2' ? '#0284c7' : (m === '4' ? '#38bdf8' : '#10b981'));
+                return `<span class="badge" style="background: rgba(255,255,255,0.08); border: 1px solid ${cor}; color: #fff; font-size: 0.72rem; margin-right: 4px; padding: 2px 6px;">${moduloNomes[m] || ('Módulo ' + m)}</span>`;
+            }).join(' ');
+
+            return `
+                <tr style="border-bottom: 1px solid #1e293b;">
+                    <td style="text-align: center; font-weight: bold; color: var(--text-muted);">${u.id}</td>
+                    <td style="font-weight: 700; color: #f8fafc;">${u.nome}</td>
+                    <td style="color: #38bdf8; font-family: monospace;">${u.login}</td>
+                    <td><span class="badge" style="background: ${u.perfil === 'admin' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(168, 85, 247, 0.15)'}; color: ${u.perfil === 'admin' ? '#38bdf8' : '#d8b4fe'};">${u.perfil}</span></td>
+                    <td>${badgesMods}</td>
+                    <td style="text-align: center;">
+                        <button class="btn btn-xs btn-secondary" onclick='editarUsuarioForm(${JSON.stringify(u)})' title="Editar Usuário" style="padding: 4px 8px; margin-right: 4px;">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        ${u.id === 1 ? '' : `
+                        <button class="btn btn-xs" onclick="excluirUsuarioCrud(${u.id}, '${u.login}')" title="Excluir Usuário" style="padding: 4px 8px; background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3);">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>`}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #ef4444; padding: 20px;">Falha de conexão: ${e.message}</td></tr>`;
+    }
+}
+
+function abrirFormularioNovoUsuario() {
+    const container = document.getElementById('form-usuario-container');
+    const titulo = document.getElementById('form-usuario-titulo');
+    if (!container) return;
+
+    document.getElementById('crud-user-id').value = '';
+    document.getElementById('crud-user-nome').value = '';
+    document.getElementById('crud-user-login').value = '';
+    document.getElementById('crud-user-senha').value = '';
+    document.getElementById('crud-user-perfil').value = 'comercial';
+    
+    // Default: Módulo 3 marcado para comercial
+    document.getElementById('chk-mod-1').checked = false;
+    document.getElementById('chk-mod-2').checked = false;
+    document.getElementById('chk-mod-3').checked = true;
+    document.getElementById('chk-mod-4').checked = false;
+
+    if (titulo) titulo.innerText = 'Novo Usuário';
+    container.style.display = 'block';
+}
+
+function editarUsuarioForm(u) {
+    const container = document.getElementById('form-usuario-container');
+    const titulo = document.getElementById('form-usuario-titulo');
+    if (!container) return;
+
+    document.getElementById('crud-user-id').value = u.id;
+    document.getElementById('crud-user-nome').value = u.nome;
+    document.getElementById('crud-user-login').value = u.login;
+    document.getElementById('crud-user-senha').value = ''; // deixa vazio se não for alterar
+    document.getElementById('crud-user-perfil').value = u.perfil;
+
+    const mods = String(u.modulos_permitidos || '').split(',').map(m => m.trim());
+    document.getElementById('chk-mod-1').checked = mods.includes('1');
+    document.getElementById('chk-mod-2').checked = mods.includes('2');
+    document.getElementById('chk-mod-3').checked = mods.includes('3');
+    document.getElementById('chk-mod-4').checked = mods.includes('4');
+
+    if (titulo) titulo.innerText = `Editar Usuário #${u.id} - ${u.nome}`;
+    container.style.display = 'block';
+}
+
+function fecharFormularioUsuario() {
+    const container = document.getElementById('form-usuario-container');
+    if (container) container.style.display = 'none';
+}
+
+async function salvarUsuarioCrud() {
+    const id = document.getElementById('crud-user-id').value;
+    const nome = document.getElementById('crud-user-nome').value.trim();
+    const login = document.getElementById('crud-user-login').value.trim();
+    const senha = document.getElementById('crud-user-senha').value.trim();
+    const perfil = document.getElementById('crud-user-perfil').value;
+
+    const mods = [];
+    if (document.getElementById('chk-mod-1').checked) mods.push(1);
+    if (document.getElementById('chk-mod-2').checked) mods.push(2);
+    if (document.getElementById('chk-mod-3').checked) mods.push(3);
+    if (document.getElementById('chk-mod-4').checked) mods.push(4);
+
+    if (mods.length === 0) {
+        alert('Selecione pelo menos um módulo permitido para este usuário.');
+        return;
+    }
+
+    try {
+        const resp = await fetch('/api/usuarios/salvar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: id ? parseInt(id) : null,
+                nome,
+                login,
+                senha,
+                perfil,
+                modulos_permitidos: mods.join(',')
+            })
+        });
+        const res = await resp.json();
+        if (resp.ok && res.success) {
+            alert('✅ ' + (res.message || 'Usuário salvo com sucesso!'));
+            fecharFormularioUsuario();
+            carregarUsuariosCadastrados();
+        } else {
+            alert('❌ Erro: ' + (res.message || 'Falha ao salvar usuário.'));
+        }
+    } catch (e) {
+        alert('❌ Erro de conexão: ' + e.message);
+    }
+}
+
+async function excluirUsuarioCrud(id, login) {
+    if (!confirm(`Deseja realmente excluir o usuário '${login}'?`)) return;
+    try {
+        const resp = await fetch('/api/usuarios/excluir', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+        });
+        const res = await resp.json();
+        if (resp.ok && res.success) {
+            alert('✅ ' + (res.message || 'Usuário excluído com sucesso!'));
+            carregarUsuariosCadastrados();
+        } else {
+            alert('❌ ' + (res.message || 'Erro ao excluir usuário.'));
+        }
+    } catch (e) {
+        alert('❌ Erro de conexão: ' + e.message);
+    }
+}
+
+// =========================================================================
+// SUB-ABA 3: CLIENTES VENCENDO E VENCIDOS (WHATSAPP & E-MAIL)
+// =========================================================================
+
+let cacheVencimentosAssinaturas = [];
+
+async function carregarVencimentosAssinaturas(filtro = 'todos') {
+    const tbody = document.getElementById('tbody-assinaturas-vencimentos');
+    const badgeCount = document.getElementById('badge-count-vencendo');
+    if (!tbody) return;
+
+    try {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 30px;"><i class="fa-solid fa-spinner fa-spin"></i> Consultando clientes vencendo e vencidos...</td></tr>';
+        const resp = await fetch(`/api/assinaturas/vencimentos?status=${encodeURIComponent(filtro)}`);
+        const data = await resp.json();
+
+        if (!resp.ok || !data.success) {
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #ef4444; padding: 30px;">${data.message || 'Erro ao carregar vencimentos.'}</td></tr>`;
+            return;
+        }
+
+        const totais = data.totais || {};
+        cacheVencimentosAssinaturas = data.assinantes || [];
+
+        // Atualiza KPIs
+        const elConclui = document.getElementById('kpi-vencimentos-conclui');
+        const elVencendo = document.getElementById('kpi-vencimentos-vencendo');
+        const elAtivos = document.getElementById('kpi-vencimentos-ativos');
+        const elTotal = document.getElementById('kpi-vencimentos-total');
+
+        if (elConclui) elConclui.innerText = totais.conclui_lote || 0;
+        if (elVencendo) elVencendo.innerText = totais.vencendo || 0;
+        if (elAtivos) elAtivos.innerText = totais.ativos || 0;
+        if (elTotal) elTotal.innerText = totais.total || 0;
+        if (badgeCount) badgeCount.innerText = (totais.conclui_lote || 0) + (totais.vencendo || 0);
+
+        renderizarTabelaVencimentos(cacheVencimentosAssinaturas);
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #ef4444; padding: 30px;">Erro de conexão: ${e.message}</td></tr>`;
+    }
+}
+
+function filtrarVencimentos(status) {
+    const sel = document.getElementById('select-filtro-vencimento');
+    if (sel) sel.value = status;
+    carregarVencimentosAssinaturas(status);
+}
+
+function filtrarTabelaVencimentosLocal() {
+    const input = document.getElementById('input-busca-vencimento');
+    const termo = input ? input.value.trim().toLowerCase() : '';
+    if (!termo) {
+        renderizarTabelaVencimentos(cacheVencimentosAssinaturas);
+        return;
+    }
+    const filtrados = cacheVencimentosAssinaturas.filter(c => {
+        return (c.cliente || '').toLowerCase().includes(termo) ||
+               (c.cpf_cnpj || '').includes(termo) ||
+               (c.cidade || '').toLowerCase().includes(termo) ||
+               (c.uf || '').toLowerCase().includes(termo);
+    });
+    renderizarTabelaVencimentos(filtrados);
+}
+
+function renderizarTabelaVencimentos(lista) {
+    const tbody = document.getElementById('tbody-assinaturas-vencimentos');
+    if (!tbody) return;
+
+    if (!lista || lista.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 30px;">Nenhum assinante encontrado para o filtro selecionado.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = lista.map((c, idx) => {
+        const badgeColor = c.badge_class === 'danger' ? '#ef4444' : (c.badge_class === 'warning' ? '#f59e0b' : '#10b981');
+        const badgeBg = c.badge_class === 'danger' ? 'rgba(239, 68, 68, 0.15)' : (c.badge_class === 'warning' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)');
+
+        // Botão WhatsApp
+        let btnWppHtml = '';
+        if (c.link_whatsapp) {
+            btnWppHtml = `
+                <a href="${c.link_whatsapp}" target="_blank" class="btn btn-xs" style="background: #22c55e; color: #fff; font-weight: 700; padding: 5px 9px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;" title="Conversar e renovar pelo WhatsApp">
+                    <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                </a>
+            `;
+        } else {
+            btnWppHtml = `
+                <button class="btn btn-xs btn-secondary" onclick="buscarContatoOmieAssinante('${c.cpf_cnpj}')" title="Buscar Telefone no Omie" style="padding: 4px 8px; font-size: 0.75rem;">
+                    <i class="fa-solid fa-magnifying-glass"></i> Buscar Omie
+                </button>
+            `;
+        }
+
+        // Botão Email
+        let btnEmailHtml = '';
+        if (c.email) {
+            const subject = encodeURIComponent("Renovação da Assinatura Liturgia Diária Pão da Vida - Edições Shalom");
+            const body = encodeURIComponent(`Olá ${c.cliente}!\n\nIdentificamos que seu ciclo da Liturgia Diária está próximo do término. Gostaria de renovar para continuar recebendo todos os meses?\n\nEquipe Edições Shalom`);
+            btnEmailHtml = `
+                <a href="mailto:${c.email}?subject=${subject}&body=${body}" class="btn btn-xs" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 5px 8px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;" title="Enviar E-mail de Renovação">
+                    <i class="fa-solid fa-envelope"></i> E-mail
+                </a>
+            `;
+        }
+
+        return `
+            <tr style="border-bottom: 1px solid #1e293b;">
+                <td style="text-align: center; color: var(--text-muted);">${idx + 1}</td>
+                <td>
+                    <strong style="color: #f8fafc; display: block;">${c.cliente}</strong>
+                    <small style="color: var(--text-muted); font-size: 0.75rem;">${c.origem}</small>
+                </td>
+                <td style="font-family: monospace; color: #94a3b8;">${c.cpf_cnpj}</td>
+                <td>${c.cidade || '--'} / <strong style="color: #38bdf8;">${c.uf || '--'}</strong></td>
+                <td style="text-align: center; font-weight: 700; color: #fff;">${c.quantidade_assinaturas} un</td>
+                <td style="text-align: center;">
+                    <span style="color: #a855f7; font-weight: 700;">${c.ciclo_atual_mes || (c.ja_recebidos + c.neste_lote)}</span> / 12
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">${c.restantes} restante(s)</div>
+                </td>
+                <td style="text-align: center;">
+                    <span class="badge" style="background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeColor}; font-size: 0.75rem; padding: 4px 8px; border-radius: 6px;">
+                        ${c.status_label}
+                    </span>
+                </td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span id="tel-val-${idx}">${c.telefone || '<em style="color:#64748b;">Sem telefone</em>'}</span>
+                        <button class="btn-icon" onclick="editarContatoAssinantePrompt('${c.cpf_cnpj}', '${c.cliente}', '${c.telefone || ''}', '${c.email || ''}')" title="Editar telefone/email" style="background: none; border: none; color: #64748b; cursor: pointer; padding: 2px;">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                    </div>
+                </td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span id="email-val-${idx}">${c.email || '<em style="color:#64748b;">Sem e-mail</em>'}</span>
+                    </div>
+                </td>
+                <td style="text-align: center;">
+                    <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
+                        ${btnWppHtml}
+                        ${btnEmailHtml}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+async function buscarContatoOmieAssinante(cpf) {
+    try {
+        const resp = await fetch('/api/assinaturas/buscar_contato_omie', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cpf_cnpj: cpf })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.success && data.contato) {
+            const tel = data.contato.telefone || '';
+            const email = data.contato.email || '';
+            if (tel || email) {
+                alert(`✅ Contato localizado no Omie!\nTelefone: ${tel || 'N/A'}\nE-mail: ${email || 'N/A'}`);
+                carregarVencimentosAssinaturas(document.getElementById('select-filtro-vencimento')?.value || 'todos');
+            } else {
+                alert('⚠️ Nenhum cadastro com este CPF/CNPJ retornou telefone/e-mail no Omie.');
+            }
+        } else {
+            alert('⚠️ Não foi possível obter o contato deste cliente no Omie.');
+        }
+    } catch (e) {
+        alert('Erro ao consultar Omie: ' + e.message);
+    }
+}
+
+async function editarContatoAssinantePrompt(cpf, nome, telAtual, emailAtual) {
+    const novoTel = prompt(`Atualizar Telefone / WhatsApp de ${nome}:`, telAtual);
+    if (novoTel === null) return;
+    const novoEmail = prompt(`Atualizar E-mail de ${nome}:`, emailAtual);
+    if (novoEmail === null) return;
+
+    try {
+        const resp = await fetch('/api/assinaturas/atualizar_contato', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                cpf_cnpj: cpf,
+                nome: nome,
+                telefone: novoTel.trim(),
+                email: novoEmail.trim()
+            })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.success) {
+            carregarVencimentosAssinaturas(document.getElementById('select-filtro-vencimento')?.value || 'todos');
+        } else {
+            alert('Erro ao atualizar: ' + (data.message || 'Falha no servidor'));
+        }
+    } catch (e) {
+        alert('Erro de conexão: ' + e.message);
+    }
+}
+
+// Exportações globais
+window.verificarAutenticacaoApp = verificarAutenticacaoApp;
+window.abrirModalLoginApp = abrirModalLoginApp;
+window.fecharModalLoginApp = fecharModalLoginApp;
+window.executarLoginApp = executarLoginApp;
+window.logoutUsuario = logoutUsuario;
+window.abrirModalGestaoUsuarios = abrirModalGestaoUsuarios;
+window.fecharModalGestaoUsuarios = fecharModalGestaoUsuarios;
+window.carregarUsuariosCadastrados = carregarUsuariosCadastrados;
+window.abrirFormularioNovoUsuario = abrirFormularioNovoUsuario;
+window.editarUsuarioForm = editarUsuarioForm;
+window.fecharFormularioUsuario = fecharFormularioUsuario;
+window.salvarUsuarioCrud = salvarUsuarioCrud;
+window.excluirUsuarioCrud = excluirUsuarioCrud;
+window.carregarVencimentosAssinaturas = carregarVencimentosAssinaturas;
+window.filtrarVencimentos = filtrarVencimentos;
+window.filtrarTabelaVencimentosLocal = filtrarTabelaVencimentosLocal;
+window.buscarContatoOmieAssinante = buscarContatoOmieAssinante;
+window.editarContatoAssinantePrompt = editarContatoAssinantePrompt;

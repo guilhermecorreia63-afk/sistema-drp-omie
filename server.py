@@ -120,6 +120,10 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_assinaturas_listar_rastreios()
         elif url_path == '/api/assinaturas/lote_ativo':
             self.handle_api_assinaturas_obter_lote_ativo()
+        elif url_path == '/api/assinaturas/vencimentos':
+            self.handle_api_assinaturas_vencimentos()
+        elif url_path == '/api/usuarios':
+            self.handle_api_usuarios_listar()
         elif url_path == '/api/correios/sro_rastrear':
             self.handle_api_correios_sro_rastrear()
         elif url_path == '/api/destaques':
@@ -223,6 +227,16 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_assinaturas_excluir_rastreio()
         elif url_path == '/api/assinaturas/configurar_lote_ativo':
             self.handle_api_assinaturas_configurar_lote_ativo()
+        elif url_path == '/api/login':
+            self.handle_api_login()
+        elif url_path == '/api/usuarios/salvar':
+            self.handle_api_usuarios_salvar()
+        elif url_path == '/api/usuarios/excluir':
+            self.handle_api_usuarios_excluir()
+        elif url_path == '/api/assinaturas/atualizar_contato':
+            self.handle_api_assinaturas_atualizar_contato()
+        elif url_path == '/api/assinaturas/buscar_contato_omie':
+            self.handle_api_assinaturas_buscar_contato_omie()
         elif url_path == '/api/assinaturas/sincronizar_rastreios_correios':
             self.handle_api_assinaturas_sincronizar_rastreios_correios()
         elif url_path == '/api/assinaturas/completar_cpfs_omie':
@@ -3334,6 +3348,151 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
 
 
+    # =========================================================================
+    # AUTENTICAÇÃO E GESTÃO DE USUÁRIOS
+    # =========================================================================
+    def handle_api_login(self):
+        try:
+            body = self._read_body()
+            login = str(body.get('login') or '').strip().lower()
+            senha = str(body.get('senha') or '').strip()
+
+            if not login or not senha:
+                self._send_json({"success": False, "message": "Informe usuário e senha."}, status=400)
+                return
+
+            df = db.executar_query("SELECT id, nome, login, perfil, modulos_permitidos FROM usuarios WHERE LOWER(login) = :login AND senha = :senha", {"login": login, "senha": senha})
+            if df is not None and not df.empty:
+                u = df.iloc[0].to_dict()
+                mods = [int(m.strip()) for m in str(u.get('modulos_permitidos', '')).split(',') if m.strip().isdigit()]
+                self._send_json({
+                    "success": True,
+                    "usuario": {
+                        "id": u["id"],
+                        "nome": u["nome"],
+                        "login": u["login"],
+                        "perfil": u["perfil"],
+                        "modulos_permitidos": mods
+                    }
+                })
+            else:
+                self._send_json({"success": False, "message": "Usuário ou senha incorretos."}, status=401)
+        except Exception as e:
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_usuarios_listar(self):
+        try:
+            df = db.executar_query("SELECT id, nome, login, perfil, modulos_permitidos, criado_em FROM usuarios ORDER BY id ASC")
+            users = df.to_dict(orient="records") if df is not None and not df.empty else []
+            self._send_json({"success": True, "usuarios": users})
+        except Exception as e:
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_usuarios_salvar(self):
+        try:
+            body = self._read_body()
+            uid = body.get('id')
+            nome = str(body.get('nome') or '').strip()
+            login = str(body.get('login') or '').strip().lower()
+            senha = str(body.get('senha') or '').strip()
+            perfil = str(body.get('perfil') or 'comercial').strip()
+            mods = str(body.get('modulos_permitidos') or '3').strip()
+
+            if not nome or not login:
+                self._send_json({"success": False, "message": "Nome e Login são obrigatórios."}, status=400)
+                return
+
+            if uid and int(uid) > 0:
+                if senha:
+                    db.executar_query(
+                        "UPDATE usuarios SET nome = :nome, login = :login, senha = :senha, perfil = :perfil, modulos_permitidos = :mods WHERE id = :id",
+                        {"nome": nome, "login": login, "senha": senha, "perfil": perfil, "mods": mods, "id": int(uid)}
+                    )
+                else:
+                    db.executar_query(
+                        "UPDATE usuarios SET nome = :nome, login = :login, perfil = :perfil, modulos_permitidos = :mods WHERE id = :id",
+                        {"nome": nome, "login": login, "perfil": perfil, "mods": mods, "id": int(uid)}
+                    )
+                msg = "Usuário atualizado com sucesso!"
+            else:
+                if not senha:
+                    self._send_json({"success": False, "message": "Senha é obrigatória para novo usuário."}, status=400)
+                    return
+                # Check login único
+                chk = db.executar_query("SELECT id FROM usuarios WHERE LOWER(login) = :login", {"login": login})
+                if chk is not None and not chk.empty:
+                    self._send_json({"success": False, "message": f"O login '{login}' já está em uso."}, status=400)
+                    return
+                db.executar_query(
+                    "INSERT INTO usuarios (nome, login, senha, perfil, modulos_permitidos) VALUES (:nome, :login, :senha, :perfil, :mods)",
+                    {"nome": nome, "login": login, "senha": senha, "perfil": perfil, "mods": mods}
+                )
+                msg = "Usuário cadastrado com sucesso!"
+
+            self._send_json({"success": True, "message": msg})
+        except Exception as e:
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_usuarios_excluir(self):
+        try:
+            body = self._read_body()
+            uid = int(body.get('id') or 0)
+            if uid == 1:
+                self._send_json({"success": False, "message": "O usuário Administrador mestre (ID 1) não pode ser excluído."}, status=400)
+                return
+            db.executar_query("DELETE FROM usuarios WHERE id = :id", {"id": uid})
+            self._send_json({"success": True, "message": "Usuário excluído com sucesso!"})
+        except Exception as e:
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    # =========================================================================
+    # ASSINATURAS: VENCIMENTOS, RENOVAÇÃO & CONTATOS
+    # =========================================================================
+    def handle_api_assinaturas_vencimentos(self):
+        try:
+            from services.assinaturas_vencimentos_service import carregar_lista_vencimentos_pdv
+            import urllib.parse
+            qs = urllib.parse.parse_qs(self.path.split('?')[1]) if '?' in self.path else {}
+            st = qs.get('status', ['todos'])[0]
+            res = carregar_lista_vencimentos_pdv(st)
+            self._send_json(res)
+        except Exception as e:
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_assinaturas_atualizar_contato(self):
+        try:
+            from services.assinaturas_vencimentos_service import salvar_contato_assinante
+            body = self._read_body()
+            cpf = str(body.get('cpf_cnpj') or '').strip()
+            tel = str(body.get('telefone') or '').strip()
+            email = str(body.get('email') or '').strip()
+            nome = str(body.get('nome') or '').strip()
+
+            if not cpf:
+                self._send_json({"success": False, "message": "CPF/CNPJ é obrigatório."}, status=400)
+                return
+
+            salvar_contato_assinante(cpf, tel, email, nome)
+            self._send_json({"success": True, "message": "Contato do assinante atualizado com sucesso!"})
+        except Exception as e:
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+    def handle_api_assinaturas_buscar_contato_omie(self):
+        try:
+            from services.assinaturas_vencimentos_service import buscar_contato_omie_por_cpf
+            body = self._read_body()
+            cpf = str(body.get('cpf_cnpj') or '').strip()
+            if not cpf:
+                self._send_json({"success": False, "message": "CPF/CNPJ não informado."}, status=400)
+                return
+            res = buscar_contato_omie_por_cpf(cpf)
+            self._send_json({"success": True, "contato": res})
+        except Exception as e:
+            self._send_json({"success": False, "message": str(e)}, status=500)
+
+
+
+
 import threading
 import time
 
@@ -3451,6 +3610,8 @@ def main():
     except KeyboardInterrupt:
         print("\n[DRP SERVER] Servidor encerrado pelo usuário.")
         httpd.server_close()
+
+
 
 if __name__ == "__main__":
     main()
