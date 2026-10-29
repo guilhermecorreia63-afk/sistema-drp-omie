@@ -392,7 +392,8 @@ class PedidosAssinaturasService:
                         "pagina": pag,
                         "registros_por_pagina": 50,
                         "apenas_importado_api": "N",
-                        "filtrar_por_data_de": data_inicio
+                        "filtrar_por_data_de": data_inicio,
+                        "filtrar_apenas_inclusao": "S"
                     }
                     res = self.client.executar("produtos/pedido/", "ListarPedidos", [payload])
                     lista_ped = res.get("pedido_venda_produto", [])
@@ -414,10 +415,16 @@ class PedidosAssinaturasService:
 
                     # Se for varredura geral (sem pedido específico), garantir que não puxa pedidos antes de 23/10/2026
                     if not numero_pedido_especifico:
-                        data_ped_str = str(cab.get("data_previsao") or p.get("infoCadastro", {}).get("dInc") or "").strip()
-                        if len(data_ped_str) >= 10:
+                        info_cad = p.get("infoCadastro", {}) or {}
+                        # Checa data de inclusao e faturamento reais do pedido
+                        d_inc_raw = str(info_cad.get("dInc") or "").strip()
+                        d_fat_raw = str(info_cad.get("dFat") or "").strip()
+                        d_prev_raw = str(cab.get("data_previsao") or "").strip()
+                        
+                        data_ref = d_inc_raw or d_fat_raw or d_prev_raw
+                        if len(data_ref) >= 10:
                             try:
-                                dt_p = datetime.strptime(data_ped_str[:10], "%d/%m/%Y")
+                                dt_p = datetime.strptime(data_ref[:10], "%d/%m/%Y")
                                 if dt_p < dt_corte:
                                     continue
                             except Exception:

@@ -212,15 +212,30 @@ def sincronizar_rastreios_correios():
             evento_portal = None
             if not is_jt and not is_entrega_propria and postagens_portal:
                 nome_upper = normalizar_nome(nome)
-                termos_busca = [t for t in nome_upper.split() if len(t) > 3]
-                # Se for Convento, adicionar também Santíssima Trindade (razão social)
-                if "CONVENTO" in nome_upper:
-                    termos_busca.extend(["CONVENTO", "SANTISSIMA", "TRINDADE"])
+                tokens_nome = [t for t in nome_upper.split() if len(t) >= 3]
 
                 for p_rec in postagens_portal:
                     dest_p = normalizar_nome(p_rec.get("destinatario"))
-                    # Match por termos relevantes do destinatário
-                    if any(t in dest_p for t in termos_busca) or (ped in str(p_rec.get("nf") or "")):
+                    tokens_dest = [t for t in dest_p.split() if len(t) >= 3]
+                    
+                    # Match estrito:
+                    # 1. Se o número do pedido estiver no campo NF da postagem
+                    match_nf = (ped and ped in str(p_rec.get("nf") or ""))
+                    # 2. Ou se o nome for idêntico
+                    match_nome_exato = (nome_upper == dest_p and len(nome_upper) > 5)
+                    # 3. Ou se compartilhar pelo menos 2 tokens com mais de 3 letras (ex: primeiro nome + sobrenome específico)
+                    tokens_comuns = set(tokens_nome).intersection(set(tokens_dest))
+                    # Ignorar palavras genéricas
+                    tokens_comuns.discard("SILVA")
+                    tokens_comuns.discard("SANTOS")
+                    tokens_comuns.discard("OLIVEIRA")
+                    tokens_comuns.discard("SOUZA")
+                    tokens_comuns.discard("FERREIRA")
+                    tokens_comuns.discard("MARIA")
+                    tokens_comuns.discard("JOSE")
+                    match_tokens = len(tokens_comuns) >= 2 or ("CONVENTO" in tokens_nome and "TRINDADE" in tokens_dest)
+
+                    if match_nf or match_nome_exato or match_tokens:
                         sro_encontrado = str(p_rec.get("sro") or "").strip().upper()
                         data_post_portal = str(p_rec.get("data_postagem") or "")
                         evento_portal = str(p_rec.get("situacao") or "")
