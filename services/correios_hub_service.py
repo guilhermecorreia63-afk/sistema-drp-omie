@@ -1596,23 +1596,39 @@ class CorreiosHubService:
             remessas_metricas = CorreiosHubService._sincronizar_remessas_faturadas_recentes(d_ini_str)
             qtd_rem += int(remessas_metricas.get("consultas") or 0)
 
-            omie_res = requests.post(
-                "https://app.omie.com.br/api/v1/produtos/nfconsultar/",
-                json={
-                    "call": "ListarNF",
-                    "app_key": app_key,
-                    "app_secret": app_secret,
-                    "param": [{
-                        "pagina": 1,
-                        "registros_por_pagina": 100,
-                        "dEmiInicial": d_ini_str,
-                        "dEmiFinal": d_fim_str
-                    }]
-                },
-                timeout=25
-            )
-            omie_data = omie_res.json()
-            lista_nf = omie_data.get("nfCadastro") or []
+            # Paginar para trazer todas as NFs do período informado
+            lista_nf = []
+            pag_atual = 1
+            tot_pags = 1
+
+            while pag_atual <= tot_pags:
+                try:
+                    omie_res = requests.post(
+                        "https://app.omie.com.br/api/v1/produtos/nfconsultar/",
+                        json={
+                            "call": "ListarNF",
+                            "app_key": app_key,
+                            "app_secret": app_secret,
+                            "param": [{
+                                "pagina": pag_atual,
+                                "registros_por_pagina": 100,
+                                "dEmiInicial": d_ini_str,
+                                "dEmiFinal": d_fim_str
+                            }]
+                        },
+                        timeout=25
+                    )
+                    omie_data = omie_res.json()
+                    tot_pags = int(omie_data.get("total_de_paginas") or 1)
+                    nfs_pag = omie_data.get("nfCadastro") or []
+                    lista_nf.extend(nfs_pag)
+                    pag_atual += 1
+                    if pag_atual <= tot_pags:
+                        time.sleep(0.08)
+                except Exception as e_pag:
+                    logger.error(f"[SYNC] Erro ao paginar ListarNF pag {pag_atual}: {e_pag}")
+                    break
+
             qtd_encontrada = len(lista_nf)
 
             bronze_check = execute_turso_query("SELECT codigo_nf, chave_nfe FROM omie_nf_bronze")
