@@ -12,3 +12,7 @@ leitor-etiquetas-main/
 *.csv
 .vscode/
 .idea/
+
+.kilo/
+archive/
+reports/

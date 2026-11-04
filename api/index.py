@@ -17,3 +17,6 @@ class handler(DRPRequestHandler):
 
     def do_POST(self):
         super().do_POST()
+
+    def do_DELETE(self):
+        super().do_DELETE()

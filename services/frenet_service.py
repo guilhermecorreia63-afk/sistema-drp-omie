@@ -18,12 +18,12 @@ def cotar_frete_frenet(cep_destino: str, valor_itens: float = 45.0, peso_kg: flo
     """
     Realiza cotação de frete na Frenet para o CEP de destino informado.
     """
-    token = os.getenv("FRENET_TOKEN", "").strip()
+    token = (os.getenv("Token_Frenet") or os.getenv("FRENET_TOKEN") or "").strip()
     if not token:
         return {
             "disponivel": False,
             "configurado": False,
-            "message": "Frenet não configurada no .env (defina FRENET_TOKEN). Insira o valor manualmente ou selecione Roberto Souza.",
+            "message": "Frenet não configurada no .env (defina Token_Frenet ou FRENET_TOKEN). Insira o valor manualmente ou selecione Roberto Souza.",
             "cotacoes": []
         }
 

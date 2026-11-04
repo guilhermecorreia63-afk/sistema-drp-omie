@@ -123,6 +123,10 @@ function setupSidebarToggle() {
 }
 
 window.navegarParaAba = function(tabId) {
+    if (tabId === 2) tabId = 'tab-correios-aguardando';
+    else if (tabId === 3) tabId = 'tab-correios-arquivo';
+    else if (tabId === 'tab-correios-hub') tabId = 'tab-correios-dashboard';
+
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     
@@ -146,7 +150,18 @@ window.navegarParaAba = function(tabId) {
         'tab-assinaturas': 'nav-group-modulo-3',
         'tab-assinaturas-pedidos': 'nav-group-modulo-3',
         'tab-combos-kit': 'nav-group-modulo-3',
-        'tab-etiquetas': 'nav-group-modulo-4'
+        'tab-etiquetas': 'nav-group-modulo-4',
+        'tab-correios-dashboard': 'nav-group-modulo-5',
+        'tab-correios-faturados': 'nav-group-modulo-5',
+        'tab-correios-aguardando': 'nav-group-modulo-5',
+        'tab-correios-arquivo': 'nav-group-modulo-5',
+        'tab-correios-rastreamento': 'nav-group-modulo-5',
+        'tab-correios-lista-plp': 'nav-group-modulo-5',
+        'tab-correios-gerar-manual': 'nav-group-modulo-5',
+        'tab-correios-importar-xml': 'nav-group-modulo-5',
+        'tab-correios-modico-ranges': 'nav-group-modulo-5',
+        'tab-correios-configuracoes': 'nav-group-modulo-5',
+        'tab-motorista-souza': 'nav-group-modulo-5'
     };
 
     const sidebar = document.getElementById('sidebar');
@@ -269,6 +284,40 @@ window.navegarParaAba = function(tabId) {
         document.getElementById('page-subheading').innerHTML = 'Impressão de etiquetas térmicas com código de barras, SKU e descrição sincronizados com o estoque.';
         if (typeof carregarModuloEtiquetas === 'function') {
             carregarModuloEtiquetas();
+        }
+    } else if (tabId.startsWith('tab-correios-')) {
+        const CORREIOS_HEADERS = {
+            'tab-correios-dashboard': ['📊 Início / Dashboard Operacional', 'Visão geral de expedições faturadas, pré-postagens Correios CWS, status SRO e indicadores.'],
+            'tab-correios-faturados': ['📋 1. Omie Pedidos & Remessas Faturadas', 'Fonte Principal: <strong>Turso DB (Camada Prata)</strong> | Sincronização incremental do Omie ERP e geração de etiquetas em lote.'],
+            'tab-correios-aguardando': ['🖨️ 2. Etiquetas para Impressão', 'Pré-postagens emitidas aguardando impressão de Rótulo Padrão + DANFE Simplificada / Declaração de Conteúdo.'],
+            'tab-correios-arquivo': ['📁 3. Etiquetas Reimpressão (Arquivo)', 'Histórico de etiquetas já impressas e arquivadas para consulta rápida ou segunda via.'],
+            'tab-correios-rastreamento': ['🔍 4. Histórico de Pré-Postagens & Rastreamento', 'Consulta integrada de objetos postados via Portal Postal e Correios SRO Rastro em tempo real.'],
+            'tab-correios-lista-plp': ['📜 5. Lista de Postagem (PLP / Pré-Lista)', 'Fechamento de lotes de expedição e emissão do documento oficial de entrega física aos Correios.'],
+            'tab-correios-gerar-manual': ['✍️ 6. Gerar Etiqueta Manual / Avulsa', 'Emissão rápida de pré-postagem Correios (PAC, SEDEX, Mini Envios ou Impresso Módico) com busca automática de CEP.'],
+            'tab-correios-importar-xml': ['📂 7. Importar XML NF-e em Lote', 'Extração automática de destinatários, notas fiscais e chaves de acesso a partir de arquivos XML para pré-postagem.'],
+            'tab-correios-modico-ranges': ['🔢 8. Ranges Impresso Módico', 'Gerenciamento de faixas de códigos de rastreamento (SRO) dedicadas à modalidade Impresso Módico.'],
+            'tab-correios-configuracoes': ['⚙️ 9. Turso DB & Credenciais Correios', 'Status das variáveis de ambiente seguras no servidor (.env / Vercel) e sincronização na nuvem.'],
+            'tab-motorista-souza': ['📱 Modo Motorista — Roberto Souza', 'Gestão de Entregas Locais, Rota no Maps e Baixas com Assinatura.']
+        };
+        const hdr = CORREIOS_HEADERS[tabId] || ['📮 Módulo 5 — Correios & Logística', 'Gestão Operacional de Postagens, Rastreio SRO e Integração Omie ERP.'];
+        document.getElementById('page-heading').innerText = hdr[0];
+        document.getElementById('page-subheading').innerHTML = hdr[1];
+
+        if (tabId === 'tab-motorista-souza' && typeof carregarEntregasAba10Motorista === 'function') {
+            carregarEntregasAba10Motorista();
+        } else if (tabId === 'tab-correios-dashboard' && typeof carregarDashboardStats === 'function') {
+            carregarDashboardStats();
+        } else if (tabId === 'tab-correios-faturados' && typeof carregarExpedicoesPrata === 'function') {
+            carregarExpedicoesPrata(1);
+        } else if (tabId === 'tab-correios-aguardando' && typeof carregarEtiquetasDoTurso === 'function') {
+            carregarEtiquetasDoTurso();
+        } else if (tabId === 'tab-correios-arquivo' && typeof carregarArquivoTurso === 'function') {
+            carregarArquivoTurso();
+        } else if (tabId === 'tab-correios-lista-plp') {
+            if (typeof carregarObjetosElegiveisPlp === 'function') carregarObjetosElegiveisPlp();
+            if (typeof carregarListasPlpFechadas === 'function') carregarListasPlpFechadas();
+        } else if (tabId === 'tab-correios-modico-ranges' && typeof carregarRangesModico === 'function') {
+            carregarRangesModico();
         }
     }
 };
@@ -11596,7 +11645,10 @@ async function executarLoginApp() {
             aplicarPermissoesModulos();
 
             // Se for comercial com acesso apenas ao Módulo 3, abre direto o Módulo 3
-            if (usuarioLogado.modulos_permitidos && usuarioLogado.modulos_permitidos.length === 1 && usuarioLogado.modulos_permitidos[0] === 3) {
+            if (usuarioLogado.modulos_permitidos && (usuarioLogado.modulos_permitidos.includes(10) || usuarioLogado.perfil === 'motorista')) {
+                window.navegarParaAba('tab-motorista-souza');
+                if (typeof carregarEntregasAba10Motorista === 'function') carregarEntregasAba10Motorista();
+            } else if (usuarioLogado.modulos_permitidos && usuarioLogado.modulos_permitidos.length === 1 && usuarioLogado.modulos_permitidos[0] === 3) {
                 window.navegarParaAba('tab-assinaturas');
             }
         } else {
@@ -11660,28 +11712,61 @@ function aplicarPermissoesModulos() {
         1: document.getElementById('nav-group-modulo-1'),
         2: document.getElementById('nav-group-modulo-2'),
         3: document.getElementById('nav-group-modulo-3'),
-        4: document.getElementById('nav-group-modulo-4')
+        4: document.getElementById('nav-group-modulo-4'),
+        5: document.getElementById('nav-group-modulo-5')
     };
 
-    // Bloqueia ou exibe na Sidebar
-    for (let m = 1; m <= 4; m++) {
+    const isMotorista = usuarioLogado.perfil === 'motorista' || modsPermitidos.includes(10);
+    const navBtnMotorista = document.getElementById('nav-btn-motorista-souza');
+
+    // Bloqueia ou exibe na Sidebar (Modulo 5 restrito para Admin, exceto se motorista)
+    for (let m = 1; m <= 5; m++) {
         const el = modGroupsSidebar[m];
         if (el) {
-            el.style.display = (isAdmin || modsPermitidos.includes(m)) ? 'block' : 'none';
+            if (m === 5) {
+                el.style.display = (isAdmin || isMotorista) ? 'block' : 'none';
+            } else {
+                el.style.display = (isAdmin || modsPermitidos.includes(m)) && !isMotorista ? 'block' : 'none';
+            }
         }
     }
+
+    // Se for motorista exclusivo, exibe apenas o botão 10 na sidebar do Modulo 5
+    if (isMotorista && !isAdmin) {
+        const group5 = modGroupsSidebar[5];
+        if (group5) {
+            group5.querySelectorAll('.nav-tab').forEach(btn => {
+                if (btn.id === 'nav-btn-motorista-souza' || btn.dataset.tab === 'tab-motorista-souza') {
+                    btn.style.display = 'flex';
+                } else {
+                    btn.style.display = 'none';
+                }
+            });
+            group5.querySelectorAll('.nav-section-title').forEach(t => t.style.display = 'none');
+        }
+    } else if (navBtnMotorista) {
+        navBtnMotorista.style.display = (isAdmin || isMotorista) ? 'flex' : 'none';
+    }
+
+    // Bloqueia card do Modulo 5 no Hub para perfis nao-administradores
+    const hubTitle5 = document.getElementById('hub-title-modulo-5');
+    const hubCard5 = document.getElementById('hub-card-modulo-5');
+    if (hubTitle5) { hubTitle5.style.display = isAdmin ? 'flex' : 'none'; }
+    if (hubCard5) { hubCard5.style.display = isAdmin ? 'flex' : 'none'; }
 
     // Se usuário só tem permissão para 1 módulo (ex: vendedora só Módulo 3), redireciona se tentar entrar em outro
     const curTab = document.querySelector('.tab-content.active');
     if (curTab && !isAdmin) {
         const id = curTab.id;
-        const modDaAba = (id.includes('assinaturas') || id === 'tab-combos-kit') ? 3 :
+        const modDaAba = (id.includes('correios')) ? 5 :
+                         (id.includes('assinaturas') || id === 'tab-combos-kit') ? 3 :
                          (id.includes('consignacao') || id.includes('eventos')) ? 2 :
                          (id.includes('etiquetas')) ? 4 : 1;
         if (!modsPermitidos.includes(modDaAba)) {
             if (modsPermitidos.includes(3)) window.navegarParaAba('tab-assinaturas');
             else if (modsPermitidos.includes(2)) window.navegarParaAba('tab-consignacao');
             else if (modsPermitidos.includes(4)) window.navegarParaAba('tab-etiquetas');
+            else window.navegarParaAba('tab-hub');
         }
     }
 }
@@ -11796,6 +11881,8 @@ function editarUsuarioForm(u) {
     document.getElementById('chk-mod-2').checked = mods.includes('2');
     document.getElementById('chk-mod-3').checked = mods.includes('3');
     document.getElementById('chk-mod-4').checked = mods.includes('4');
+    const chk10 = document.getElementById('chk-mod-10');
+    if (chk10) chk10.checked = mods.includes('10');
 
     if (titulo) titulo.innerText = `Editar Usuário #${u.id} - ${u.nome}`;
     container.style.display = 'block';
@@ -11818,6 +11905,7 @@ async function salvarUsuarioCrud() {
     if (document.getElementById('chk-mod-2').checked) mods.push(2);
     if (document.getElementById('chk-mod-3').checked) mods.push(3);
     if (document.getElementById('chk-mod-4').checked) mods.push(4);
+    if (document.getElementById('chk-mod-10') && document.getElementById('chk-mod-10').checked) mods.push(10);
 
     if (mods.length === 0) {
         alert('Selecione pelo menos um módulo permitido para este usuário.');

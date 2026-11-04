@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
-services/produtos.py - Serviço de Catálogo de Produtos e Características
+services/produtos.py - ServiÃ§o de CatÃ¡logo de Produtos e CaracterÃ­sticas
 =========================================================================
-Idioma: Português do Brasil (PT-BR)
+Idioma: PortuguÃªs do Brasil (PT-BR)
 """
 from typing import List, Dict, Any, Optional
 from omie_client import create_omie_client

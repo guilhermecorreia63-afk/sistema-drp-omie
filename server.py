@@ -28,6 +28,14 @@ except ImportError:
     alertas_email = None
 
 try:
+    from services.correios_hub_service import CorreiosHubService
+except ImportError:
+    try:
+        from correios_hub_service import CorreiosHubService
+    except ImportError:
+        CorreiosHubService = None
+
+try:
     import database as db
 except ImportError:
     db = None
@@ -128,12 +136,31 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_correios_sro_rastrear()
         elif url_path == '/api/destaques':
             self.handle_api_destaques_get()
+        elif url_path.startswith('/.netlify/functions/') or url_path.startswith('/api/correios_bridge/'):
+            self.handle_api_correios_bridge('GET', url_path)
+        elif url_path == '/api/correios_hub/dashboard_stats':
+            self.handle_api_correios_hub_dashboard_stats()
+        elif url_path == '/api/correios_hub/expedicoes':
+            self.handle_api_correios_hub_expedicoes()
+        elif url_path == '/api/correios_hub/prepostagens':
+            self.handle_api_correios_hub_prepostagens()
+        elif url_path == '/api/correios_hub/rastrear':
+            self.handle_api_correios_hub_rastrear()
         else:
             super().do_GET()
 
+    def do_DELETE(self):
+        url_path = self.path.split('?')[0].rstrip('/')
+        if url_path.startswith('/.netlify/functions/') or url_path.startswith('/api/correios_bridge/'):
+            self.handle_api_correios_bridge('DELETE', url_path)
+        else:
+            self.send_error(404, f"Endpoint não encontrado: {self.path}")
+
     def do_POST(self):
         url_path = self.path.split('?')[0].rstrip('/')
-        if url_path == '/api/cron_sync':
+        if url_path.startswith('/.netlify/functions/') or url_path.startswith('/api/correios_bridge/'):
+            self.handle_api_correios_bridge('POST', url_path)
+        elif url_path == '/api/cron_sync':
             self.handle_api_cron_sync()
         elif url_path in ['/api/sync_requisicoes', '/api/sync/requisicoes']:
             self.handle_api_sync_requisicoes()
@@ -829,6 +856,62 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Content-Type', 'application/json; charset=utf-8')
         self.end_headers()
         self.wfile.write(json.dumps(response_payload, ensure_ascii=False).encode('utf-8'))
+
+    def handle_api_correios_hub_dashboard_stats(self):
+        try:
+            if not CorreiosHubService:
+                self._send_json({"sucesso": False, "erro": "Servico Correios Hub indisponivel"}, status=500)
+                return
+            parsed_url = urlparse(self.path)
+            params = parse_qs(parsed_url.query)
+            periodo = params.get('periodo', ['mes_atual'])[0]
+            stats = CorreiosHubService.get_dashboard_stats(periodo=periodo)
+            self._send_json({"sucesso": True, "stats": stats})
+        except Exception as e:
+            self._send_json({"sucesso": False, "erro": str(e)}, status=500)
+
+    def handle_api_correios_hub_expedicoes(self):
+        try:
+            if not CorreiosHubService:
+                self._send_json({"sucesso": False, "erro": "Servico Correios Hub indisponivel"}, status=500)
+                return
+            parsed_url = urlparse(self.path)
+            params = parse_qs(parsed_url.query)
+            page = int(params.get('page', [1])[0])
+            limit = int(params.get('limit', [25])[0])
+            busca = params.get('busca', [''])[0]
+            tipo_origem = params.get('tipo_origem', ['TODOS'])[0]
+            dados = CorreiosHubService.list_expedicoes_prata(page=page, limit=limit, busca=busca, tipo_origem=tipo_origem)
+            self._send_json(dados)
+        except Exception as e:
+            self._send_json({"sucesso": False, "erro": str(e)}, status=500)
+
+    def handle_api_correios_hub_prepostagens(self):
+        try:
+            if not CorreiosHubService:
+                self._send_json({"sucesso": False, "erro": "Servico Correios Hub indisponivel"}, status=500)
+                return
+            parsed_url = urlparse(self.path)
+            params = parse_qs(parsed_url.query)
+            limit = int(params.get('limit', [50])[0])
+            busca = params.get('busca', [''])[0]
+            dados = CorreiosHubService.list_prepostagens(limit=limit, busca=busca)
+            self._send_json(dados)
+        except Exception as e:
+            self._send_json({"sucesso": False, "erro": str(e)}, status=500)
+
+    def handle_api_correios_hub_rastrear(self):
+        try:
+            if not CorreiosHubService:
+                self._send_json({"sucesso": False, "erro": "Servico Correios Hub indisponivel"}, status=500)
+                return
+            parsed_url = urlparse(self.path)
+            params = parse_qs(parsed_url.query)
+            codigo = params.get('codigo', [''])[0]
+            dados = CorreiosHubService.consultar_sro_rastro(codigo)
+            self._send_json(dados)
+        except Exception as e:
+            self._send_json({"sucesso": False, "erro": str(e)}, status=500)
 
     def handle_api_destaques_save(self):
         content_length = int(self.headers.get('Content-Length', 0))
@@ -3490,6 +3573,25 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             self._send_json({"success": False, "message": str(e)}, status=500)
 
+    def handle_api_correios_bridge(self, method: str, url_path: str):
+        try:
+            from services.correios_hub_service import CorreiosHubService
+            import urllib.parse
+            func_name = url_path.split('/')[-1]
+            qs = urllib.parse.parse_qs(self.path.split('?')[1]) if '?' in self.path else {}
+            body = self._read_body() if method in ['POST', 'PUT'] else {}
+            res = CorreiosHubService.dispatch_function(func_name, method, qs, body)
+            status_code = 200
+            if isinstance(res, tuple) and len(res) == 2:
+                status_code, res = res
+            elif isinstance(res, dict) and '_status' in res:
+                status_code = int(res.pop('_status'))
+            self._send_json(res, status=status_code)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            self._send_json({"ok": False, "error": str(e)}, status=500)
+
 
 
 
@@ -3604,7 +3706,7 @@ def main():
     
     # Inicia o Agendador Automático e Seguro
     _iniciar_agendador_seguro()
-
+    
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

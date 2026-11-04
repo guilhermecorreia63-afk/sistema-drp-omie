@@ -1,5 +1,168 @@
 {
-  "itens": [],
+  "itens": [
+    {
+      "sku": "009537",
+      "adicionado_em": "30/10/2026 15:01",
+      "decisao": "PENDENTE",
+      "observacao": "",
+      "qtd_sugerida": 0.0
+    },
+    {
+      "sku": "10046",
+      "adicionado_em": "21/10/2026 18:39",
+      "decisao": "PENDENTE",
+      "observacao": "",
+      "qtd_sugerida": 0.0
+    },
+    {
+      "sku": "008908",
+      "adicionado_em": "21/10/2026 18:41",
+      "decisao": "PENDENTE",
+      "observacao": "",
+      "qtd_sugerida": 0.0
+    },
+    {
+      "sku": "008907",
+      "adicionado_em": "21/10/2026 18:41",
+      "decisao": "PENDENTE",
+      "observacao": "",
+      "qtd_sugerida": 2.0
+    },
+    {
+      "sku": "008906",
+      "adicionado_em": "21/10/2026 18:41",
+      "decisao": "PENDENTE",
+      "observacao": "",
+      "qtd_sugerida": 4.0
+    },
+    {
+      "sku": "008905",
+      "adicionado_em": "21/10/2026 18:41",
+      "decisao": "PENDENTE",
+      "observacao": "",
+      "qtd_sugerida": 4.0
+    },
+    {
+      "sku": "008904",
+      "adicionado_em": "21/10/2026 18:41",
+      "decisao": "PENDENTE",
+      "observacao": "",
+      "qtd_sugerida": 3.0
+    },
+    {
+      "sku": "010042",
+      "adicionado_em": "21/10/2026 18:39",
+      "decisao": "PENDENTE",
+      "observacao": "",
+      "qtd_sugerida": 5.0
+    },
+    {
+      "sku": "010043",
+      "adicionado_em": "21/10/2026 18:39",
+      "decisao": "PENDENTE",
+      "observacao": "",
+      "qtd_sugerida": 8.0
+    },
+    {
+      "sku": "010044",
+      "adicionado_em": "21/10/2026 18:39",
+      "decisao": "PENDENTE",
+      "observacao": "",
+      "qtd_sugerida": 8.0
+    },
+    {
+      "sku": "010045",
+      "adicionado_em": "21/10/2026 18:39",
+      "decisao": "PENDENTE",
+      "observacao": "",
+      "qtd_sugerida": 3.0
+    },
+    {
+      "sku": "010047",
+      "adicionado_em": "21/10/2026 18:39",
+      "decisao": "PENDENTE",
+      "observacao": "",
+      "qtd_sugerida": 2.0
+    },
+    {
+      "sku": "007926",
+      "adicionado_em": "21/10/2026 16:50",
+      "decisao": "PENDENTE",
+      "observacao": "",
+      "qtd_sugerida": 10000.0
+    },
+    {
+      "sku": "009539",
+      "adicionado_em": "21/10/2026 16:49",
+      "decisao": "PENDENTE",
+      "observacao": "",
+      "qtd_sugerida": 30.0
+    },
+    {
+      "sku": "000561",
+      "adicionado_em": "15/10/2026 18:47",
+      "decisao": "PENDENTE",
+      "observacao": "",
+      "qtd_sugerida": 0.0
+    },
+    {
+      "sku": "004332",
+      "adicionado_em": "15/10/2026 18:42",
+      "decisao": "PENDENTE",
+      "observacao": "",
+      "qtd_sugerida": 0.0
+    },
+    {
+      "sku": "008818",
+      "adicionado_em": "15/10/2026 18:21",
+      "decisao": "PENDENTE",
+      "observacao": "",
+      "qtd_sugerida": 0.0
+    },
+    {
+      "sku": "002544",
+      "adicionado_em": "15/10/2026 18:44",
+      "decisao": "PENDENTE",
+      "observacao": "",
+      "qtd_sugerida": 0.0
+    },
+    {
+      "sku": "007407",
+      "adicionado_em": "15/10/2026 18:50",
+      "decisao": "PENDENTE",
+      "observacao": "",
+      "qtd_sugerida": 0.0
+    },
+    {
+      "sku": "007126",
+      "adicionado_em": "21/10/2026 16:50",
+      "decisao": "PENDENTE",
+      "observacao": "",
+      "qtd_sugerida": 0.0
+    },
+    {
+      "sku": "007124",
+      "adicionado_em": "21/10/2026 16:50",
+      "decisao": "PENDENTE",
+      "observacao": "",
+      "qtd_sugerida": 0.0
+    },
+    {
+      "sku": "007127",
+      "adicionado_em": "21/10/2026 16:50",
+      "decisao": "PENDENTE",
+      "observacao": "",
+      "qtd_sugerida": 0.0
+    },
+    {
+      "sku": "007128",
+      "adicionado_em": "21/10/2026 16:50",
+      "decisao": "PENDENTE",
+      "observacao": "",
+      "qtd_sugerida": 50,
+      "decidido_em": "30/10/2026 15:02"
+    }
+  ],
   "metas_fornecedores": {
     "DISTRIBUIDORA LOYOLA": 1000.0,
     "LOYOLA": 1000.0,

@@ -75,3 +75,10 @@ instrument.md
 # Pastas locais / externas importadas temporariamente
 portifolio_guilherme/
 leitor-etiquetas-main/
+
+# Pastas de agentes e arquivos locais
+.kilo/
+archive/
+reports/
+*-shm
+*-wal
