@@ -1056,15 +1056,12 @@ function renderTabelaPrata(expedicoes) {
 
     const transpTag = exp.transportadora_normalizada || "OUTROS";
     const servicoTag = exp.servico_normalizado || "OUTROS";
-    const isCorreios = transpTag === "CORREIOS";
     const qtdAtual = (todosPedidos[idx] && todosPedidos[idx].qtd_etiquetas) ? todosPedidos[idx].qtd_etiquetas : 1;
 
-    const seletorQtdHtml = isCorreios
-      ? `<div style="display: inline-flex; align-items: center; gap: 3px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.45); border-radius: 6px; padding: 2px 5px;" title="Quantidade de etiquetas (volumes) a gerar nos Correios para esta Nota Fiscal">
+    const seletorQtdHtml = `<div style="display: inline-flex; align-items: center; gap: 3px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.45); border-radius: 6px; padding: 2px 5px;" title="Quantidade de etiquetas / volumes a gerar para esta Nota Fiscal">
            <span style="font-size: 0.7rem; color: #38bdf8; font-weight: 700;">🏷️</span>
            <input type="number" id="qtdEtqRow_${idx}" min="1" max="20" value="${qtdAtual}" onchange="atualizarQtdEtiquetasLinha(${idx}, this.value)" onclick="this.select()" style="width: 38px; text-align: center; background: #0f172a; color: #38bdf8; border: 1px solid #334155; border-radius: 4px; padding: 2px; font-weight: 800; font-size: 0.82rem;">
-         </div>`
-      : `<span style="display: inline-flex; align-items: center; gap: 3px; background: rgba(148, 163, 184, 0.1); border: 1px solid rgba(148, 163, 184, 0.25); color: #94a3b8; border-radius: 6px; padding: 3px 7px; font-size: 0.75rem; font-weight: 600;" title="Para ${transpTag}, cada Nota Fiscal gera 1 etiqueta/JSON">1 etq</span>`;
+         </div>`;
 
     html += `
       <tr>
@@ -2769,27 +2766,34 @@ async function emitirPedidoObjeto(ped, qtdEtiquetas = 1) {
     const pickupService = isRetiradaGuarita ? "RETIRADA_GUARITA" : "RETIRADA_ESTOQUE";
     const orderId = String(ped.numero_pedido || ped.numero_remessa || ped.numero_nf || "SEM_PEDIDO").trim();
     const safeId = orderId.replace(/[^A-Za-z0-9_-]/g, "_").slice(0, 48);
-    const payload = {
-      pedido: orderId,
-      numero_nf: String(ped.numero_nf || ""), serie_nf: String(ped.serie_nf || "1"), chave_nfe: String(ped.chave_nfe || ""),
-      id_prepostagem: `${pickupService}_${safeId}`,
-      codigo_objeto: "",
-      servico: pickupService,
-      destinatario: ped.destinatario?.nome || "CLIENTE",
-      cpf_cnpj_destinatario: String(ped.destinatario?.cpfCnpj || "").replace(/\D/g, ""),
-      email_destinatario: ped.email_destinatario || "", telefone_destinatario: ped.telefone_destinatario || "",
-      logradouro: ped.destinatario?.endereco?.logradouro || "", numero: ped.destinatario?.endereco?.numero || "",
-      complemento: ped.destinatario?.endereco?.complemento || "", bairro: ped.destinatario?.endereco?.bairro || "",
-      cidade: ped.destinatario?.endereco?.cidade || "", uf: ped.destinatario?.endereco?.uf || "", cep: String(ped.destinatario?.endereco?.cep || "").replace(/\D/g, ""),
-      obs_entrega: ped.obs_entrega || ped.obs_venda || "",
-      valor_frete: 0, origem_postagem: pickupService, status: "PRONTO", status_rotulo: "PRONTO"
-    };
-    const response = await fetch("/.netlify/functions/turso-db?action=save_prepostagem", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
-    });
-    const data = await safeFetchJson(response);
-    if (!response.ok || data.error) throw new Error(data.error || "Falha ao registrar retirada no Turso.");
-    return [{ idPrePostagem: data.id_prepostagem || payload.id_prepostagem, codigoObjeto: "", servico: pickupService }];
+    const totalEmitir = Math.max(1, parseInt(qtdEtiquetas, 10) || 1);
+    const resultados = [];
+    for (let i = 0; i < totalEmitir; i++) {
+      const volSuffix = totalEmitir > 1 ? `_V${i + 1}` : "";
+      const obsVol = totalEmitir > 1 ? `${ped.obs_entrega || ped.obs_venda || ""} (Vol. ${i + 1}/${totalEmitir})`.trim() : (ped.obs_entrega || ped.obs_venda || "");
+      const payload = {
+        pedido: orderId,
+        numero_nf: String(ped.numero_nf || ""), serie_nf: String(ped.serie_nf || "1"), chave_nfe: String(ped.chave_nfe || ""),
+        id_prepostagem: `${pickupService}_${safeId}${volSuffix}`,
+        codigo_objeto: "",
+        servico: pickupService,
+        destinatario: ped.destinatario?.nome || "CLIENTE",
+        cpf_cnpj_destinatario: String(ped.destinatario?.cpfCnpj || "").replace(/\D/g, ""),
+        email_destinatario: ped.email_destinatario || "", telefone_destinatario: ped.telefone_destinatario || "",
+        logradouro: ped.destinatario?.endereco?.logradouro || "", numero: ped.destinatario?.endereco?.numero || "",
+        complemento: ped.destinatario?.endereco?.complemento || "", bairro: ped.destinatario?.endereco?.bairro || "",
+        cidade: ped.destinatario?.endereco?.cidade || "", uf: ped.destinatario?.endereco?.uf || "", cep: String(ped.destinatario?.endereco?.cep || "").replace(/\D/g, ""),
+        obs_entrega: obsVol,
+        valor_frete: 0, origem_postagem: pickupService, status: "PRONTO", status_rotulo: "PRONTO"
+      };
+      const response = await fetch("/.netlify/functions/turso-db?action=save_prepostagem", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
+      });
+      const data = await safeFetchJson(response);
+      if (!response.ok || data.error) throw new Error(data.error || "Falha ao registrar retirada no Turso.");
+      resultados.push({ idPrePostagem: data.id_prepostagem || payload.id_prepostagem, codigoObjeto: "", servico: pickupService });
+    }
+    return resultados;
   }
   const isSouza = transpNorm === "SOUZA" || servico.includes("SOUZA") || servico.includes("ENTREGA_PROPRIA") || servico.includes("ENTREGA LOCAL");
   const isModico = servico.includes("MODICO") || servico.includes("MÓDICO") || servico.includes("20133");
@@ -2843,7 +2847,7 @@ async function emitirPedidoObjeto(ped, qtdEtiquetas = 1) {
           cidade: payload.destinatario.endereco.cidade,
           uf: payload.destinatario.endereco.uf,
           servico: "ENTREGA_PROPRIA",
-          obs_entrega: ped.obs_entrega || ped.obs_venda || "",
+          obs_entrega: totalEmitir > 1 ? `${ped.obs_entrega || ped.obs_venda || ""} (Vol. ${i + 1}/${totalEmitir})`.trim() : (ped.obs_entrega || ped.obs_venda || ""),
           valor_frete: Number(ped.valor_frete || 11.50) || 11.50,
           origem_postagem: "SOUZA_LOCAL",
           status: "PRONTO"
@@ -2915,9 +2919,8 @@ async function emitirUnico(idx) {
   const ped = todosPedidos[idx];
   if (!ped) return;
 
-  const isCorreios = (ped.transportadora_normalizada || "CORREIOS") === "CORREIOS";
   const inpRow = document.getElementById(`qtdEtqRow_${idx}`);
-  const qtd = isCorreios ? Math.max(1, parseInt(inpRow ? inpRow.value : (ped.qtd_etiquetas || 1), 10) || 1) : 1;
+  const qtd = Math.max(1, parseInt(inpRow ? inpRow.value : (ped.qtd_etiquetas || 1), 10) || 1);
   ped.qtd_etiquetas = qtd;
 
   const descQtd = qtd > 1 ? `${qtd} etiquetas (volumes)` : `1 etiqueta`;
@@ -2951,10 +2954,8 @@ async function emitirSelecionados() {
     const idx = parseInt(chk.dataset.idx, 10);
     const ped = todosPedidos[idx];
     if (!ped) return;
-    const isCorreios = (ped.transportadora_normalizada || "CORREIOS") === "CORREIOS";
     const inpRow = document.getElementById(`qtdEtqRow_${idx}`);
-
-    const qtd = isCorreios ? Math.max(1, parseInt(inpRow ? inpRow.value : (ped.qtd_etiquetas || 1), 10) || 1) : 1;
+    const qtd = Math.max(1, parseInt(inpRow ? inpRow.value : (ped.qtd_etiquetas || 1), 10) || 1);
     ped.qtd_etiquetas = qtd;
     totalEtiquetasPrevistas += qtd;
   });
@@ -2980,8 +2981,7 @@ async function emitirSelecionados() {
       const ped = todosPedidos[idx];
       if (!ped) continue;
       const inpRow = document.getElementById(`qtdEtqRow_${idx}`);
-      const isCorreios = (ped.transportadora_normalizada || "CORREIOS") === "CORREIOS";
-      const qtd = isCorreios ? Math.max(1, parseInt(inpRow ? inpRow.value : (ped.qtd_etiquetas || 1), 10) || 1) : 1;
+      const qtd = Math.max(1, parseInt(inpRow ? inpRow.value : (ped.qtd_etiquetas || 1), 10) || 1);
       ped.qtd_etiquetas = qtd;
 
       try {
@@ -3070,9 +3070,8 @@ function abrirModalEditarPedido(idx) {
 
   const inpQtd = document.getElementById("editQtdEtiquetas");
   if (inpQtd) {
-    const isCorreios = (ped.transportadora_normalizada || "CORREIOS") === "CORREIOS";
-    inpQtd.value = isCorreios ? (ped.qtd_etiquetas || 1) : 1;
-    inpQtd.disabled = !isCorreios;
+    inpQtd.value = ped.qtd_etiquetas || 1;
+    inpQtd.disabled = false;
   }
 
   modal.style.display = "flex";
@@ -3123,8 +3122,7 @@ async function salvarEEmitirModal() {
     ped.transportadora_normalizada = "CORREIOS";
   }
 
-  const isCorreios = (ped.transportadora_normalizada || "CORREIOS") === "CORREIOS";
-  const qtd = isCorreios ? Math.max(1, parseInt(document.getElementById("editQtdEtiquetas").value || "1", 10) || 1) : 1;
+  const qtd = Math.max(1, parseInt(document.getElementById("editQtdEtiquetas").value || "1", 10) || 1);
   ped.qtd_etiquetas = qtd;
   const inpRow = document.getElementById(`qtdEtqRow_${idx}`);
   if (inpRow) inpRow.value = qtd;
@@ -3148,7 +3146,7 @@ async function salvarEEmitirModal() {
 // CANCELAMENTO DE PRÉ-POSTAGENS (ABA 2)
 // ==========================================================================
 
-async function executarCancelamentoItem(item) {
+async function executarCancelamentoItem(item, forcarLocal = false) {
   if (!item) return { sucesso: false, erro: "Item inválido" };
   try {
     const serv = (item.servico || "").toUpperCase();
@@ -3162,6 +3160,9 @@ async function executarCancelamentoItem(item) {
       codigoObjeto: obj,
       servico: isSouza ? "ENTREGA_PROPRIA" : (isModico ? "IMPRESSO_MODICO" : serv)
     });
+    if (forcarLocal) {
+      params.append("forcarLocal", "true");
+    }
 
     const res = await fetch(`/.netlify/functions/correios-cancelar?${params.toString()}`, {
       method: "DELETE"
@@ -3170,7 +3171,7 @@ async function executarCancelamentoItem(item) {
     if (res.ok && (data.sucesso || data.ok)) {
       return { sucesso: true };
     }
-    return { sucesso: false, erro: data.error || data.mensagem || "Erro ao cancelar" };
+    return { sucesso: false, erro: data.error || data.mensagem || "Erro ao cancelar", detalhes: data };
   } catch (err) {
     return { sucesso: false, erro: err.message };
   }
@@ -3192,6 +3193,19 @@ async function cancelarPrePostagem(idx) {
     if (typeof carregarDashboardStats === "function") carregarDashboardStats();
     alert("✅ Pré-postagem cancelada com sucesso!");
   } else {
+    if (confirm(`A API dos Correios rejeitou o cancelamento (${res.erro}).\n\nIsso ocorre quando a pré-postagem é antiga, teste ou já expirou no sistema dos Correios.\n\nDeseja FORÇAR o cancelamento no sistema para remover este item e liberar o pedido?`)) {
+      const resForce = await executarCancelamentoItem(item, true);
+      if (resForce.sucesso) {
+        etiquetasGeradas.splice(idx, 1);
+        renderEtiquetasGeradas();
+        if (typeof carregarArquivoTurso === "function") carregarArquivoTurso();
+        if (typeof carregarDashboardStats === "function") carregarDashboardStats();
+        alert("✅ Pré-postagem cancelada e removida localmente com sucesso!");
+        return;
+      }
+      alert(`❌ Falha ao forçar cancelamento local: ${resForce.erro}`);
+      return;
+    }
     alert(`❌ Falha ao cancelar: ${res.erro}`);
   }
 }
@@ -3212,6 +3226,19 @@ async function cancelarPrePostagemArquivo(idx) {
     if (typeof carregarDashboardStats === "function") carregarDashboardStats();
     alert("✅ Etiqueta impressa cancelada e estornada com sucesso!");
   } else {
+    if (confirm(`A API dos Correios rejeitou o cancelamento (${res.erro}).\n\nIsso ocorre quando a pré-postagem é antiga, teste ou já expirou no sistema dos Correios.\n\nDeseja FORÇAR o cancelamento no sistema para remover este item do histórico?`)) {
+      const resForce = await executarCancelamentoItem(item, true);
+      if (resForce.sucesso) {
+        etiquetasArquivoFiltrados.splice(idx, 1);
+        renderEtiquetasArquivo(etiquetasArquivoFiltrados);
+        if (typeof carregarEtiquetasDoTurso === "function") carregarEtiquetasDoTurso();
+        if (typeof carregarDashboardStats === "function") carregarDashboardStats();
+        alert("✅ Etiqueta cancelada e removida localmente com sucesso!");
+        return;
+      }
+      alert(`❌ Falha ao forçar cancelamento local: ${resForce.erro}`);
+      return;
+    }
     alert(`❌ Falha ao cancelar etiqueta impressa: ${res.erro}`);
   }
 }

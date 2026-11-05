@@ -1110,6 +1110,7 @@ class CorreiosHubService:
                     UPDATE prepostagens 
                     SET cancelado = 1,
                         status_rotulo = ?,
+                        status_impressao = 'CANCELADO',
                         data_cancelamento = CURRENT_TIMESTAMP,
                         resposta_cancelamento_cws = ?,
                         usuario_cancelamento = ?,
@@ -2294,22 +2295,80 @@ class CorreiosHubService:
         ids_pre = b.get("idsPrePostagens") or []
         cods_obj = b.get("codigosObjetos") or []
         solicitante = b.get("idCorreiosSolicitanteCancelamento") or username
+        forcar_local = bool(b.get("forcarLocal") or b.get("forcar_local") or (qp.get("forcarLocal", [""])[0].lower() in ("true", "1")) or (qp.get("force", [""])[0] == "1"))
 
         target_obj = cod_obj or (cods_obj[0] if cods_obj else "")
         target_id_pre = id_pre or (ids_pre[0] if ids_pre else "")
 
+        if forcar_local:
+            CorreiosHubService.handle_turso_db("POST", {"action": ["cancel_prepostagem"]}, {
+                "id_prepostagem": target_id_pre,
+                "codigo_objeto": target_obj,
+                "status_rotulo": "CANCELADO",
+                "resposta_cws": {"origem": "CANCELAMENTO_FORCADO", "motivo": "Cancelamento forçado pelo operador"},
+                "usuario_cancelamento": "OPERADOR"
+            })
+            return 200, {
+                "sucesso": True,
+                "httpStatus": 200,
+                "mensagem": "Objeto cancelado e removido do sistema com sucesso.",
+                "detalhes": {"forcar_local": True}
+            }
+
         servico_persistido = None
+        is_teste = "TEST" in str(target_id_pre).upper() or "TEST" in str(target_obj).upper()
         if target_obj or target_id_pre:
             try:
                 q_pre = execute_turso_query(
-                    "SELECT servico FROM prepostagens WHERE (codigo_objeto = ? AND codigo_objeto != '') OR (id_prepostagem = ? AND id_prepostagem != '') LIMIT 1",
+                    "SELECT servico, pedido, destinatario FROM prepostagens WHERE (codigo_objeto = ? AND codigo_objeto != '') OR (id_prepostagem = ? AND id_prepostagem != '') LIMIT 1",
                     [target_obj, target_id_pre]
                 )
                 rows = (q_pre or {}).get("rows") or []
-                if rows and _cell_val(rows[0][0]):
-                    servico_persistido = str(_cell_val(rows[0][0])).upper()
+                if rows:
+                    if _cell_val(rows[0][0]):
+                        servico_persistido = str(_cell_val(rows[0][0])).upper()
+                    ped_txt = str(_cell_val(rows[0][1]) or "").upper()
+                    dest_txt = str(_cell_val(rows[0][2]) or "").upper()
+                    if "TEST" in ped_txt or "TEST" in dest_txt:
+                        is_teste = True
             except Exception:
                 pass
+
+        if is_teste:
+            CorreiosHubService.handle_turso_db("POST", {"action": ["cancel_prepostagem"]}, {
+                "id_prepostagem": target_id_pre,
+                "codigo_objeto": target_obj,
+                "status_rotulo": "CANCELADO",
+                "resposta_cws": {"origem": "OBJETO_TESTE", "motivo": "Cancelamento local de teste"},
+                "usuario_cancelamento": "OPERADOR"
+            })
+            return 200, {
+                "sucesso": True,
+                "httpStatus": 200,
+                "mensagem": "Objeto de teste cancelado com sucesso no sistema local.",
+                "detalhes": {"origem": "OBJETO_TESTE"}
+            }
+
+        is_total = (
+            (target_obj and target_obj.upper().startswith("TX"))
+            or (target_id_pre and target_id_pre.upper().startswith("TOTAL_EXPRESS_"))
+            or (servico_persistido and any(k in servico_persistido for k in ("TOTAL", "EXP", "STD")))
+            or ("TOTAL" in servico_req)
+        )
+        if is_total:
+            CorreiosHubService.handle_turso_db("POST", {"action": ["cancel_prepostagem"]}, {
+                "id_prepostagem": target_id_pre,
+                "codigo_objeto": target_obj,
+                "status_rotulo": "CANCELADO",
+                "resposta_cws": {"origem": "TOTAL_EXPRESS", "motivo": "Cancelamento local Total Express"},
+                "usuario_cancelamento": "OPERADOR"
+            })
+            return 200, {
+                "sucesso": True,
+                "httpStatus": 200,
+                "mensagem": "Etiqueta Total Express cancelada com sucesso no sistema local.",
+                "detalhes": {"origem": "TOTAL_EXPRESS"}
+            }
 
         is_modico = False
         if servico_persistido:
