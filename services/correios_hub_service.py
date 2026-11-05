@@ -51,8 +51,8 @@ def execute_turso_query(sql: str, args: list = None) -> Optional[Dict[str, Any]]
     """Executa query unica no Turso de Correios via HTTP Pipeline v2."""
     turso_url, turso_token = _get_turso_creds()
     if not turso_url or not turso_token:
-        logger.error("CORREIOS_TURSO_URL ou CORREIOS_TURSO_TOKEN nao configurados.")
-        return None
+        logger.error("Credenciais do Turso DB não configuradas no ambiente.")
+        raise RuntimeError("Credenciais do Turso DB ausentes no ambiente. Configure TURSO_DATABASE_URL e TURSO_AUTH_TOKEN nas variáveis de ambiente da Vercel.")
 
     http_url = turso_url.replace("libsql://", "https://").rstrip("/")
     payload = {
@@ -803,8 +803,9 @@ class CorreiosHubService:
                             dt_start = None
 
                     if dt_start:
-                        where_clauses.append("(created_at >= ? OR data_emissao >= ?)")
-                        query_args.extend([dt_start.isoformat(), dt_start.strftime("%d/%m/%Y")])
+                        iso_date = dt_start.strftime("%Y-%m-%d")
+                        where_clauses.append("(substr(created_at, 1, 10) >= ? OR (length(data_emissao) = 10 AND (substr(data_emissao, 7, 4) || '-' || substr(data_emissao, 4, 2) || '-' || substr(data_emissao, 1, 2)) >= ?))")
+                        query_args.extend([iso_date, iso_date])
 
                 where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
 

@@ -692,17 +692,29 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function carregarEtiquetasDoTurso() {
-  await carregarEtiquetasTotalExpress();
   try {
     const res = await fetch("/.netlify/functions/turso-db?action=list_prepostagens");
-    const data = await res.json();
+    const data = await safeFetchJson(res);
+    if (!res.ok || data.ok === false || data.error) {
+      console.error("Erro ao carregar pré-postagens do Turso:", data);
+      const tbody = document.getElementById("tableBodyAguardando");
+      if (tbody) {
+        const errMsg = data.error || data.message || `Status HTTP ${res.status}`;
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-state" style="color: #f87171;">
+          ⚠️ Erro ao consultar pré-postagens no Turso DB: <strong>${errMsg}</strong><br>
+          <small style="color: #94a3b8;">Verifique se as variáveis <code>TURSO_DATABASE_URL</code> e <code>TURSO_AUTH_TOKEN</code> estão configuradas na Vercel (Project Settings &rarr; Environment Variables).</small>
+        </td></tr>`;
+      }
+      return;
+    }
     if (data.prepostagens && data.prepostagens.length > 0) {
       etiquetasGeradas = data.prepostagens.filter(p => {
         const estaCancelado = p.cancelado === 1 || p.cancelado === "1" || p.cancelado === true || p.status_cancelamento === "CANCELADO";
-        return (p.status_impressao === "PRONTO" || !p.status_impressao) && !estaCancelado;
+        const statusImp = (p.status_impressao || "PENDENTE").toUpperCase();
+        return (statusImp === "PRONTO" || statusImp === "PENDENTE" || !p.status_impressao) && !estaCancelado;
       })
         .map(p => ({
-          statusImpressao: p.status_impressao || "PRONTO",
+          statusImpressao: p.status_impressao || "PENDENTE",
           cancelado: p.cancelado || 0,
         idPrePostagem: p.id_prepostagem,
         objeto: p.codigo_objeto || `OBJ_${p.id}`,
@@ -738,9 +750,17 @@ async function carregarEtiquetasDoTurso() {
         }
       }));
       renderEtiquetasGeradas();
+    } else {
+      etiquetasGeradas = [];
+      renderEtiquetasGeradas();
     }
   } catch (err) {
     console.error("Erro ao carregar etiquetas do Turso no F5:", err);
+  }
+  try {
+    await carregarEtiquetasTotalExpress();
+  } catch (eTotal) {
+    console.error("Erro Total Express:", eTotal);
   }
 }
 
@@ -904,6 +924,17 @@ async function carregarExpedicoesPrata(pagina = 1) {
 
     const res = await fetch(`/.netlify/functions/turso-db?${params.toString()}`);
     const data = await safeFetchJson(res);
+
+    if (!res.ok || data.ok === false || data.error) {
+      const errMsg = data.error || data.message || `Status HTTP ${res.status}`;
+      if (tableBody) {
+        tableBody.innerHTML = `<tr><td colspan="9" class="empty-state" style="color: #f87171;">
+          ⚠️ Erro ao consultar expedições no Turso DB: <strong>${errMsg}</strong><br>
+          <small style="color: #94a3b8;">Se estiver acessando via Vercel, certifique-se de configurar as variáveis de ambiente <code>TURSO_DATABASE_URL</code> e <code>TURSO_AUTH_TOKEN</code> no painel da Vercel (Project Settings &rarr; Environment Variables).</small>
+        </td></tr>`;
+      }
+      return;
+    }
 
     const expedicoes = data.expedicoes || [];
     expedicoesPrataState.listaExpedicoes = expedicoes;
@@ -1471,11 +1502,24 @@ function initArquivoTab() {
 async function carregarArquivoTurso() {
   try {
     const res = await fetch("/.netlify/functions/turso-db?action=list_prepostagens");
-    const data = await res.json();
+    const data = await safeFetchJson(res);
+    if (!res.ok || data.ok === false || data.error) {
+      console.error("Erro ao carregar arquivo Turso:", data);
+      const tbody = document.getElementById("tableBodyArquivo");
+      if (tbody) {
+        const errMsg = data.error || data.message || `Status HTTP ${res.status}`;
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-state" style="color: #f87171;">
+          ⚠️ Erro ao consultar arquivo no Turso DB: <strong>${errMsg}</strong><br>
+          <small style="color: #94a3b8;">Verifique se as variáveis <code>TURSO_DATABASE_URL</code> e <code>TURSO_AUTH_TOKEN</code> estão configuradas na Vercel (Project Settings &rarr; Environment Variables).</small>
+        </td></tr>`;
+      }
+      return;
+    }
     if (data.prepostagens && data.prepostagens.length > 0) {
       etiquetasArquivo = data.prepostagens.filter(p => {
         const estaCancelado = p.cancelado === 1 || p.cancelado === "1" || p.cancelado === true || p.status_cancelamento === "CANCELADO";
-        return p.status_impressao === "ARQUIVADO" && !estaCancelado;
+        const statusImp = (p.status_impressao || "").toUpperCase();
+        return (statusImp === "ARQUIVADO" || statusImp === "IMPRESSO") && !estaCancelado;
       }).map(p => ({
         idPrePostagem: p.id_prepostagem,
         objeto: p.codigo_objeto || `OBJ_${p.id}`,
@@ -1487,7 +1531,7 @@ async function carregarArquivoTurso() {
         createdAt: p.created_at || "",
         idRecibo: p.id_recibo_atual,
         statusRotulo: p.status_rotulo || "PENDENTE",
-        statusImpressao: "ARQUIVADO",
+        statusImpressao: p.status_impressao || "IMPRESSO",
         obs_entrega: p.obs_entrega || "",
         dadosPedido: {
           numero_pedido: p.pedido,
