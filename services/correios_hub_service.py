@@ -973,20 +973,13 @@ class CorreiosHubService:
             # --- ACTION: save_prepostagem ---
             if action == "save_prepostagem":
                 servico = str(b.get("servico") or "PAC")
-                final_cod = str(b.get("codigo_objeto") or "")
-                final_id_pre = str(b.get("id_prepostagem") or "")
+                final_cod = str(b.get("codigo_objeto") or "").strip()
+                final_id_pre = str(b.get("id_prepostagem") or "").strip()
 
                 if servico in ("RETIRADA_GUARITA", "RETIRADA_ESTOQUE"):
                     if not final_id_pre:
                         return 400, {"error": "Identificador local obrigatorio para retirada."}
-                    if final_cod:
-                        return 400, {"error": "Retiradas nao podem receber codigo de rastreio."}
-                    duplicado = execute_turso_query(
-                        "SELECT id FROM prepostagens WHERE pedido = ? AND servico = ? AND cancelado = 0 LIMIT 1",
-                        [b.get("pedido") or "", servico]
-                    )
-                    if (duplicado or {}).get("rows"):
-                        return 409, {"error": "Este pedido ja possui uma etiqueta de retirada ativa para esta modalidade."}
+                    final_cod = ""
 
                 if servico in ("IMPRESSO_MODICO", "20133") and (not final_cod or final_cod.startswith("OBJ_") or final_cod.startswith("TEMP_")):
                     allocated = alocar_codigo_modico()
@@ -1004,6 +997,8 @@ class CorreiosHubService:
                 v_frete = float(b.get("valor_frete") or 0.0)
                 t_item = str(b.get("tipo_item") or "PEDIDO")
                 desc_avulsa = str(b.get("descricao_avulsa") or "")
+
+                final_cod_db = final_cod if final_cod else None
                 sql = """
                     INSERT INTO prepostagens (
                       pedido, numero_nf, serie_nf, chave_nfe, codigo_cliente_omie,
@@ -1036,7 +1031,7 @@ class CorreiosHubService:
                 """
                 res = execute_turso_query(sql, [
                     b.get("pedido"), b.get("numero_nf"), b.get("serie_nf") or "1", b.get("chave_nfe"), b.get("codigo_cliente_omie"),
-                    final_id_pre, final_cod, b.get("contrato"), b.get("cartao_postagem"), servico,
+                    final_id_pre, final_cod_db, b.get("contrato"), b.get("cartao_postagem"), servico,
                     b.get("destinatario"), b.get("cpf_cnpj_destinatario"), b.get("email_destinatario"), b.get("telefone_destinatario"),
                     b.get("logradouro"), b.get("numero"), b.get("complemento"), b.get("bairro"), b.get("cidade"), b.get("uf"), b.get("cep"),
                     b.get("origem_postagem") or "OMIE", b.get("status_rotulo") or "PENDENTE",
