@@ -3147,7 +3147,7 @@ class CorreiosHubService:
                 from pathlib import Path
                 from services.total_express_service import TotalExpressService
                 action = (query_params.get("action", [None])[0]) or body.get("action") or "registrar"
-                db_path = Path(os.getenv("TOTAL_EXPRESS_DB_PATH") or "data/total_express_local.db")
+                db_path = TotalExpressService.get_db_path()
                 if action == "registrar":
                     pedido = body.get("pedido") or body
                     key = str(pedido.get("chave_nfe") or "").strip()

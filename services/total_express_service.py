@@ -279,6 +279,32 @@ class TotalExpressService:
         return payload_dict
 
     @classmethod
+    def get_db_path(cls) -> Path:
+        env_path = os.getenv("TOTAL_EXPRESS_DB_PATH")
+        if env_path:
+            p = Path(env_path)
+            try:
+                p.parent.mkdir(parents=True, exist_ok=True)
+                return p
+            except (OSError, PermissionError):
+                pass
+        # No ambiente Vercel / AWS Lambda o filesystem é Read-Only exceto /tmp
+        if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+            tmp_dir = Path("/tmp")
+            try:
+                tmp_dir.mkdir(parents=True, exist_ok=True)
+            except Exception:
+                pass
+            return tmp_dir / "total_express_local.db"
+        local_dir = Path("data")
+        try:
+            local_dir.mkdir(parents=True, exist_ok=True)
+            return local_dir / "total_express_local.db"
+        except (OSError, PermissionError):
+            import tempfile
+            return Path(tempfile.gettempdir()) / "total_express_local.db"
+
+    @classmethod
     def registrar_encomenda(cls, pedido: Dict[str, Any]) -> Dict[str, Any]:
         creds = cls.get_credentials()
         if not creds["username"] or not creds["password"]:
@@ -289,8 +315,7 @@ class TotalExpressService:
             cls.salvar_resultado(pedido, {"pedido": pedido.get("numero_pedido") or pedido.get("pedido")}, {}, "ERRO_VALIDACAO", erro=str(exc))
             return {"sucesso": False, "erros_validacao": exc.errors, "erro": str(exc)}
         order = payload["encomendas"][0]["pedido"]
-        path = Path(os.getenv("TOTAL_EXPRESS_DB_PATH") or "data/total_express_local.db")
-        path.parent.mkdir(parents=True, exist_ok=True)
+        path = cls.get_db_path()
         with sqlite3.connect(path, timeout=10) as conn:
             conn.execute("CREATE TABLE IF NOT EXISTS total_express_encomendas (id INTEGER PRIMARY KEY AUTOINCREMENT, pedido TEXT NOT NULL UNIQUE, status TEXT NOT NULL, awb TEXT UNIQUE, rota TEXT, codigo_barras TEXT, tipo_servico TEXT, data TEXT, hora TEXT, documento_fiscal TEXT, payload_json TEXT NOT NULL, resposta_json TEXT, erro TEXT, criado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, atualizado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)")
             conn.execute("BEGIN IMMEDIATE")
@@ -341,59 +366,89 @@ class TotalExpressService:
             cls.salvar_resultado(pedido, {"pedido": order}, payload, "ERRO_CONEXAO", erro=str(exc))
             return {"sucesso": False, "erro": f"Falha de conexão: {exc}"}
 
-    @staticmethod
-    def salvar_resultado(pedido: Dict[str, Any], encomenda: Dict[str, Any], payload: Dict[str, Any], status: str, resposta: Dict[str, Any] = None, erro: str = "") -> None:
-        path = Path(os.getenv("TOTAL_EXPRESS_DB_PATH") or "data/total_express_local.db")
-        path.parent.mkdir(parents=True, exist_ok=True)
+    @classmethod
+    def salvar_resultado(cls, pedido: Dict[str, Any], encomenda: Dict[str, Any], payload: Dict[str, Any], status: str, resposta: Dict[str, Any] = None, erro: str = "") -> None:
+        path = cls.get_db_path()
         serialized = json.dumps(resposta or {}, ensure_ascii=False)
-        with sqlite3.connect(path, timeout=10) as conn:
-            conn.execute("PRAGMA journal_mode=WAL")
-            conn.execute("""CREATE TABLE IF NOT EXISTS total_express_encomendas (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                pedido TEXT NOT NULL UNIQUE,
-                status TEXT NOT NULL,
-                awb TEXT UNIQUE,
-                rota TEXT,
-                codigo_barras TEXT,
-                tipo_servico TEXT,
-                data TEXT,
-                hora TEXT,
-                documento_fiscal TEXT,
-                payload_json TEXT NOT NULL,
-                resposta_json TEXT,
-                erro TEXT,
-                criado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                atualizado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-            )""")
-            conn.execute("""INSERT INTO total_express_encomendas
-                (pedido, status, awb, rota, codigo_barras, tipo_servico, data, hora,
-                 documento_fiscal, payload_json, resposta_json, erro)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(pedido) DO UPDATE SET status=excluded.status,
-                 awb=COALESCE(excluded.awb, total_express_encomendas.awb),
-                 rota=COALESCE(excluded.rota, total_express_encomendas.rota),
-                 codigo_barras=COALESCE(excluded.codigo_barras, total_express_encomendas.codigo_barras),
-                 tipo_servico=COALESCE(excluded.tipo_servico, total_express_encomendas.tipo_servico),
-                 data=COALESCE(excluded.data, total_express_encomendas.data),
-                 hora=COALESCE(excluded.hora, total_express_encomendas.hora),
-                 documento_fiscal=COALESCE(excluded.documento_fiscal, total_express_encomendas.documento_fiscal),
-                 payload_json=excluded.payload_json, resposta_json=excluded.resposta_json,
-                 erro=excluded.erro, atualizado_em=CURRENT_TIMESTAMP""",
-                (str(encomenda.get("pedido") or pedido.get("numero_pedido") or ""), status,
-                 encomenda.get("awb"), encomenda.get("rota"), encomenda.get("codigoBarras"),
-                 encomenda.get("tipoServico"), encomenda.get("data"), encomenda.get("hora"),
-                 json.dumps(encomenda.get("documentoFiscal") or [], ensure_ascii=False),
-                 json.dumps(payload, ensure_ascii=False), serialized, erro))
+        try:
+            with sqlite3.connect(path, timeout=10) as conn:
+                conn.execute("PRAGMA journal_mode=WAL")
+                conn.execute("""CREATE TABLE IF NOT EXISTS total_express_encomendas (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    pedido TEXT NOT NULL UNIQUE,
+                    status TEXT NOT NULL,
+                    awb TEXT UNIQUE,
+                    rota TEXT,
+                    codigo_barras TEXT,
+                    tipo_servico TEXT,
+                    data TEXT,
+                    hora TEXT,
+                    documento_fiscal TEXT,
+                    payload_json TEXT NOT NULL,
+                    resposta_json TEXT,
+                    erro TEXT,
+                    criado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    atualizado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )""")
+                conn.execute("""INSERT INTO total_express_encomendas
+                    (pedido, status, awb, rota, codigo_barras, tipo_servico, data, hora,
+                     documento_fiscal, payload_json, resposta_json, erro)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(pedido) DO UPDATE SET status=excluded.status,
+                     awb=COALESCE(excluded.awb, total_express_encomendas.awb),
+                     rota=COALESCE(excluded.rota, total_express_encomendas.rota),
+                     codigo_barras=COALESCE(excluded.codigo_barras, total_express_encomendas.codigo_barras),
+                     tipo_servico=COALESCE(excluded.tipo_servico, total_express_encomendas.tipo_servico),
+                     data=COALESCE(excluded.data, total_express_encomendas.data),
+                     hora=COALESCE(excluded.hora, total_express_encomendas.hora),
+                     documento_fiscal=COALESCE(excluded.documento_fiscal, total_express_encomendas.documento_fiscal),
+                     payload_json=excluded.payload_json, resposta_json=excluded.resposta_json,
+                     erro=excluded.erro, atualizado_em=CURRENT_TIMESTAMP""",
+                    (str(encomenda.get("pedido") or pedido.get("numero_pedido") or ""), status,
+                     encomenda.get("awb"), encomenda.get("rota"), encomenda.get("codigoBarras"),
+                     encomenda.get("tipoServico"), encomenda.get("data"), encomenda.get("hora"),
+                     json.dumps(encomenda.get("documentoFiscal") or [], ensure_ascii=False),
+                     json.dumps(payload, ensure_ascii=False), serialized, erro))
+        except Exception as sql_err:
+            logger.warning(f"Erro ao salvar SQLite local Total Express: {sql_err}")
 
-    @staticmethod
-    def listar_encomendas() -> List[Dict[str, Any]]:
-        path = Path(os.getenv("TOTAL_EXPRESS_DB_PATH") or "data/total_express_local.db")
+        # Espelhar pré-postagem no Turso DB se AWB gerado com sucesso
+        awb = encomenda.get("awb")
+        if awb and status in ("REGISTRADO", "PARCIAL"):
+            try:
+                from services.correios_hub_service import execute_turso_query
+                pedido_num = str(encomenda.get("pedido") or pedido.get("numero_pedido") or pedido.get("pedido") or "")
+                nf_num = str(pedido.get("numero_nf") or "")
+                dest_nome = str(pedido.get("cliente_nome") or (pedido.get("destinatario") or {}).get("nome") or "")
+                dest_obj = pedido.get("destinatario") or {}
+                end_obj = dest_obj.get("endereco") or {}
+                cidade_dest = str(pedido.get("cidade") or end_obj.get("cidade") or "")
+                uf_dest = str(pedido.get("uf") or end_obj.get("uf") or "")
+                cep_dest = str(pedido.get("cep") or end_obj.get("cep") or "")
+                servico_nome = encomenda.get("tipoServico") or "TOTAL_EXPRESS"
+                execute_turso_query("""
+                    INSERT INTO prepostagens (
+                        pedido, numero_nf, chave_nfe, id_prepostagem, codigo_objeto,
+                        servico, destinatario, cidade, uf, cep, status_rotulo, status_impressao, cancelado, tipo_item
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PRONTO', 'PENDENTE', 0, 'PEDIDO')
+                    ON CONFLICT(codigo_objeto) DO UPDATE SET
+                        status_rotulo='PRONTO', status_impressao='PENDENTE', cancelado=0
+                """, [pedido_num, nf_num, str(pedido.get("chave_nfe") or ""), f"TOTAL_EXPRESS_{awb}", awb, servico_nome, dest_nome, cidade_dest, uf_dest, cep_dest])
+            except Exception as turso_err:
+                logger.warning(f"Não foi possível espelhar AWB Total Express no Turso DB: {turso_err}")
+
+    @classmethod
+    def listar_encomendas(cls) -> List[Dict[str, Any]]:
+        path = cls.get_db_path()
         if not path.exists():
             return []
-        with sqlite3.connect(path) as conn:
-            conn.row_factory = sqlite3.Row
-            rows = conn.execute("SELECT * FROM total_express_encomendas ORDER BY id DESC LIMIT 200").fetchall()
-        return [dict(row) for row in rows]
+        try:
+            with sqlite3.connect(path) as conn:
+                conn.row_factory = sqlite3.Row
+                rows = conn.execute("SELECT * FROM total_express_encomendas ORDER BY id DESC LIMIT 200").fetchall()
+            return [dict(row) for row in rows]
+        except Exception:
+            return []
 
     @staticmethod
     def gerar_etiqueta(dados: Dict[str, Any]) -> bytes:

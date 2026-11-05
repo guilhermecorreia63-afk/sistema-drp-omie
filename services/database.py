@@ -394,9 +394,19 @@ def executar_batch_query(stmts_list: list):
         except Exception as e:
             logger.error("Erro no batch Turso: %s", e)
 
+def _get_local_db_path() -> str:
+    if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+        import tempfile
+        return os.path.join(tempfile.gettempdir(), "database_local.db")
+    try:
+        os.makedirs("data", exist_ok=True)
+        return os.path.join("data", "database_local.db")
+    except (OSError, PermissionError):
+        import tempfile
+        return os.path.join(tempfile.gettempdir(), "database_local.db")
+
     # Fallback para SQLite Local
-    local_path = os.path.join("data", "database_local.db")
-    os.makedirs("data", exist_ok=True)
+    local_path = _get_local_db_path()
     conn = sqlite3.connect(local_path)
     try:
         cur = conn.cursor()
@@ -421,8 +431,7 @@ def executar_query(query: str, params: dict | tuple = None, is_select: bool = Tr
         except Exception:
             pass
 
-    local_path = os.path.join("data", "database_local.db")
-    os.makedirs("data", exist_ok=True)
+    local_path = _get_local_db_path()
     conn = sqlite3.connect(local_path)
     try:
         cur = conn.cursor()
@@ -432,8 +441,7 @@ def executar_query(query: str, params: dict | tuple = None, is_select: bool = Tr
         conn.close()
 
 def inicializar_banco():
-    local_path = os.path.join("data", "database_local.db")
-    os.makedirs("data", exist_ok=True)
+    local_path = _get_local_db_path()
     conn = sqlite3.connect(local_path)
     try:
         cur = conn.cursor()
