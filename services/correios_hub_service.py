@@ -2978,9 +2978,10 @@ class CorreiosHubService:
             c.rect(20, H - 16 - 24, 243, 24, stroke=1, fill=0)
             draw_text_top("DANFE Simplificado", 64, 21, 14, bold=True)
 
-            # 2. Barcode Code128 da Chave
+            # 2. Barcode Code128 da Chave (Centralizado)
             bc = code128.Code128(chave_limpa, barHeight=42, barWidth=0.68)
-            bc.drawOn(c, 18, H - 50 - 45)
+            x_bc = max(10.0, (W - bc.width) / 2.0)
+            bc.drawOn(c, x_bc, H - 50 - 45)
 
             # 3. Chave & Protocolo
             draw_text_top("CHAVE DE ACESSO", 107.6, 102.8, 7, bold=True)
