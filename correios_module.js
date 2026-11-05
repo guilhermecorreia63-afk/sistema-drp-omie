@@ -702,7 +702,7 @@ async function carregarEtiquetasDoTurso() {
         const errMsg = data.error || data.message || `Status HTTP ${res.status}`;
         tbody.innerHTML = `<tr><td colspan="6" class="empty-state" style="color: #f87171;">
           ⚠️ Erro ao consultar pré-postagens no Turso DB: <strong>${errMsg}</strong><br>
-          <small style="color: #94a3b8;">Verifique se as variáveis <code>TURSO_DATABASE_URL</code> e <code>TURSO_AUTH_TOKEN</code> estão configuradas na Vercel (Project Settings &rarr; Environment Variables).</small>
+          <small style="color: #94a3b8;">Verifique se as variáveis <code>CORREIOS_TURSO_URL</code> e <code>CORREIOS_TURSO_TOKEN</code> estão configuradas na Vercel (Project Settings &rarr; Environment Variables) com o banco gestoretiquetas.</small>
         </td></tr>`;
       }
       return;
@@ -930,7 +930,7 @@ async function carregarExpedicoesPrata(pagina = 1) {
       if (tableBody) {
         tableBody.innerHTML = `<tr><td colspan="9" class="empty-state" style="color: #f87171;">
           ⚠️ Erro ao consultar expedições no Turso DB: <strong>${errMsg}</strong><br>
-          <small style="color: #94a3b8;">Se estiver acessando via Vercel, certifique-se de configurar as variáveis de ambiente <code>TURSO_DATABASE_URL</code> e <code>TURSO_AUTH_TOKEN</code> no painel da Vercel (Project Settings &rarr; Environment Variables).</small>
+          <small style="color: #94a3b8;">Se estiver acessando via Vercel, certifique-se de configurar as variáveis de ambiente <code>CORREIOS_TURSO_URL</code> e <code>CORREIOS_TURSO_TOKEN</code> no painel da Vercel (Project Settings &rarr; Environment Variables) com o banco gestoretiquetas.</small>
         </td></tr>`;
       }
       return;
@@ -1510,7 +1510,7 @@ async function carregarArquivoTurso() {
         const errMsg = data.error || data.message || `Status HTTP ${res.status}`;
         tbody.innerHTML = `<tr><td colspan="6" class="empty-state" style="color: #f87171;">
           ⚠️ Erro ao consultar arquivo no Turso DB: <strong>${errMsg}</strong><br>
-          <small style="color: #94a3b8;">Verifique se as variáveis <code>TURSO_DATABASE_URL</code> e <code>TURSO_AUTH_TOKEN</code> estão configuradas na Vercel (Project Settings &rarr; Environment Variables).</small>
+          <small style="color: #94a3b8;">Verifique se as variáveis <code>CORREIOS_TURSO_URL</code> e <code>CORREIOS_TURSO_TOKEN</code> estão configuradas na Vercel (Project Settings &rarr; Environment Variables) com o banco gestoretiquetas.</small>
         </td></tr>`;
       }
       return;

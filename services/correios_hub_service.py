@@ -23,8 +23,14 @@ load_dotenv()
 logger = logging.getLogger("correios_hub_service")
 
 def _get_turso_creds() -> Tuple[str, str]:
-    url = (os.getenv("CORREIOS_TURSO_URL") or os.getenv("TURSO_DATABASE_URL") or "").strip()
-    token = (os.getenv("CORREIOS_TURSO_TOKEN") or os.getenv("TURSO_AUTH_TOKEN") or "").strip()
+    url = (os.getenv("CORREIOS_TURSO_URL") or "").strip()
+    token = (os.getenv("CORREIOS_TURSO_TOKEN") or "").strip()
+    if not url or not token:
+        fb_url = (os.getenv("TURSO_DATABASE_URL") or "").strip()
+        fb_tok = (os.getenv("TURSO_AUTH_TOKEN") or "").strip()
+        if "gestoretiquetas" in fb_url:
+            return fb_url, fb_tok
+        return "", ""
     return url, token
 
 def _get_omie_creds() -> Tuple[str, str]:
@@ -51,8 +57,8 @@ def execute_turso_query(sql: str, args: list = None) -> Optional[Dict[str, Any]]
     """Executa query unica no Turso de Correios via HTTP Pipeline v2."""
     turso_url, turso_token = _get_turso_creds()
     if not turso_url or not turso_token:
-        logger.error("Credenciais do Turso DB não configuradas no ambiente.")
-        raise RuntimeError("Credenciais do Turso DB ausentes no ambiente. Configure TURSO_DATABASE_URL e TURSO_AUTH_TOKEN nas variáveis de ambiente da Vercel.")
+        logger.error("Credenciais do Turso DB de etiquetas não configuradas no ambiente.")
+        raise RuntimeError("Credenciais do banco de etiquetas ausentes. Configure CORREIOS_TURSO_URL e CORREIOS_TURSO_TOKEN no painel da Vercel (banco gestoretiquetas).")
 
     http_url = turso_url.replace("libsql://", "https://").rstrip("/")
     payload = {
