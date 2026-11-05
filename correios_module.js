@@ -1767,7 +1767,7 @@ async function obterPdfRotulo(item, btnElement = null) {
     item.pdfBase64 = pdfB64;
     return pdfB64;
   }
-  const isTotalExpress = serv.includes("TOTAL") || idPre.startsWith("TOTAL_EXPRESS_") || (item.objeto && item.objeto.startsWith("TXAQ"));
+  const isTotalExpress = serv.includes("TOTAL") || serv === "EXP" || serv === "STD" || idPre.startsWith("TOTAL_EXPRESS_") || (item.objeto && item.objeto.toUpperCase().startsWith("TX"));
   if (isTotalExpress) {
     const awb = item.objeto || idPre.replace("TOTAL_EXPRESS_", "");
     try {
@@ -1781,8 +1781,10 @@ async function obterPdfRotulo(item, btnElement = null) {
         item.pdfBase64 = dataTot.pdfBase64;
         return dataTot.pdfBase64;
       }
+      throw new Error(dataTot?.erro || "Não foi possível carregar a etiqueta oficial da Total Express.");
     } catch (eTot) {
-      console.warn("Falha ao obter rótulo Total Express:", eTot);
+      console.error("Falha ao obter rótulo Total Express:", eTot);
+      throw eTot;
     }
   }
 
@@ -3253,7 +3255,16 @@ function atualizarBotaoGerarPlp() {
   if (!btn) return;
   const sel = document.querySelectorAll(".chk-obj-plp:checked").length;
   btn.disabled = sel === 0;
-  btn.textContent = sel > 0 ? `📜 Gerar Lista de Postagem (${sel} objetos)` : `📜 Gerar Lista de Postagem (PLP)`;
+  const transpSel = document.getElementById("plpTranspTab")?.value || "CORREIOS";
+  if (transpSel === "TOTAL") {
+    btn.textContent = sel > 0 ? `⚡ Fechar Manifesto Total Express (${sel} itens)` : `⚡ Fechar Manifesto Total Express`;
+  } else if (transpSel === "SOUZA") {
+    btn.textContent = sel > 0 ? `🚚 Fechar Romaneio Souza (${sel} itens)` : `🚚 Fechar Romaneio Souza`;
+  } else if (transpSel === "GUARITA") {
+    btn.textContent = sel > 0 ? `🏁 Fechar Lista Guarita (${sel} itens)` : `🏁 Fechar Lista Guarita`;
+  } else {
+    btn.textContent = sel > 0 ? `📜 Gerar Lista de Postagem (${sel} objetos)` : `📜 Gerar Lista de Postagem (PLP)`;
+  }
 }
 
 async function carregarObjetosElegiveisPlp() {
@@ -3593,10 +3604,13 @@ async function carregarListasPlpFechadas() {
       tbody.innerHTML = listasPlpFechadas.map(l => {
         const isSouza = (l.tipo_romaneio || "").toUpperCase() === "SOUZA";
         const isGuarita = (l.tipo_romaneio || "").toUpperCase() === "RETIRADA_GUARITA";
+        const isTotal = (l.tipo_romaneio || "").toUpperCase().includes("TOTAL");
         const badgeTipo = isGuarita
           ? `<span class="badge" style="background: rgba(16,185,129,0.18); color: #34d399; border: 1px solid #059669;">🏁 GUARITA</span>`
           : isSouza
           ? `<span class="badge" style="background: rgba(14,165,233,0.2); color: #38bdf8; border: 1px solid #0284c7;">🚚 SOUZA</span>`
+          : isTotal
+          ? `<span class="badge" style="background: rgba(245,158,11,0.2); color: #f59e0b; border: 1px solid #d97706;">⚡ TOTAL EXPRESS</span>`
           : `<span class="badge badge-primary">📦 ${l.tipo_romaneio || 'CORREIOS'}</span>`;
 
         const freteDisplay = l.valor_total_frete ? `R$ ${Number(l.valor_total_frete).toFixed(2)}` : '-';
@@ -3729,9 +3743,12 @@ async function visualizarModalListaPlp(id) {
     const itens = data.itens || [];
     const isSouza = (l.tipo_romaneio || "").toUpperCase() === "SOUZA";
     const isGuarita = (l.tipo_romaneio || "").toUpperCase() === "RETIRADA_GUARITA";
+    const isTotal = (l.tipo_romaneio || "").toUpperCase().includes("TOTAL");
 
     document.getElementById("modalListaTitulo").textContent = isGuarita ? "Lista de Retiradas - Guarita" : isSouza 
       ? `🚚 Romaneio de Entrega Roberto Souza #${l.numero_lista}` 
+      : isTotal
+      ? `⚡ Manifesto de Coleta Total Express #${l.numero_lista}`
       : `📋 Detalhes da Lista de Postagem #${l.numero_lista}`;
 
     const freteTotal = Number(l.valor_total_frete || 0).toFixed(2);
@@ -3762,7 +3779,7 @@ async function visualizarModalListaPlp(id) {
 
     const btnPdf = document.getElementById("btnBaixarPdfModalLista");
     if (btnPdf) {
-      btnPdf.onclick = () => isGuarita ? gerarPdfListaRetiradaGuarita(l, itens) : (isSouza ? gerarPdfRomaneioSouza(l, itens) : gerarPdfPlpOficial(l, itens));
+      btnPdf.onclick = () => isGuarita ? gerarPdfListaRetiradaGuarita(l, itens) : (isSouza ? gerarPdfRomaneioSouza(l, itens) : (isTotal ? gerarPdfRomaneioTotalExpress(l, itens) : gerarPdfPlpOficial(l, itens)));
     }
 
     modal.style.display = "flex";
@@ -3976,6 +3993,170 @@ async function gerarPdfRomaneioSouza(lista, itens) {
     // Box 4: Conferência
     drawText("NÚMERO DO DOCUMENTO / DATA", { x: 365, yTop: yAssin + 6, size: 6.5, font: fontBold });
     drawText("CONFERÊNCIA FINAL / RECEBIMENTO", { x: 365, yTop: yAssin + 52, size: 6.5, font: fontBold });
+  }
+
+  const bytes = await pdfDoc.save();
+  imprimirPdfBase64(base64ArrayBuffer(bytes));
+}
+
+async function gerarPdfRomaneioTotalExpress(lista, itens) {
+  const { PDFDocument, StandardFonts, rgb } = PDFLib;
+  const pdfDoc = await PDFDocument.create();
+
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const fontReg = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+  const ITENS_POR_PAGINA = 24;
+  const totalPaginas = Math.max(1, Math.ceil(itens.length / ITENS_POR_PAGINA));
+
+  const hoje = new Date();
+  const dataHojeFmt = hoje.toLocaleDateString("pt-BR") + " " + hoje.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  let dataGeracaoFmt = dataHojeFmt;
+  if (lista.data_geracao) {
+    const raw = String(lista.data_geracao).replace("T", " ").trim();
+    const [dPart, tPart] = raw.split(" ");
+    if (dPart && dPart.includes("-")) {
+      const dp = dPart.split("-");
+      dataGeracaoFmt = `${dp[2]}/${dp[1]}/${dp[0]}` + (tPart ? ` ${tPart.substring(0,5)}` : "");
+    } else {
+      dataGeracaoFmt = raw.substring(0, 16);
+    }
+  }
+  const numLista = lista.numero_lista || "000000";
+
+  for (let pag = 0; pag < totalPaginas; pag++) {
+    const page = pdfDoc.addPage([595.28, 841.89]); // A4 Retrato
+    const W = 595.28;
+    const H = 841.89;
+
+    const drawText = (textStr, options) => {
+      const ptX = options.x;
+      const ptY = H - options.yTop - (options.size || 8);
+      page.drawText(sanitizeWinAnsi(textStr), { ...options, x: ptX, y: ptY });
+    };
+
+    const drawRect = (options) => {
+      const ptX = options.x;
+      const ptW = options.w;
+      const ptH = options.h;
+      const ptY = H - options.yTop - ptH;
+      page.drawRectangle({
+        x: ptX,
+        y: ptY,
+        width: ptW,
+        height: ptH,
+        color: options.color,
+        borderColor: options.borderColor,
+        borderWidth: options.borderWidth || 0
+      });
+    };
+
+    const drawLine = (x1, yTop1, x2, yTop2, thickness = 0.5, color = rgb(0,0,0)) => {
+      page.drawLine({
+        start: { x: x1, y: H - yTop1 },
+        end: { x: x2, y: yTop2 === yTop1 ? H - yTop1 : H - yTop2 },
+        thickness: thickness,
+        color: color
+      });
+    };
+
+    // 1. CABEÇALHO SUPERIOR TOTAL EXPRESS
+    drawRect({ x: 30, yTop: 30, w: W - 60, h: 65, borderColor: rgb(0,0,0), borderWidth: 1 });
+    drawLine(180, 30, 180, 95, 1);
+    drawLine(410, 30, 410, 95, 1);
+
+    // Coluna 1: Total Express
+    drawText("TOTAL EXPRESS", { x: 42, yTop: 50, size: 14, font: fontBold, color: rgb(0, 0, 0) });
+    drawText("COLETA & ENCOMENDAS", { x: 42, yTop: 66, size: 7.5, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
+
+    // Coluna 2: MANIFESTO DE COLETA
+    drawText("MANIFESTO DE COLETA", { x: 200, yTop: 52, size: 14, font: fontBold, color: rgb(0,0,0) });
+    drawText("TOTAL EXPRESS - ROMANEIO DE CARGA", { x: 195, yTop: 72, size: 9.5, font: fontBold, color: rgb(0.2, 0.2, 0.2) });
+
+    // Coluna 3: Metadados
+    drawText(`DATA GERAÇÃO: ${dataGeracaoFmt}`, { x: 416, yTop: 43, size: 7.2, font: fontBold });
+    drawText(`MANIFESTO Nº: ${numLista}`, { x: 416, yTop: 55, size: 7.2, font: fontBold });
+    drawText(`FOLHA: ${pag + 1}/${totalPaginas}`, { x: 518, yTop: 55, size: 7.2, font: fontBold });
+    drawText(`DATA IMPRESSÃO: ${dataHojeFmt}`, { x: 416, yTop: 72, size: 7.0, font: fontReg });
+
+    // 2. DADOS DO CLIENTE / REMETENTE
+    drawRect({ x: 30, yTop: 95, w: W - 60, h: 30, borderColor: rgb(0,0,0), borderWidth: 1 });
+    drawText("REMETENTE / CONTRATANTE", { x: 35, yTop: 101, size: 6.5, font: fontBold });
+    drawText("EDICOES SHALOM / ASSOCIACAO SHALOM", { x: 35, yTop: 114, size: 9.5, font: fontBold });
+    drawText("CNPJ: 07.044.456/0003-64", { x: 410, yTop: 104, size: 7.5, font: fontBold });
+    drawText("AQUIRAZ - CE (61700-000)", { x: 410, yTop: 115, size: 7.5, font: fontReg });
+
+    // 3. TABELA DE ENCOMENDAS
+    let yTabela = 135;
+    drawRect({ x: 30, yTop: yTabela, w: W - 60, h: 16, color: rgb(0.94, 0.94, 0.94), borderColor: rgb(0,0,0), borderWidth: 1 });
+
+    drawText("N.", { x: 33, yTop: yTabela + 4, size: 7.2, font: fontBold });
+    drawText("AWB / Rastreio", { x: 52, yTop: yTabela + 4, size: 7.2, font: fontBold });
+    drawText("Serviço", { x: 145, yTop: yTabela + 4, size: 7.2, font: fontBold });
+    drawText("N.F. / Pedido", { x: 190, yTop: yTabela + 4, size: 7.2, font: fontBold });
+    drawText("Destinatário", { x: 260, yTop: yTabela + 4, size: 7.2, font: fontBold });
+    drawText("CEP", { x: 395, yTop: yTabela + 4, size: 7.2, font: fontBold });
+    drawText("Cidade / UF", { x: 450, yTop: yTabela + 4, size: 7.2, font: fontBold });
+    drawText("Rota", { x: 535, yTop: yTabela + 4, size: 7.2, font: fontBold });
+
+    // Linhas de itens
+    yTabela += 16;
+    const inicioIdx = pag * ITENS_POR_PAGINA;
+    const fimIdx = Math.min(itens.length, inicioIdx + ITENS_POR_PAGINA);
+
+    for (let i = inicioIdx; i < fimIdx; i++) {
+      const it = itens[i];
+      const cepRaw = String(it.cep || "").replace(/\D/g, "");
+      const cepFmt = cepRaw.length === 8 ? `${cepRaw.substring(0,5)}-${cepRaw.substring(5)}` : (it.cep || "-");
+      const nfPedStr = it.numero_nf ? `NF ${it.numero_nf}` : (it.pedido ? `Ped ${it.pedido}` : "-");
+      const destStr = String(it.destinatario || "").substring(0, 22);
+      const servStr = (it.servico || "EXP").replace("TOTAL_EXPRESS", "EXP");
+      const cidUf = `${(it.cidade || '').substring(0, 10)} / ${(it.uf || '')}`;
+      const rotaStr = (it.rota || it.observacoes_entrega || "-").substring(0, 10);
+
+      drawText(String(i + 1), { x: 33, yTop: yTabela + 3, size: 6.8, font: fontReg });
+      drawText(it.codigo_objeto || "-", { x: 52, yTop: yTabela + 3, size: 7.2, font: fontBold });
+      drawText(servStr, { x: 145, yTop: yTabela + 3, size: 6.8, font: fontReg });
+      drawText(nfPedStr, { x: 190, yTop: yTabela + 3, size: 6.8, font: fontBold });
+      drawText(destStr, { x: 260, yTop: yTabela + 3, size: 6.8, font: fontReg });
+      drawText(cepFmt, { x: 395, yTop: yTabela + 3, size: 6.8, font: fontReg });
+      drawText(cidUf, { x: 450, yTop: yTabela + 3, size: 6.8, font: fontReg });
+      drawText(rotaStr, { x: 535, yTop: yTabela + 3, size: 6.8, font: fontBold });
+
+      drawLine(30, yTabela + 14, W - 30, yTabela + 14, 0.3, rgb(0.8, 0.8, 0.8));
+      yTabela += 14;
+    }
+
+    // 4. RODAPÉ DE TERMO E ASSINATURAS TOTAL EXPRESS
+    const yRodape = H - 145;
+    drawRect({ x: 30, yTop: yRodape, w: W - 60, h: 22, color: rgb(0.96, 0.96, 0.96), borderColor: rgb(0,0,0), borderWidth: 1 });
+    drawText("TOTAL DE VOLUMES / ENCOMENDAS:", { x: 35, yTop: yRodape + 4, size: 8, font: fontBold });
+    drawText(String(itens.length), { x: 195, yTop: yRodape + 4, size: 9, font: fontBold });
+    drawText("TOTAL EXPRESS - LOGÍSTICA E DISTRIBUIÇÃO", { x: 330, yTop: yRodape + 4, size: 8, font: fontBold });
+
+    // Quadro de assinaturas com 3 colunas
+    const yAssin = yRodape + 22;
+    drawRect({ x: 30, yTop: yAssin, w: W - 60, h: 90, borderColor: rgb(0,0,0), borderWidth: 1 });
+    drawLine(195, yAssin, 195, yAssin + 90, 1);
+    drawLine(380, yAssin, 380, yAssin + 90, 1);
+
+    // Box 1: Expedição Shalom
+    drawText("EXPEDIÇÃO SHALOM - RESPONSÁVEL", { x: 35, yTop: yAssin + 6, size: 6.5, font: fontBold });
+    drawText(`Entregue ${itens.length} volume(s) à Total Express.`, { x: 35, yTop: yAssin + 24, size: 7.5, font: fontBold });
+    drawLine(35, yAssin + 65, 185, yAssin + 65, 0.5, rgb(0.5, 0.5, 0.5));
+    drawText("Assinatura do Expedidor", { x: 35, yTop: yAssin + 70, size: 6.5, font: fontReg });
+
+    // Box 2: Motorista Coletor Total Express
+    drawText("MOTORISTA / COLETOR TOTAL EXPRESS", { x: 202, yTop: yAssin + 6, size: 6.5, font: fontBold });
+    drawText("Nome legível: _______________________________", { x: 202, yTop: yAssin + 24, size: 6.8, font: fontReg });
+    drawText("RG / CPF: ___________________________________", { x: 202, yTop: yAssin + 42, size: 6.8, font: fontReg });
+    drawText("Placa do Veículo: ___________________________", { x: 202, yTop: yAssin + 60, size: 6.8, font: fontReg });
+    drawText("Assinatura: _________________________________", { x: 202, yTop: yAssin + 78, size: 6.8, font: fontReg });
+
+    // Box 3: Data / Hora e Carimbo
+    drawText("DATA E HORA DA COLETA", { x: 388, yTop: yAssin + 6, size: 6.5, font: fontBold });
+    drawText(`Data: ____/____/________   Hora: ____:____`, { x: 388, yTop: yAssin + 30, size: 7.2, font: fontBold });
+    drawText("Visto / Carimbo Base Total Express:", { x: 388, yTop: yAssin + 55, size: 6.5, font: fontReg });
   }
 
   const bytes = await pdfDoc.save();

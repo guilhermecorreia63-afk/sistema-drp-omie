@@ -2453,7 +2453,10 @@ class CorreiosHubService:
                 if transportadora:
                     t_up = transportadora.upper()
                     if t_up == "CORREIOS":
-                        sql += " AND servico != 'RETIRADA_GUARITA' AND servico != 'RETIRADA_ESTOQUE' AND (servico IN ('PAC', 'SEDEX', 'MINI ENVIOS', 'IMPRESSO_MODICO', '20133') OR (servico NOT IN ('ENTREGA_PROPRIA', 'TOTAL_EXPRESS', 'JT_EXPRESS') AND codigo_objeto NOT LIKE 'SZ%'))"
+                        sql += """ AND servico NOT IN ('RETIRADA_GUARITA', 'RETIRADA_ESTOQUE', 'ENTREGA_PROPRIA', 'SOUZA', 'LOCAL', 'TOTAL_EXPRESS', 'EXP', 'STD', 'JT_EXPRESS')
+                                   AND codigo_objeto NOT LIKE 'SZ%'
+                                   AND codigo_objeto NOT LIKE 'TX%'
+                                   AND id_prepostagem NOT LIKE 'TOTAL_EXPRESS_%' """
                     elif t_up == "SOUZA":
                         sql += " AND (servico IN ('ENTREGA_PROPRIA', 'SOUZA', 'LOCAL') OR codigo_objeto LIKE 'SZ%')"
                     elif t_up == "GUARITA":
@@ -2461,9 +2464,9 @@ class CorreiosHubService:
                     elif t_up == "ESTOQUE":
                         sql += " AND servico = 'RETIRADA_ESTOQUE'"
                     elif t_up == "TOTAL":
-                        sql += " AND (servico LIKE '%TOTAL%' OR servico = 'TOTAL_EXPRESS')"
+                        sql += " AND (codigo_objeto LIKE 'TX%' OR id_prepostagem LIKE 'TOTAL_EXPRESS_%' OR servico IN ('EXP', 'STD', 'TOTAL_EXPRESS') OR servico LIKE '%TOTAL%')"
                     elif t_up == "JT":
-                        sql += " AND (servico LIKE '%JT%' OR servico LIKE '%J&T%')" 
+                        sql += " AND (servico LIKE '%JT%' OR servico LIKE '%J&T%')"
                     else:
                         sql += " AND servico NOT IN ('RETIRADA_GUARITA', 'RETIRADA_ESTOQUE')"
                 else:
