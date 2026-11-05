@@ -3290,7 +3290,7 @@ class CorreiosHubService:
                                 "pedido": _cell_val(r[0])
                             }
 
-                    req_pedido = body.get("pedido") or {}
+                    req_pedido = body.get("pedido") or body.get("item") or {}
                     if not entry and not req_pedido:
                         return 404, {"sucesso": False, "erro": "AWB não encontrada localmente."}
 
@@ -3298,6 +3298,41 @@ class CorreiosHubService:
                     dest_obj = shipment.get("destinatario") or req_pedido.get("destinatario") or {}
                     address = dest_obj.get("endereco") or req_pedido.get("endereco") or {}
                     doc_fiscal = (shipment.get("docFiscal", {}).get("nfe") or [{}])[0]
+
+                    # Enriquecimento via omie_expedicoes_prata se faltar logradouro ou bairro
+                    ped_val = str((entry or {}).get("pedido") or req_pedido.get("numero_pedido") or req_pedido.get("pedido") or "").strip()
+                    nf_val = str(doc_fiscal.get("nfeNumero") or req_pedido.get("numero_nf") or "").strip()
+                    ch_val = str(doc_fiscal.get("nfeChave") or req_pedido.get("chave_nfe") or "").strip()
+                    if (not address.get("logradouro") or not address.get("bairro")) and (ped_val or nf_val or ch_val):
+                        try:
+                            prata_fb = execute_turso_query("""
+                                SELECT logradouro, numero, complemento, bairro, cidade, uf, cep, cliente_nome
+                                FROM omie_expedicoes_prata
+                                WHERE (numero_pedido = ? AND numero_pedido != '')
+                                   OR (numero_nf = ? AND numero_nf != '')
+                                   OR (chave_nfe = ? AND chave_nfe != '')
+                                LIMIT 1
+                            """, [ped_val, nf_val, ch_val])
+                            if prata_fb and prata_fb.get("rows"):
+                                prow = prata_fb["rows"][0]
+                                if not address.get("logradouro"):
+                                    address["logradouro"] = _cell_val(prow[0]) or ""
+                                if not address.get("numero"):
+                                    address["numero"] = _cell_val(prow[1]) or ""
+                                if not address.get("complemento"):
+                                    address["complemento"] = _cell_val(prow[2]) or ""
+                                if not address.get("bairro"):
+                                    address["bairro"] = _cell_val(prow[3]) or ""
+                                if not address.get("cidade"):
+                                    address["cidade"] = _cell_val(prow[4]) or ""
+                                if not address.get("estado"):
+                                    address["estado"] = _cell_val(prow[5]) or ""
+                                if not address.get("cep"):
+                                    address["cep"] = _cell_val(prow[6]) or ""
+                                if not dest_obj.get("nome"):
+                                    dest_obj["nome"] = _cell_val(prow[7]) or ""
+                        except Exception as e_pr:
+                            logger.warning(f"Fallback omie_expedicoes_prata falhou: {e_pr}")
 
                     dados_etiqueta = {
                         "awb": awb,

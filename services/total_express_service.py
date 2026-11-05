@@ -422,6 +422,10 @@ class TotalExpressService:
                 dest_nome = str(pedido.get("cliente_nome") or (pedido.get("destinatario") or {}).get("nome") or "")
                 dest_obj = pedido.get("destinatario") or {}
                 end_obj = dest_obj.get("endereco") or {}
+                logradouro_dest = str(pedido.get("logradouro") or end_obj.get("logradouro") or "")
+                numero_dest = str(pedido.get("numero") or end_obj.get("numero") or "")
+                complemento_dest = str(pedido.get("complemento") or end_obj.get("complemento") or "")
+                bairro_dest = str(pedido.get("bairro") or end_obj.get("bairro") or "")
                 cidade_dest = str(pedido.get("cidade") or end_obj.get("cidade") or "")
                 uf_dest = str(pedido.get("uf") or end_obj.get("uf") or "")
                 cep_dest = str(pedido.get("cep") or end_obj.get("cep") or "")
@@ -429,11 +433,15 @@ class TotalExpressService:
                 execute_turso_query("""
                     INSERT INTO prepostagens (
                         pedido, numero_nf, chave_nfe, id_prepostagem, codigo_objeto,
-                        servico, destinatario, cidade, uf, cep, status_rotulo, status_impressao, cancelado, tipo_item
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PRONTO', 'PENDENTE', 0, 'PEDIDO')
+                        servico, destinatario, logradouro, numero, complemento, bairro, cidade, uf, cep, status_rotulo, status_impressao, cancelado, tipo_item
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PRONTO', 'PENDENTE', 0, 'PEDIDO')
                     ON CONFLICT(codigo_objeto) DO UPDATE SET
-                        status_rotulo='PRONTO', status_impressao='PENDENTE', cancelado=0
-                """, [pedido_num, nf_num, str(pedido.get("chave_nfe") or ""), f"TOTAL_EXPRESS_{awb}", awb, servico_nome, dest_nome, cidade_dest, uf_dest, cep_dest])
+                        status_rotulo='PRONTO', status_impressao='PENDENTE', cancelado=0,
+                        logradouro=COALESCE(excluded.logradouro, prepostagens.logradouro),
+                        numero=COALESCE(excluded.numero, prepostagens.numero),
+                        complemento=COALESCE(excluded.complemento, prepostagens.complemento),
+                        bairro=COALESCE(excluded.bairro, prepostagens.bairro)
+                """, [pedido_num, nf_num, str(pedido.get("chave_nfe") or ""), f"TOTAL_EXPRESS_{awb}", awb, servico_nome, dest_nome, logradouro_dest, numero_dest, complemento_dest, bairro_dest, cidade_dest, uf_dest, cep_dest])
             except Exception as turso_err:
                 logger.warning(f"Não foi possível espelhar AWB Total Express no Turso DB: {turso_err}")
 
@@ -565,6 +573,39 @@ class TotalExpressService:
         pedido_num = str(dados.get("pedido") or dados.get("numero_pedido") or "").strip()
         nf_num = str(dados.get("numero_nf") or "").lstrip("0") or "SEM_NF"
         chave_nfe = re.sub(r"\D", "", str(dados.get("chave_nfe") or ""))
+
+        # Fallback de enriquecimento automático via omie_expedicoes_prata se faltar logradouro ou bairro
+        if (not logradouro or not bairro) and (pedido_num or nf_num or chave_nfe):
+            try:
+                from services.correios_hub_service import execute_turso_query, _cell_val
+                q_fb = execute_turso_query("""
+                    SELECT logradouro, numero, complemento, bairro, cidade, uf, cep, cliente_nome
+                    FROM omie_expedicoes_prata
+                    WHERE (numero_pedido = ? AND numero_pedido != '')
+                       OR (numero_nf = ? AND numero_nf != '')
+                       OR (chave_nfe = ? AND chave_nfe != '')
+                    LIMIT 1
+                """, [pedido_num, nf_num, chave_nfe])
+                if q_fb and q_fb.get("rows"):
+                    fb_row = q_fb["rows"][0]
+                    if not logradouro:
+                        logradouro = str(_cell_val(fb_row[0]) or "").strip()
+                    if not numero:
+                        numero = str(_cell_val(fb_row[1]) or "").strip()
+                    if not complemento:
+                        complemento = str(_cell_val(fb_row[2]) or "").strip()
+                    if not bairro:
+                        bairro = str(_cell_val(fb_row[3]) or "").strip()
+                    if not cidade:
+                        cidade = str(_cell_val(fb_row[4]) or "").strip().upper()
+                    if not uf:
+                        uf = str(_cell_val(fb_row[5]) or "").strip().upper()
+                    if not cep:
+                        cep = str(_cell_val(fb_row[6]) or "").strip()
+                    if not dest_nome:
+                        dest_nome = str(_cell_val(fb_row[7]) or "").strip()
+            except Exception:
+                pass
         rota = str(dados.get("rota") or "05-TZL-SP-LOC-[I88]").strip()
         tipo_servico = str(dados.get("tipoServico") or dados.get("tipo_servico") or "STD").strip().upper()
         servico_sigla = "EXP" if "EXP" in tipo_servico else "STD"
