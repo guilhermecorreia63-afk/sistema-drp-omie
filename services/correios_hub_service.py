@@ -1106,6 +1106,16 @@ class CorreiosHubService:
             if action == "cancel_prepostagem":
                 resp_cws = b.get("resposta_cws")
                 resp_str = json.dumps(resp_cws, ensure_ascii=False) if isinstance(resp_cws, (dict, list)) else str(resp_cws or "")
+                id_reg = b.get("id_registro") or b.get("idRegistro") or b.get("id") or 0
+                try:
+                    id_reg = int(id_reg)
+                except Exception:
+                    id_reg = 0
+                target_id_pre = str(b.get("id_prepostagem") or "").strip()
+                target_obj = str(b.get("codigo_objeto") or "").strip()
+                ped = str(b.get("pedido") or "").strip()
+                num_nf = str(b.get("numero_nf") or b.get("numeroNf") or "").strip()
+
                 execute_turso_query("""
                     UPDATE prepostagens 
                     SET cancelado = 1,
@@ -1119,13 +1129,18 @@ class CorreiosHubService:
                             ELSE codigo_objeto 
                         END,
                         updated_at = CURRENT_TIMESTAMP
-                    WHERE (id_prepostagem = ? AND id_prepostagem != '') OR (codigo_objeto = ? AND codigo_objeto != '')
+                    WHERE (id = ? AND ? > 0)
+                       OR (id_prepostagem = ? AND id_prepostagem != '') 
+                       OR (codigo_objeto = ? AND codigo_objeto != '')
+                       OR (pedido = ? AND pedido != '' AND numero_nf = ? AND numero_nf != '')
                 """, [
                     b.get("status_rotulo") or "CANCELADO",
                     resp_str,
                     b.get("usuario_cancelamento") or "OPERADOR",
-                    b.get("id_prepostagem") or "",
-                    b.get("codigo_objeto") or ""
+                    id_reg, id_reg,
+                    target_id_pre,
+                    target_obj,
+                    ped, num_nf
                 ])
                 return 200, {"success": True}
 
@@ -2291,6 +2306,9 @@ class CorreiosHubService:
 
         id_pre = b.get("idPrePostagem") or b.get("id") or (qp.get("id", [""])[0]) or (qp.get("idPrePostagem", [""])[0]) or ""
         cod_obj = b.get("codigoObjeto") or (qp.get("codigoObjeto", [""])[0]) or ""
+        id_reg = b.get("idRegistro") or b.get("id_registro") or (qp.get("idRegistro", [""])[0]) or (qp.get("id_registro", [""])[0]) or ""
+        pedido_reg = b.get("pedido") or (qp.get("pedido", [""])[0]) or ""
+        nf_reg = b.get("numeroNf") or b.get("numero_nf") or (qp.get("numeroNf", [""])[0]) or (qp.get("numero_nf", [""])[0]) or ""
         servico_req = (b.get("servico") or (qp.get("servico", [""])[0]) or "").upper()
         ids_pre = b.get("idsPrePostagens") or []
         cods_obj = b.get("codigosObjetos") or []
@@ -2302,8 +2320,11 @@ class CorreiosHubService:
 
         if forcar_local:
             CorreiosHubService.handle_turso_db("POST", {"action": ["cancel_prepostagem"]}, {
+                "id_registro": id_reg,
                 "id_prepostagem": target_id_pre,
                 "codigo_objeto": target_obj,
+                "pedido": pedido_reg,
+                "numero_nf": nf_reg,
                 "status_rotulo": "CANCELADO",
                 "resposta_cws": {"origem": "CANCELAMENTO_FORCADO", "motivo": "Cancelamento forçado pelo operador"},
                 "usuario_cancelamento": "OPERADOR"

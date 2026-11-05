@@ -714,6 +714,8 @@ async function carregarEtiquetasDoTurso() {
         return (statusImp === "PRONTO" || statusImp === "PENDENTE" || !p.status_impressao) && !estaCancelado;
       })
         .map(p => ({
+          id: p.id,
+          idRegistro: p.id,
           statusImpressao: p.status_impressao || "PENDENTE",
           cancelado: p.cancelado || 0,
         idPrePostagem: p.id_prepostagem,
@@ -723,7 +725,7 @@ async function carregarEtiquetasDoTurso() {
         cidadeUf: `${p.cidade || ''}/${p.uf || ''}`,
         nf: p.numero_nf,
         chaveNfe: p.chave_nfe || "",
-        data: p.created_at ? new Date(p.created_at).toLocaleTimeString() : new Date().toLocaleTimeString(),
+        data: formatarDataHoraBR(p.created_at),
         idRecibo: p.id_recibo_atual,
         statusRotulo: p.status_rotulo || "PENDENTE",
         obs_entrega: p.obs_entrega || "",
@@ -1387,6 +1389,75 @@ function renderEtiquetasGeradas() {
 
 
 // ==========================================================================
+
+// Funções utilitárias de Data e Horário no Fuso de Brasília (UTC-3)
+function formatarDataHoraBR(dataStr, incluirHora = true) {
+  if (!dataStr) return "-";
+  try {
+    let s = String(dataStr).trim();
+    if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?(\.\d+)?$/.test(s)) {
+      s = s.replace(" ", "T") + "Z";
+    }
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return String(dataStr);
+    const options = {
+      timeZone: "America/Sao_Paulo",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric"
+    };
+    if (incluirHora) {
+      options.hour = "2-digit";
+      options.minute = "2-digit";
+    }
+    return new Intl.DateTimeFormat("pt-BR", options).format(d);
+  } catch (err) {
+    return String(dataStr);
+  }
+}
+
+function getHojeBrasiliaISO() {
+  try {
+    const d = new Date();
+    const partes = new Intl.DateTimeFormat("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).formatToParts(d);
+    const ano = partes.find(p => p.type === "year")?.value;
+    const mes = partes.find(p => p.type === "month")?.value;
+    const dia = partes.find(p => p.type === "day")?.value;
+    return `${ano}-${mes}-${dia}`;
+  } catch (err) {
+    return new Date().toISOString().substring(0, 10);
+  }
+}
+
+function getDataBrasiliaISO(dataStr) {
+  if (!dataStr) return "";
+  try {
+    let s = String(dataStr).trim();
+    if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?(\.\d+)?$/.test(s)) {
+      s = s.replace(" ", "T") + "Z";
+    }
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return "";
+    const partes = new Intl.DateTimeFormat("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).formatToParts(d);
+    const ano = partes.find(p => p.type === "year")?.value;
+    const mes = partes.find(p => p.type === "month")?.value;
+    const dia = partes.find(p => p.type === "day")?.value;
+    return `${ano}-${mes}-${dia}`;
+  } catch (err) {
+    return "";
+  }
+}
+
 // ABA 3: ETIQUETAS REIMPRESSÃO (ARQUIVO DE IMPRESSOS)
 // ==========================================================================
 
@@ -1434,6 +1505,9 @@ function initArquivoTab() {
 
   const inputDtInicio = document.getElementById("filterArqDataInicio");
   const inputDtFim = document.getElementById("filterArqDataFim");
+  const hoje = getHojeBrasiliaISO();
+  if (inputDtInicio && !inputDtInicio.value) inputDtInicio.value = hoje;
+  if (inputDtFim && !inputDtFim.value) inputDtFim.value = hoje;
   if (inputDtInicio) inputDtInicio.addEventListener("change", aplicarFiltrosArquivo);
   if (inputDtFim) inputDtFim.addEventListener("change", aplicarFiltrosArquivo);
 
@@ -1518,6 +1592,8 @@ async function carregarArquivoTurso() {
         const statusImp = (p.status_impressao || "").toUpperCase();
         return (statusImp === "ARQUIVADO" || statusImp === "IMPRESSO") && !estaCancelado;
       }).map(p => ({
+        id: p.id,
+        idRegistro: p.id,
         idPrePostagem: p.id_prepostagem,
         objeto: p.codigo_objeto || `OBJ_${p.id}`,
         servico: p.servico,
@@ -1585,18 +1661,16 @@ function aplicarFiltrosArquivo() {
       if (servicoSel === "PAC" && !s.includes("PAC")) return false;
       if (servicoSel === "SEDEX" && !s.includes("SEDEX")) return false;
       if (servicoSel === "MINI ENVIOS" && !s.includes("MINI")) return false;
+      if (servicoSel === "TOTAL_EXPRESS" && !s.includes("TOTAL") && !s.includes("EXP") && !s.includes("STD")) return false;
+      if (servicoSel === "ENTREGA_PROPRIA" && !s.includes("SOUZA") && !s.includes("ENTREGA") && !s.includes("GUARITA") && !s.includes("ESTOQUE")) return false;
     }
 
-    // Filtro Data
-    if (dtInicioStr && item.createdAt) {
-      const dtItem = new Date(item.createdAt);
-      const dtIni = new Date(dtInicioStr + "T00:00:00");
-      if (dtItem < dtIni) return false;
-    }
-    if (dtFimStr && item.createdAt) {
-      const dtItem = new Date(item.createdAt);
-      const dtFim = new Date(dtFimStr + "T23:59:59");
-      if (dtItem > dtFim) return false;
+    // Filtro Data (Fuso de Brasília America/Sao_Paulo)
+    if (dtInicioStr || dtFimStr) {
+      const dtItemISO = getDataBrasiliaISO(item.createdAt);
+      if (dtInicioStr && dtItemISO && dtItemISO < dtInicioStr) return false;
+      if (dtFimStr && dtItemISO && dtItemISO > dtFimStr) return false;
+      if ((dtInicioStr || dtFimStr) && !dtItemISO) return false;
     }
 
     return true;
@@ -1613,7 +1687,7 @@ function renderEtiquetasArquivo(lista) {
   if (!tbody) return;
 
   if (lista.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhuma etiqueta no arquivo de reimpressão.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhuma etiqueta no arquivo de reimpressão.</td></tr>';
     const chkAll = document.getElementById("chkSelectAllArquivo");
     if (chkAll) chkAll.checked = false;
     return;
@@ -1626,6 +1700,7 @@ function renderEtiquetasArquivo(lista) {
     const temDanfe = Boolean(e.chaveNfe && e.chaveNfe.length === 44);
     const servStr = e.servico || '-';
     const destStr = e.destinatario || '-';
+    const dataHoraStr = formatarDataHoraBR(e.createdAt);
 
     return('<tr>' +
       '<td><input type="checkbox" class="chk-arquivo" data-idx="' + idx + '" checked></td>' +
@@ -1633,6 +1708,7 @@ function renderEtiquetasArquivo(lista) {
       '<td><span class="badge badge-info">' + servStr + '</span></td>' +
       '<td>' + destStr + '</td>' +
       '<td><span class="badge badge-secondary">Não gerada</span></td>' +
+      '<td style="font-size: 0.8rem; color: #94a3b8; white-space: nowrap;">' + dataHoraStr + '</td>' +
       '<td>' +
         '<div class="btn-action-group" style="display: flex; gap: 4px; flex-wrap: wrap;">' +
           '<button class="btn btn-secondary" style="padding: 3px 6px; font-size: 0.72rem;" onclick="visualizarDocumentosObjetoArquivo(' + idx + ', this)">Visualizar Rótulo</button>' +
@@ -3152,12 +3228,18 @@ async function executarCancelamentoItem(item, forcarLocal = false) {
     const serv = (item.servico || "").toUpperCase();
     const idPre = item.idPrePostagem || "";
     const obj = item.objeto || "";
+    const idReg = item.id || item.idRegistro || "";
+    const ped = item.dadosPedido?.numero_pedido || item.pedido || "";
+    const nf = item.nf || item.numero_nf || "";
     const isModico = serv.includes("MODICO") || serv.includes("MÓDICO") || idPre.startsWith("MODICO_");
     const isSouza = serv.includes("SOUZA") || serv.includes("ENTREGA_PROPRIA") || serv.includes("ENTREGA LOCAL") || idPre.startsWith("SOUZA_") || obj.startsWith("SZ");
 
     const params = new URLSearchParams({
       id: idPre,
       codigoObjeto: obj,
+      idRegistro: String(idReg),
+      pedido: String(ped),
+      numeroNf: String(nf),
       servico: isSouza ? "ENTREGA_PROPRIA" : (isModico ? "IMPRESSO_MODICO" : serv)
     });
     if (forcarLocal) {
@@ -3358,7 +3440,7 @@ async function carregarObjetosElegiveisPlp() {
             </div>
           </td>
           <td><span class="badge ${obj.status_entrega === 'FINALIZADO' ? 'badge-success' : 'badge-secondary'}" style="font-size: 0.72rem;">${isGuarita ? 'AGUARDANDO RETIRADA' : (obj.status_entrega || 'EM_COLETA')}</span></td>
-          <td style="font-size: 0.75rem; color: #94a3b8;">${obj.created_at ? obj.created_at.substring(0, 16).replace('T', ' ') : '-'}</td>
+          <td style="font-size: 0.75rem; color: #94a3b8;">${obj.created_at ? formatarDataHoraBR(obj.created_at) : '-'}</td>
         </tr>
       `;
       }).join("");
