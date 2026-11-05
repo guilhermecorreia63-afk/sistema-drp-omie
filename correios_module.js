@@ -1701,21 +1701,26 @@ async function reimprimirDocumentosObjetoArquivo(idx, btnElement = null) {
 
   try {
     const rotuloBase64 = await obterPdfRotulo(item, btnElement);
-    const danfeBase64 = await obterPdfDanfeOuDeclaracao(item);
-
     const { PDFDocument } = PDFLib;
     const pdfItem = await PDFDocument.create();
 
+    let jaContemDanfe = false;
     if (rotuloBase64) {
       const docRotulo = await PDFDocument.load(rotuloBase64);
+      if (docRotulo.getPageCount() > 1) {
+        jaContemDanfe = true;
+      }
       const paginasRotulo = await pdfItem.copyPages(docRotulo, docRotulo.getPageIndices());
       paginasRotulo.forEach(p => pdfItem.addPage(p));
     }
 
-    if (danfeBase64) {
-      const docDanfe = await PDFDocument.load(danfeBase64);
-      const paginasDanfe = await pdfItem.copyPages(docDanfe, docDanfe.getPageIndices());
-      paginasDanfe.forEach(p => pdfItem.addPage(p));
+    if (!jaContemDanfe) {
+      const danfeBase64 = await obterPdfDanfeOuDeclaracao(item);
+      if (danfeBase64) {
+        const docDanfe = await PDFDocument.load(danfeBase64);
+        const paginasDanfe = await pdfItem.copyPages(docDanfe, docDanfe.getPageIndices());
+        paginasDanfe.forEach(p => pdfItem.addPage(p));
+      }
     }
 
     const finalBytes = await pdfItem.save();
@@ -1762,6 +1767,25 @@ async function obterPdfRotulo(item, btnElement = null) {
     item.pdfBase64 = pdfB64;
     return pdfB64;
   }
+  const isTotalExpress = serv.includes("TOTAL") || idPre.startsWith("TOTAL_EXPRESS_") || (item.objeto && item.objeto.startsWith("TXAQ"));
+  if (isTotalExpress) {
+    const awb = item.objeto || idPre.replace("TOTAL_EXPRESS_", "");
+    try {
+      const resTot = await fetch("/.netlify/functions/total-express?action=etiqueta", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ awb: awb, pedido: item.dadosPedido || item })
+      });
+      const dataTot = await safeFetchJson(resTot);
+      if (dataTot && dataTot.pdfBase64) {
+        item.pdfBase64 = dataTot.pdfBase64;
+        return dataTot.pdfBase64;
+      }
+    } catch (eTot) {
+      console.warn("Falha ao obter rótulo Total Express:", eTot);
+    }
+  }
+
   const isSouza = serv.includes("SOUZA") || serv.includes("ENTREGA_PROPRIA") || serv.includes("LOCAL") || (item.objeto && item.objeto.startsWith("SZ")) || idPre.startsWith("SOUZA_");
   const isModico = serv.includes("MODICO") || serv.includes("20133") || (item.objeto && item.objeto.startsWith("YD")) || idPre.startsWith("MODICO_");
 
@@ -2009,21 +2033,26 @@ async function imprimirDocumentosObjeto(idx, btnElement = null) {
 
   try {
     const rotuloBase64 = await obterPdfRotulo(item, btnElement);
-    const danfeBase64 = await obterPdfDanfeOuDeclaracao(item);
-
     const { PDFDocument } = PDFLib;
     const pdfItem = await PDFDocument.create();
 
+    let jaContemDanfe = false;
     if (rotuloBase64) {
       const docRotulo = await PDFDocument.load(rotuloBase64);
+      if (docRotulo.getPageCount() > 1) {
+        jaContemDanfe = true;
+      }
       const paginasRotulo = await pdfItem.copyPages(docRotulo, docRotulo.getPageIndices());
       paginasRotulo.forEach(p => pdfItem.addPage(p));
     }
 
-    if (danfeBase64) {
-      const docDanfe = await PDFDocument.load(danfeBase64);
-      const paginasDanfe = await pdfItem.copyPages(docDanfe, docDanfe.getPageIndices());
-      paginasDanfe.forEach(p => pdfItem.addPage(p));
+    if (!jaContemDanfe) {
+      const danfeBase64 = await obterPdfDanfeOuDeclaracao(item);
+      if (danfeBase64) {
+        const docDanfe = await PDFDocument.load(danfeBase64);
+        const paginasDanfe = await pdfItem.copyPages(docDanfe, docDanfe.getPageIndices());
+        paginasDanfe.forEach(p => pdfItem.addPage(p));
+      }
     }
 
     const finalBytes = await pdfItem.save();
@@ -2720,7 +2749,7 @@ async function emitirPedidoObjeto(ped, qtdEtiquetas = 1) {
     const records = result.retorno?.encomendas || [];
     if (records.length) {
       const awb = records[0].volumes?.[0]?.awb;
-      const pdfResponse = await fetch("/.netlify/functions/total-express?action=etiqueta", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({awb})});
+      const pdfResponse = await fetch("/.netlify/functions/total-express?action=etiqueta", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({awb: awb, pedido: payload})});
       const pdf = await safeFetchJson(pdfResponse);
       if (!pdfResponse.ok || !pdf.pdfBase64) throw new Error(pdf.erro || "Etiqueta Total Express indisponível");
       const win = window.open("");

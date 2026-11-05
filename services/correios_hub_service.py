@@ -3180,14 +3180,82 @@ class CorreiosHubService:
                             conn.commit()
                     return 200, {"sucesso": True, "mensagem": f"Etiqueta Total Express {awb or pedido} cancelada localmente com sucesso."}
                 if action == "etiqueta":
-                    awb = str(body.get("awb") or "").strip()
+                    awb = str(body.get("awb") or query_params.get("awb", [""])[0] or "").strip()
                     entry = next((item for item in TotalExpressService.listar_encomendas() if item.get("awb") == awb), None)
-                    if not entry:
+                    payload = {}
+                    if entry:
+                        payload = json.loads(entry.get("payload_json") or "{}")
+                    else:
+                        # Tenta buscar no Turso DB se não achou no cache local da instância
+                        turso_res = execute_turso_query("""
+                            SELECT pedido, numero_nf, chave_nfe, destinatario, logradouro, numero, complemento, bairro, cidade, uf, cep, valor_frete, dados_fiscais_json
+                            FROM prepostagens
+                            WHERE codigo_objeto = ? OR id_prepostagem = ? LIMIT 1
+                        """, [awb, f"TOTAL_EXPRESS_{awb}"])
+                        if turso_res and turso_res.get("rows"):
+                            r = turso_res["rows"][0]
+                            dados_fiscais = json.loads(_cell_val(r[12]) or "{}") if len(r) > 12 and _cell_val(r[12]) else {}
+                            payload = {
+                                "encomendas": [{
+                                    "pedido": _cell_val(r[0]),
+                                    "destinatario": {
+                                        "nome": _cell_val(r[3]),
+                                        "endereco": {
+                                            "logradouro": _cell_val(r[4]),
+                                            "numero": _cell_val(r[5]),
+                                            "complemento": _cell_val(r[6]),
+                                            "bairro": _cell_val(r[7]),
+                                            "cidade": _cell_val(r[8]),
+                                            "estado": _cell_val(r[9]),
+                                            "cep": _cell_val(r[10])
+                                        }
+                                    },
+                                    "docFiscal": {
+                                        "nfe": [{
+                                            "nfeNumero": _cell_val(r[1]),
+                                            "nfeChave": _cell_val(r[2]),
+                                            "nfeValTotal": dados_fiscais.get("vNF") or 0.0
+                                        }]
+                                    }
+                                }]
+                            }
+                            entry = {
+                                "awb": awb,
+                                "rota": "05-TZL-SP-LOC-[I88]",
+                                "codigo_barras": awb,
+                                "tipo_servico": "EXP",
+                                "pedido": _cell_val(r[0])
+                            }
+
+                    req_pedido = body.get("pedido") or {}
+                    if not entry and not req_pedido:
                         return 404, {"sucesso": False, "erro": "AWB não encontrada localmente."}
-                    payload = json.loads(entry.get("payload_json") or "{}")
+
                     shipment = (payload.get("encomendas") or [{}])[0]
-                    address = shipment.get("destinatario", {}).get("endereco", {})
-                    pdf_bytes = TotalExpressService.gerar_etiqueta({"awb": awb, "rota": entry.get("rota"), "codigoBarras": entry.get("codigo_barras"), "tipoServico": entry.get("tipo_servico"), "pedido": entry.get("pedido"), "cep": address.get("cep"), "destinatario": shipment.get("destinatario", {}).get("nome")})
+                    dest_obj = shipment.get("destinatario") or req_pedido.get("destinatario") or {}
+                    address = dest_obj.get("endereco") or req_pedido.get("endereco") or {}
+                    doc_fiscal = (shipment.get("docFiscal", {}).get("nfe") or [{}])[0]
+
+                    dados_etiqueta = {
+                        "awb": awb,
+                        "rota": (entry or {}).get("rota") or req_pedido.get("rota") or "05-TZL-SP-LOC-[I88]",
+                        "codigoBarras": (entry or {}).get("codigo_barras") or req_pedido.get("codigoBarras") or awb,
+                        "tipoServico": (entry or {}).get("tipo_servico") or req_pedido.get("tipoServico") or "STD",
+                        "pedido": (entry or {}).get("pedido") or req_pedido.get("numero_pedido") or req_pedido.get("pedido") or "",
+                        "destinatario": {
+                            "nome": dest_obj.get("nome") or req_pedido.get("cliente_nome") or "",
+                            "cpfCnpj": dest_obj.get("cpfCnpj") or req_pedido.get("cliente_cpf_cnpj") or "",
+                            "endereco": address
+                        },
+                        "numero_nf": doc_fiscal.get("nfeNumero") or req_pedido.get("numero_nf") or "",
+                        "serie_nf": doc_fiscal.get("nfeSerie") or req_pedido.get("serie_nf") or "1",
+                        "chave_nfe": doc_fiscal.get("nfeChave") or req_pedido.get("chave_nfe") or "",
+                        "valor_nf": doc_fiscal.get("nfeValTotal") or req_pedido.get("valor_nf") or 0.0,
+                        "data_emissao": doc_fiscal.get("nfeData") or req_pedido.get("data_emissao") or "",
+                        "peso_kg": shipment.get("peso") or req_pedido.get("peso_kg") or 0.830,
+                        "volumes": shipment.get("volumes") or req_pedido.get("volumes") or 1
+                    }
+                    pdf_bytes = TotalExpressService.gerar_etiqueta(dados_etiqueta)
                     return 200, {"sucesso": True, "pdfBase64": base64.b64encode(pdf_bytes).decode("ascii"), "mimeType": "application/pdf"}
                 return 400, {"sucesso": False, "erro": f"Ação '{action}' inválida para total-express."}
             except Exception as exc:

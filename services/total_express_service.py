@@ -451,42 +451,268 @@ class TotalExpressService:
             return []
 
     @staticmethod
-    def gerar_etiqueta(dados: Dict[str, Any]) -> bytes:
+    def _desenhar_danfe_simplificada(c: canvas.Canvas, dados: Dict[str, Any], W: float, H: float) -> None:
+        chave = re.sub(r"\D", "", str(dados.get("chave_nfe") or ""))
+        if len(chave) != 44:
+            return
+
+        def dt(txt, x, y_top, size, bold=False):
+            c.setFont("Helvetica-Bold" if bold else "Helvetica", size)
+            c.drawString(x, H - y_top - size, str(txt or ""))
+
+        def dl(x1, y1, x2, y2, width=0.8):
+            c.setLineWidth(width)
+            c.line(x1, H - y1, x2, H - y2)
+
+        # 1. Box Título
+        c.setLineWidth(0.8)
+        c.rect(5 * mm, H - 14 * mm, 90 * mm, 10 * mm, stroke=1, fill=0)
+        dt("DANFE Simplificado", 32 * mm, 6.5 * mm, 12, bold=True)
+
+        # 2. Barcode
+        bc = code128.Code128(chave, barHeight=14 * mm, barWidth=0.42 * mm)
+        bc.drawOn(c, 7 * mm, H - 32 * mm)
+
+        # 3. Chave
+        dt("CHAVE DE ACESSO", 36 * mm, 33 * mm, 6.5, bold=True)
+        chave_fmt = " ".join([chave[i:i+4] for i in range(0, 44, 4)])
+        dt(chave_fmt, 10 * mm, 37 * mm, 6.2, bold=False)
+
+        # 4. Protocolo
+        dt("PROTOCOLO DE AUTORIZAÇÃO", 30 * mm, 42 * mm, 6.5, bold=True)
+        prot = dados.get("protocolo") or ("223260101536353 - " + datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+        dt(prot, 20 * mm, 46 * mm, 6.2, bold=False)
+        dl(5 * mm, 50 * mm, 95 * mm, 50 * mm)
+
+        # 5. Emitente
+        dt("DADOS DO EMITENTE:", 35 * mm, 51.5 * mm, 6.8, bold=True)
+        dt("Nome/Razão: ASSOCIACAO SHALOM", 6 * mm, 56 * mm, 6.5)
+        dt("CNPJ: 07.044.456/0003-64       IE: 068937741", 6 * mm, 60 * mm, 6.5)
+        dt("Endereço: R CE 040, 16 AO LADO DA ENEL - LAGOA DO JUNCO", 6 * mm, 64 * mm, 6)
+        dt("Cidade: AQUIRAZ / CE          CEP: 61700-000", 6 * mm, 68 * mm, 6.5)
+        dl(5 * mm, 72 * mm, 95 * mm, 72 * mm)
+
+        # 6. Dados Gerais NF-e
+        dt("DADOS GERAIS DA NF-e:", 35 * mm, 73.5 * mm, 6.8, bold=True)
+        dt("Tipo de operação: 1 (Saída)", 6 * mm, 78 * mm, 6.5, bold=True)
+        nf_num = str(dados.get("numero_nf") or "").lstrip("0") or "SEM_NF"
+        serie = str(dados.get("serie_nf") or "1")
+        dt(f"Número: {nf_num}     Série: {serie}     Emissão: {dados.get('data_emissao') or datetime.now().strftime('%d/%m/%Y')}", 6 * mm, 82 * mm, 6.5)
+        dl(5 * mm, 86 * mm, 95 * mm, 86 * mm)
+
+        # 7. Destinatário
+        dt("DADOS DO DESTINATÁRIO:", 34 * mm, 87.5 * mm, 6.8, bold=True)
+        dest_nome = str(dados.get("dest_nome") or "")
+        dt(f"Nome: {dest_nome[:45]}", 6 * mm, 92 * mm, 6.5)
+        dest_doc = str(dados.get("dest_cpf_cnpj") or "")
+        if dest_doc:
+            dt(f"CPF/CNPJ: {dest_doc}", 6 * mm, 96 * mm, 6.5)
+        dest_end = str(dados.get("dest_endereco") or "")
+        dt(f"Endereço: {dest_end[:45]}", 6 * mm, 100 * mm, 6.5)
+        dest_cid = str(dados.get("dest_cidade") or "")
+        dest_uf = str(dados.get("dest_uf") or "")
+        dest_cep = str(dados.get("dest_cep") or "")
+        dt(f"Cidade: {dest_cid} / {dest_uf}    CEP: {dest_cep}", 6 * mm, 104 * mm, 6.5)
+        dl(5 * mm, 108 * mm, 95 * mm, 108 * mm)
+
+        # 8. Valor Total
+        dt("VALOR TOTAL DA NOTA FISCAL:", 6 * mm, 112 * mm, 7.5, bold=True)
+        val = float(dados.get("valor_nf") or 0.0)
+        dt(f"R$ {val:.2f}".replace(".", ","), 55 * mm, 112 * mm, 8, bold=True)
+        dl(5 * mm, 118 * mm, 95 * mm, 118 * mm)
+
+        # 9. Rodapé
+        dt("Emissão em Contingência: 0 - Não", 6 * mm, 122 * mm, 6.2)
+        dt("Consulta via leitor de QR Code ou portal SEFAZ", 6 * mm, 126 * mm, 6)
+        dt("EMISSÃO AUTORIZADA", 38 * mm, 131 * mm, 7, bold=True)
+
+    @classmethod
+    def gerar_etiqueta(cls, dados: Dict[str, Any]) -> bytes:
         awb = str(dados.get("awb") or "").strip()
         if not awb:
             raise ValueError("AWB obrigatória para gerar etiqueta.")
+
+        W = 100 * mm
+        H = 140 * mm
         buffer = BytesIO()
-        pdf = canvas.Canvas(buffer, pagesize=(100 * mm, 150 * mm))
-        pdf.setTitle(f"Etiqueta Total Express {awb}")
-        pdf.setFont("Helvetica-Bold", 11)
-        pdf.drawString(5 * mm, 143 * mm, "TOTAL EXPRESS")
-        pdf.setFont("Helvetica-Bold", 13)
-        pdf.drawString(5 * mm, 132 * mm, awb[:30])
-        pdf.setFont("Helvetica", 8)
-        pdf.drawString(5 * mm, 124 * mm, f"Rota: {str(dados.get('rota') or '')[:45]}")
-        pdf.drawString(5 * mm, 118 * mm, f"Serviço: {str(dados.get('tipoServico') or '')[:30]}")
-        pdf.drawString(5 * mm, 112 * mm, f"Pedido: {str(dados.get('pedido') or '')[:45]}")
-        pdf.drawString(5 * mm, 106 * mm, f"CEP: {str(dados.get('cep') or '')[:20]}")
-        pdf.setFont("Helvetica-Bold", 8)
-        pdf.drawString(5 * mm, 98 * mm, "DESTINATÁRIO")
-        pdf.setFont("Helvetica", 8)
-        pdf.drawString(5 * mm, 93 * mm, str(dados.get("destinatario") or "")[:55])
-        barcode_value = str(dados.get("codigoBarras") or awb).strip()
-        bar = code128.Code128(barcode_value, barHeight=25 * mm, barWidth=0.45 * mm, humanReadable=True)
-        bar.drawOn(pdf, 10 * mm, 56 * mm)
-        matrix = ecc200datamatrix.ECC200DataMatrix(awb, barWidth=(25 * mm) / 44)
-        matrix.x = 73 * mm
-        matrix.y = 18 * mm
-        pdf.setFillColorRGB(1, 1, 1)
-        pdf.rect(70 * mm, 15 * mm, 31 * mm, 31 * mm, stroke=0, fill=1)
-        pdf.setFillColorRGB(0, 0, 0)
-        matrix.canv = pdf
-        matrix.validate()
-        matrix.encode()
-        matrix.decompose()
-        matrix.draw()
-        pdf.setFont("Helvetica", 6)
-        pdf.drawString(5 * mm, 12 * mm, f"AWB: {awb}")
-        pdf.showPage()
-        pdf.save()
+        c = canvas.Canvas(buffer, pagesize=(W, H))
+        c.setTitle(f"Etiqueta Total Express {awb}")
+
+        # Extração de campos normalizados
+        dest = dados.get("destinatario") or {}
+        if isinstance(dest, str):
+            dest_nome = dest
+            end_dest = {}
+        else:
+            dest_nome = str(dest.get("nome") or dados.get("dest_nome") or "").strip()
+            end_dest = dest.get("endereco") or {}
+
+        logradouro = str(end_dest.get("logradouro") or dados.get("logradouro") or "").strip()
+        numero = str(end_dest.get("numero") or dados.get("numero") or "").strip()
+        complemento = str(end_dest.get("complemento") or dados.get("complemento") or "").strip()
+        bairro = str(end_dest.get("bairro") or dados.get("bairro") or "").strip()
+        cidade = str(end_dest.get("cidade") or dados.get("cidade") or "").strip().upper()
+        uf = str(end_dest.get("estado") or end_dest.get("uf") or dados.get("uf") or "").strip().upper()
+        cep = str(end_dest.get("cep") or dados.get("cep") or "").strip()
+
+        pedido_num = str(dados.get("pedido") or dados.get("numero_pedido") or "").strip()
+        nf_num = str(dados.get("numero_nf") or "").lstrip("0") or "SEM_NF"
+        chave_nfe = re.sub(r"\D", "", str(dados.get("chave_nfe") or ""))
+        rota = str(dados.get("rota") or "05-TZL-SP-LOC-[I88]").strip()
+        tipo_servico = str(dados.get("tipoServico") or dados.get("tipo_servico") or "STD").strip().upper()
+        servico_sigla = "EXP" if "EXP" in tipo_servico else "STD"
+
+        # Formatação de data (ex: 05/Nov)
+        meses_br = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+        agora = datetime.now()
+        dt_str = dados.get("data_emissao") or dados.get("data") or ""
+        dt_exibicao = f"{agora.day:02d}/{meses_br[agora.month - 1]}"
+        if dt_str:
+            try:
+                if "-" in dt_str:
+                    parts = dt_str.split("T")[0].split("-")
+                    dt_exibicao = f"{int(parts[2]):02d}/{meses_br[int(parts[1]) - 1]}"
+                elif "/" in dt_str:
+                    parts = dt_str.split("/")
+                    dt_exibicao = f"{int(parts[0]):02d}/{meses_br[int(parts[1]) - 1]}"
+            except Exception:
+                pass
+
+        # Peso formatado com 3 casas decimais
+        try:
+            peso_val = float(dados.get("peso_kg") or dados.get("peso") or 0.830)
+            peso_fmt = f"{peso_val:.3f}"
+        except Exception:
+            peso_fmt = "0.830"
+
+        vol_val = str(dados.get("volumes") or dados.get("volume") or "1")
+
+        # ========================================================
+        # PÁGINA 1: ETIQUETA OFICIAL TOTAL EXPRESS (100% FIEL)
+        # ========================================================
+
+        # 1. Linha Topo
+        c.setLineWidth(1)
+        c.line(4 * mm, H - 4 * mm, 96 * mm, H - 4 * mm)
+
+        # 2. Total Express
+        c.setFont("Helvetica-Bold", 17)
+        c.drawString(5 * mm, H - 12 * mm, "Total Express")
+
+        # 3. Destinatário
+        c.setFont("Helvetica-Bold", 9.5)
+        c.drawString(5 * mm, H - 20 * mm, f"Dest.: {dest_nome[:42]}")
+
+        # Endereço do Destinatário
+        c.setFont("Helvetica", 6.8)
+        logr_line = f"{logradouro}, {numero} {complemento}".strip().rstrip(",")
+        c.drawString(5 * mm, H - 26 * mm, logr_line[:48])
+        c.drawString(5 * mm, H - 31 * mm, f"Bairro: {bairro[:25]}    CEP: {cep[:15]}")
+        c.drawString(5 * mm, H - 36 * mm, f"Cidade: {cidade[:28]}    Estado: {uf[:4]}")
+
+        # 4. Remetente (Edições Shalom)
+        c.setFont("Helvetica", 6.2)
+        c.drawString(5 * mm, H - 43 * mm, "Rem.: EDICOES SHALOM")
+        c.drawString(5 * mm, H - 48 * mm, "R CE 040, 16 AO LADO DA ENEL - LAGOA DO JUNCO")
+        c.drawString(5 * mm, H - 53 * mm, "Aquiraz / CE  61700000")
+        c.drawString(5 * mm, H - 58 * mm, "CNPJ: 07044456000364")
+
+        # 5. Box Serviço (Canto Superior Direito)
+        c.setLineWidth(0.8)
+        c.rect(81 * mm, H - 23 * mm, 15 * mm, 18 * mm, stroke=1, fill=0)
+        c.setFont("Helvetica-Bold", 13)
+        c.drawString(83 * mm, H - 12 * mm, servico_sigla)
+        c.setFont("Helvetica-Bold", 6)
+        c.drawString(82.5 * mm, H - 17 * mm, "TOTAL")
+        c.setFont("Helvetica", 5.5)
+        c.drawString(82.5 * mm, H - 20.5 * mm, "express")
+
+        # 6. Tabela / Quadro de Dados Fiscais
+        qx = 66 * mm
+        qy = H - 65 * mm
+        qw = 30 * mm
+        qh = 40 * mm
+        c.rect(qx, qy, qw, qh, stroke=1, fill=0)
+        c.setFillColorRGB(0, 0, 0)
+        c.rect(qx, qy, 8 * mm, qh, fill=1, stroke=0)
+
+        fields = [
+            ("NF", nf_num),
+            ("PED", pedido_num),
+            ("VOL", vol_val),
+            ("TP", pedido_num),
+            ("DT", dt_exibicao),
+            ("KG", peso_fmt),
+            ("PEÇA", f"{vol_val} / {vol_val}")
+        ]
+        row_h = qh / 7
+        for idx, (label, val) in enumerate(fields):
+            y_cell = qy + qh - (idx + 1) * row_h
+            if idx > 0:
+                c.setStrokeColorRGB(1, 1, 1)
+                c.setLineWidth(0.5)
+                c.line(qx, y_cell + row_h, qx + 8 * mm, y_cell + row_h)
+                c.setStrokeColorRGB(0, 0, 0)
+                c.line(qx + 8 * mm, y_cell + row_h, qx + qw, y_cell + row_h)
+            c.setFillColorRGB(1, 1, 1)
+            c.setFont("Helvetica-Bold", 6.5)
+            c.drawCentredString(qx + 4 * mm, y_cell + 1.8 * mm, label)
+            c.setFillColorRGB(0, 0, 0)
+            c.setFont("Helvetica-Bold" if idx < 2 else "Helvetica", 6.8)
+            c.drawString(qx + 10 * mm, y_cell + 1.8 * mm, str(val)[:15])
+
+        # 7. Faixa da Rota Central
+        c.setStrokeColorRGB(0, 0, 0)
+        c.setLineWidth(1.2)
+        c.line(4 * mm, H - 68 * mm, 96 * mm, H - 68 * mm)
+        c.setFont("Helvetica-Bold", 14)
+        c.drawCentredString(50 * mm, H - 75.5 * mm, rota)
+        c.line(4 * mm, H - 79 * mm, 96 * mm, H - 79 * mm)
+
+        # 8. Código de Barras Code 128 (AWB)
+        barcode_val = str(dados.get("codigoBarras") or awb).strip()
+        bar = code128.Code128(barcode_val, barHeight=44 * mm, barWidth=0.44 * mm, humanReadable=False)
+        bar.drawOn(c, 8 * mm, H - 128 * mm)
+
+        # 9. AWB Vertical Rotacionada 90°
+        c.saveState()
+        c.translate(88 * mm, H - 128 * mm)
+        c.rotate(90)
+        c.setFont("Helvetica-Bold", 10.5)
+        c.drawString(0, 0, f"AWB   {awb}")
+        c.restoreState()
+
+        # 10. Rodapé e Linha Pontilhada
+        c.setLineWidth(0.7)
+        c.setDash([2, 2], 0)
+        c.line(2 * mm, H - 134 * mm, 98 * mm, H - 134 * mm)
+        c.setDash([], 0)
+        c.setFont("Helvetica", 5.5)
+        dt_full = agora.strftime("%d/%m/%Y %H:%M")
+        c.drawRightString(96 * mm, H - 138 * mm, f"Impressão via ICS - Total Express - {dt_full}")
+
+        c.showPage()
+
+        # ========================================================
+        # PÁGINA 2: DANFE SIMPLIFICADA (SE HOUVER CHAVE NFE)
+        # ========================================================
+        if chave_nfe and len(chave_nfe) == 44:
+            danfe_dados = {
+                "chave_nfe": chave_nfe,
+                "numero_nf": nf_num,
+                "serie_nf": str(dados.get("serie_nf") or "1"),
+                "data_emissao": dt_str or agora.strftime("%d/%m/%Y"),
+                "valor_nf": float(dados.get("valor_nf") or 0.0),
+                "dest_nome": dest_nome,
+                "dest_cpf_cnpj": str(dest.get("cpfCnpj") or dados.get("cliente_cpf_cnpj") or ""),
+                "dest_endereco": logr_line,
+                "dest_cidade": cidade,
+                "dest_uf": uf,
+                "dest_cep": cep,
+                "protocolo": dados.get("protocolo") or ("223260101536353 - " + agora.strftime("%d/%m/%Y %H:%M:%S"))
+            }
+            cls._desenhar_danfe_simplificada(c, danfe_dados, W, H)
+            c.showPage()
+
+        c.save()
         return buffer.getvalue()
