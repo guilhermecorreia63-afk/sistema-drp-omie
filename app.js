@@ -1659,33 +1659,50 @@ function renderModalDestaques() {
     itensDestaques.forEach((item, index) => {
         const skuNorm = String(item.sku || '').trim();
         const skuPad = skuNorm.padStart(6, '0');
-        const p = state.produtos ? state.produtos.find(prod => String(prod.sku).trim() === skuNorm || String(prod.sku).trim() === skuPad) : null;
+        const p = state.produtos ? state.produtos.find(prod => {
+            const pSku = String(prod.sku || '').trim().toUpperCase();
+            const pCod = String(prod.codigo || '').trim().toUpperCase();
+            return pSku === skuNorm.toUpperCase() || pSku === skuPad.toUpperCase() || pCod === skuNorm.toUpperCase();
+        }) : null;
         const nomeExibicao = item.nome || (p ? p.nome : 'Produto Cadastrado');
+        const saldoCD = p ? (p.cd_sp || 0) : 0;
+        const saldoMatriz = p ? (p.matriz || 0) : 0;
 
         if (busca && !skuNorm.toLowerCase().includes(busca) && !nomeExibicao.toLowerCase().includes(busca)) {
             return;
         }
 
-        const badgeCD = item.cd !== false 
-            ? `<span class="badge" style="background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14,165,233,0.3); font-size: 0.7rem; padding: 2px 7px;"><i class="fa-solid fa-truck-ramp-box"></i> CD_SP</span>` 
-            : '';
-        const badgeMatriz = item.matriz 
-            ? `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); font-size: 0.7rem; padding: 2px 7px;"><i class="fa-solid fa-industry"></i> Matriz</span>` 
-            : '';
+        const isAtivoCD = item.cd !== false;
+        const isAtivoMatriz = Boolean(item.matriz);
+
+        const btnCD = isAtivoCD
+            ? `<button class="btn btn-xs" onclick="toggleDestaqueDestino(${index}, 'cd')" title="Clique para desativar exibição no CD_SP" style="background: rgba(14, 165, 233, 0.25); color: #38bdf8; border: 1px solid #0284c7; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: 600;"><i class="fa-solid fa-truck-ramp-box"></i> CD_SP (Ativo)</button>`
+            : `<button class="btn btn-xs" onclick="toggleDestaqueDestino(${index}, 'cd')" title="Clique para ativar exibição no CD_SP" style="background: rgba(255, 255, 255, 0.05); color: #64748b; border: 1px dashed rgba(255, 255, 255, 0.2); font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; cursor: pointer;"><i class="fa-solid fa-plus"></i> Ativar CD_SP</button>`;
+
+        const btnMatriz = isAtivoMatriz
+            ? `<button class="btn btn-xs" onclick="toggleDestaqueDestino(${index}, 'matriz')" title="Clique para desativar exibição na Matriz" style="background: rgba(16, 185, 129, 0.25); color: #34d399; border: 1px solid #059669; font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: 600;"><i class="fa-solid fa-industry"></i> Matriz (Ativo)</button>`
+            : `<button class="btn btn-xs" onclick="toggleDestaqueDestino(${index}, 'matriz')" title="Clique para ativar exibição na Matriz" style="background: rgba(255, 255, 255, 0.05); color: #64748b; border: 1px dashed rgba(255, 255, 255, 0.2); font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; cursor: pointer;"><i class="fa-solid fa-plus"></i> Ativar Matriz</button>`;
 
         const row = document.createElement('div');
         row.className = 'blacklist-row';
-        row.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); gap: 10px;';
+        row.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.06); gap: 12px;';
         row.innerHTML = `
             <div style="flex: 1; min-width: 0;">
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
-                    <strong style="color: #60a5fa; font-family: monospace; font-size: 0.9rem;">${skuNorm}</strong>
-                    ${badgeCD}
-                    ${badgeMatriz}
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 3px; flex-wrap: wrap;">
+                    <strong style="color: #60a5fa; font-family: monospace; font-size: 0.95rem;">${skuNorm}</strong>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        ${btnCD}
+                        ${btnMatriz}
+                    </div>
                 </div>
-                <div style="font-size: 0.82rem; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${nomeExibicao}</div>
+                <div style="font-size: 0.84rem; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500;">${nomeExibicao}</div>
+                <div style="font-size: 0.76rem; color: #94a3b8; margin-top: 4px; display: flex; gap: 14px; align-items: center;">
+                    <span>Saldo CD_SP: <strong style="color: ${saldoCD > 0 ? '#38bdf8' : '#cbd5e1'};">${saldoCD.toLocaleString('pt-BR')} un</strong></span>
+                    <span style="color: rgba(255,255,255,0.2);">|</span>
+                    <span>Saldo Matriz: <strong style="color: ${saldoMatriz > 0 ? '#34d399' : '#cbd5e1'};">${saldoMatriz.toLocaleString('pt-BR')} un</strong></span>
+                </div>
             </div>
-            <button class="btn btn-xs btn-danger btn-remove-destaque" data-idx="${index}" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; border-radius: 4px; padding: 5px 9px; cursor: pointer; white-space: nowrap;">
+            <button class="btn btn-xs btn-danger btn-remove-destaque" data-idx="${index}" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; border-radius: 4px; padding: 6px 10px; cursor: pointer; white-space: nowrap;">
                 <i class="fa-solid fa-trash-can"></i> Remover
             </button>
         `;
@@ -1701,6 +1718,21 @@ function renderModalDestaques() {
         container.appendChild(row);
     });
 }
+
+async function toggleDestaqueDestino(index, destino) {
+    if (!state.destaquesLista || !state.destaquesLista[index]) return;
+    const item = state.destaquesLista[index];
+    if (destino === 'cd') {
+        item.cd = item.cd === false ? true : false;
+    } else if (destino === 'matriz') {
+        item.matriz = !item.matriz;
+    }
+    atualizarSetsDestaques();
+    await salvarDestaquesServidor();
+    renderModalDestaques();
+    render();
+}
+window.toggleDestaqueDestino = toggleDestaqueDestino;
 
 async function adicionarItemDestaque() {
     const input = document.getElementById('destaques-new-sku');

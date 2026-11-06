@@ -357,6 +357,10 @@ def classificar_forma_envio_prata(texto_omie: str, cod_transportadora: Any = "",
     if cod_str == "2199110781" or "TOTAL EXPRESS" in texto_upper or "TEX COURIER" in texto_upper or "TOTAL_EXPRESS" in texto_upper:
         return {"grupo": "TOTAL EXPRESS", "servico": "TOTAL_STANDARD", "log": f"Total Express (Cod: {cod_str})"}
 
+    # 2.5. Translatino (Redespacho levado via Roberto Souza)
+    if "TRANSLATINO" in texto_upper or "TRANSLATINO" in str(cod_str).upper():
+        return {"grupo": "SOUZA", "servico": "SOUZA_TRANSLATINO", "log": "Translatino (Levado via Roberto Souza)"}
+
     # 3. Roberto Souza (Entrega Local Fortaleza)
     if cod_str == "1854969807" or "ROBERTO SOUZA" in texto_upper or "ROBERTO SOUSA" in texto_upper or "SOUZA" in texto_upper or "SOUSA" in texto_upper or "ENTREGA LOCAL" in texto_upper or "FROTISTA" in texto_upper:
         return {"grupo": "SOUZA", "servico": "ENTREGA_PROPRIA", "log": f"Entrega Propria Souza (Cod: {cod_str})"}
@@ -985,7 +989,7 @@ class CorreiosHubService:
                     allocated = alocar_codigo_modico()
                     final_cod = allocated["codigoObjeto"]
                     final_id_pre = allocated["idPrepostagem"]
-                elif servico in ("ENTREGA_PROPRIA", "SOUZA") and (not final_cod or final_cod.startswith("OBJ_") or final_cod.startswith("TEMP_") or not final_cod.startswith("SZ")):
+                elif servico in ("ENTREGA_PROPRIA", "SOUZA", "SOUZA_TRANSLATINO", "TRANSLATINO") and (not final_cod or final_cod.startswith("OBJ_") or final_cod.startswith("TEMP_") or not final_cod.startswith("SZ")):
                     allocated = alocar_codigo_souza()
                     final_cod = allocated["codigoObjeto"]
                     final_id_pre = allocated["idPrepostagem"]
@@ -2528,12 +2532,12 @@ class CorreiosHubService:
                 if transportadora:
                     t_up = transportadora.upper()
                     if t_up == "CORREIOS":
-                        sql += """ AND servico NOT IN ('RETIRADA_GUARITA', 'RETIRADA_ESTOQUE', 'ENTREGA_PROPRIA', 'SOUZA', 'LOCAL', 'TOTAL_EXPRESS', 'EXP', 'STD', 'JT_EXPRESS')
+                        sql += """ AND servico NOT IN ('RETIRADA_GUARITA', 'RETIRADA_ESTOQUE', 'ENTREGA_PROPRIA', 'SOUZA', 'LOCAL', 'SOUZA_TRANSLATINO', 'TRANSLATINO', 'TOTAL_EXPRESS', 'EXP', 'STD', 'JT_EXPRESS')
                                    AND codigo_objeto NOT LIKE 'SZ%'
                                    AND codigo_objeto NOT LIKE 'TX%'
                                    AND id_prepostagem NOT LIKE 'TOTAL_EXPRESS_%' """
                     elif t_up == "SOUZA":
-                        sql += " AND (servico IN ('ENTREGA_PROPRIA', 'SOUZA', 'LOCAL') OR codigo_objeto LIKE 'SZ%')"
+                        sql += " AND (servico IN ('ENTREGA_PROPRIA', 'SOUZA', 'LOCAL', 'SOUZA_TRANSLATINO', 'TRANSLATINO') OR codigo_objeto LIKE 'SZ%')"
                     elif t_up == "GUARITA":
                         sql += " AND servico = 'RETIRADA_GUARITA'"
                     elif t_up == "ESTOQUE":
@@ -2605,7 +2609,7 @@ class CorreiosHubService:
                     vf = float(_cell_val(r[3]) or 0.0)
                     srv = str(_cell_val(r[2]) or "")
                     cd = str(_cell_val(r[1]) or "")
-                    if srv in ("ENTREGA_PROPRIA", "SOUZA", "LOCAL") or cd.startswith("SZ"):
+                    if srv in ("ENTREGA_PROPRIA", "SOUZA", "LOCAL", "SOUZA_TRANSLATINO", "TRANSLATINO") or cd.startswith("SZ"):
                         tipo_romaneio = "SOUZA"
                     elif srv == "RETIRADA_GUARITA":
                         tipo_romaneio = "RETIRADA_GUARITA"

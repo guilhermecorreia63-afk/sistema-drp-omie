@@ -3840,9 +3840,20 @@
                 <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
                     Itens adicionados aqui <strong>sempre aparecerão na aba 1 (Reposição CD_SP)</strong> mesmo quando tiverem 0 vendas e 0 estoque no CD, permitindo planejar remessas de novos lançamentos (ex: Natal, Liturgias, etc.).
                 </p>
-                <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
                     <input type="text" id="destaques-new-sku" placeholder="Digite o SKU ou Código (ex: PRD00876)..." class="form-control" style="flex: 1;">
                     <button id="btn-add-destaque" class="btn btn-primary" style="white-space: nowrap;"><i class="fa-solid fa-plus"></i> Incluir Item</button>
+                </div>
+                <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px; padding: 6px 12px; background: rgba(255,255,255,0.03); border-radius: 6px; font-size: 0.85rem;">
+                    <span style="font-weight: 600; color: #94a3b8;">Destinos da exibição:</span>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; margin: 0;">
+                        <input type="checkbox" id="destaques-dest-cd" checked style="accent-color: #38bdf8; cursor: pointer; width: 16px; height: 16px;">
+                        <span style="color: #38bdf8; font-weight: 600;"><i class="fa-solid fa-truck-ramp-box"></i> CD_SP (Aba 1)</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; margin: 0;">
+                        <input type="checkbox" id="destaques-dest-matriz" checked style="accent-color: #34d399; cursor: pointer; width: 16px; height: 16px;">
+                        <span style="color: #34d399; font-weight: 600;"><i class="fa-solid fa-industry"></i> Matriz (Aba 2)</span>
+                    </label>
                 </div>
                 <div class="form-group">
                     <input type="text" id="destaques-search" placeholder="Filtrar nesta lista..." class="form-control">
@@ -5292,6 +5303,7 @@
               <option value="Mini Envios">Mini Envios (Correios)</option>
               <option value="Impresso Módico">Impresso Módico (Correios)</option>
               <option value="Entrega Local (Souza)">Entrega Local (Souza - Fortaleza/RMF)</option>
+              <option value="Translatino (via Roberto Souza)">Translatino (via Roberto Souza)</option>
               <option value="Retirada na Guarita">Retirada na Guarita</option>
               <option value="Retirada no Estoque">Retirada no Estoque</option>
               <option value="Total Express">Total Express</option>

@@ -51,54 +51,9 @@ async function gerarRotuloSouzaLocalPdf(item) {
 
   const W = 283.46; // 100mm térmico (72 pt/in = 28.346 pt/cm)
   const H = 396.85; // 140mm térmico
-  const page = pdfDoc.addPage([W, H]);
 
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const fontReg = await pdfDoc.embedFont(StandardFonts.Helvetica);
-
-  const drawText = (text, options) => {
-    const ptX = options.x;
-    const ptY = H - options.yTop - (options.size || 8);
-    page.drawText(sanitizeWinAnsi(text), { ...options, x: ptX, y: ptY });
-  };
-
-  const drawRect = (options) => {
-    const ptX = options.x;
-    const ptW = options.w;
-    const ptH = options.h;
-    const ptY = H - options.yTop - ptH;
-    page.drawRectangle({
-      x: ptX,
-      y: ptY,
-      width: ptW,
-      height: ptH,
-      color: options.color,
-      borderColor: options.borderColor,
-      borderWidth: options.borderWidth || 0
-    });
-  };
-
-  const drawLine = (x1, yTop1, x2, yTop2, thickness = 0.6, color = rgb(0.1, 0.1, 0.1)) => {
-    page.drawLine({
-      start: { x: x1, y: H - yTop1 },
-      end: { x: x2, y: yTop2 === yTop1 ? H - yTop1 : H - yTop2 },
-      thickness: thickness,
-      color: color
-    });
-  };
-
-  const drawBarcode = async (options, x, yTop, w, h) => {
-    try {
-      const canvas = document.createElement("canvas");
-      bwipjs.toCanvas(canvas, options);
-      const pngUrl = canvas.toDataURL("image/png");
-      const pngImageBytes = await fetch(pngUrl).then(res => res.arrayBuffer());
-      const pngImage = await pdfDoc.embedPng(pngImageBytes);
-      page.drawImage(pngImage, { x: x, y: H - yTop - h, width: w, height: h });
-    } catch (eBar) {
-      console.error("Erro ao gerar barcode bwipjs (Souza):", eBar);
-    }
-  };
 
   const ped = item.dadosPedido || {};
   const destInfo = ped.destinatario || {};
@@ -122,83 +77,154 @@ async function gerarRotuloSouzaLocalPdf(item) {
   const sroCode = (item.objeto || item.codigo_objeto || `SZ${String(numPedido).replace(/\D/g, '')}BR`).toUpperCase();
   const obsEntrega = (item.obs_entrega || ped.obs_entrega || ped.obs_venda || "").trim();
 
-  // Borda Externa Térmica 100x140
-  drawRect({ x: 8, yTop: 8, w: W - 16, h: H - 16, borderColor: rgb(0,0,0), borderWidth: 1.2 });
+  const servStr = (item.servico || ped.forma_envio || ped.servico || "").toUpperCase();
+  const transpStr = (ped.transportadora_normalizada || "").toUpperCase();
+  const isTranslatino = servStr.includes("TRANSLATINO") || transpStr.includes("TRANSLATINO") || (ped.observacoes || "").toUpperCase().includes("TRANSLATINO") || obsEntrega.toUpperCase().includes("TRANSLATINO");
 
-  // 1. CABEÇALHO MODERNO
-  drawRect({ x: 8, yTop: 8, w: W - 16, h: 36, color: rgb(0.08, 0.12, 0.20) });
-  drawText("COMUNIDADE CATOLICA SHALOM", { x: 16, yTop: 14, size: 9.5, font: fontBold, color: rgb(1,1,1) });
-  drawText("ENTREGA LOCAL  -  ROBERTO SOUZA", { x: 16, yTop: 26, size: 8.5, font: fontBold, color: rgb(0.22, 0.74, 0.97) });
-
-  // 2. PEDIDO & NOTA FISCAL
-  drawRect({ x: 8, yTop: 44, w: W - 16, h: 22, color: rgb(0.94, 0.96, 0.98) });
-  drawLine(8, 66, W - 8, 66, 0.8);
-  drawText(`PEDIDO: #${numPedido}`, { x: 16, yTop: 51, size: 9.5, font: fontBold, color: rgb(0.1, 0.1, 0.1) });
-  drawText(`NF-e: ${numNf ? numNf : 'S/N'}`, { x: 155, yTop: 51, size: 9.5, font: fontBold, color: rgb(0.1, 0.1, 0.1) });
-
-  // 3. CÓDIGO DE RASTREIO BIPÁVEL (CODE 128)
-  drawText("RASTREIO / BIPAGEM MOTORISTA:", { x: 16, yTop: 72, size: 7.5, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
-  if (sroCode) {
-    await drawBarcode({
-      bcid: 'code128',
-      text: sroCode,
-      scale: 3,
-      height: 16,
-      includetext: false
-    }, 16, 82, W - 32, 42);
-  }
-  drawText(sroCode, { x: 75, yTop: 128, size: 11.5, font: fontBold, color: rgb(0, 0, 0) });
-  drawLine(8, 142, W - 8, 142, 0.8);
-
-  // 4. DESTINATÁRIO
-  drawRect({ x: 8, yTop: 142, w: W - 16, h: 16, color: rgb(0.12, 0.16, 0.24) });
-  drawText("DESTINATARIO (ENTREGA)", { x: 16, yTop: 146, size: 8, font: fontBold, color: rgb(1,1,1) });
-
-  drawText(destNome.substring(0, 38), { x: 16, yTop: 164, size: 9, font: fontBold });
-  if (destDoc) {
-    drawText(`CPF/CNPJ: ${destDoc}`, { x: 16, yTop: 175, size: 7.2, font: fontReg, color: rgb(0.25, 0.25, 0.25) });
+  // Identificar total de volumes informado (1 código SRO para N etiquetas térmicas)
+  let totalVolumes = Math.max(1, parseInt(item.volumes || ped.qtd_etiquetas || ped.volumes || 1, 10) || 1);
+  if (totalVolumes === 1 && obsEntrega) {
+    const mVol = obsEntrega.match(/\[(\d+)\s+Volumes/i) || obsEntrega.match(/Vol\.\s*\d+\/(\d+)/i);
+    if (mVol && mVol[1]) totalVolumes = Math.max(1, parseInt(mVol[1], 10) || 1);
   }
 
-  // Endereço de Entrega
-  const linhaEnd = `${destLog}, ${destNum}${destCompl ? ' - ' + destCompl : ''}`;
-  drawText(linhaEnd.substring(0, 48), { x: 16, yTop: 188, size: 8.5, font: fontBold });
-  drawText(`BAIRRO: ${destBairro}`, { x: 16, yTop: 199, size: 8, font: fontReg });
-  drawText(`${destCidade} - ${destUf}  |  CEP: ${cepFmt}`, { x: 16, yTop: 210, size: 8.5, font: fontBold });
+  const desenharPaginaVolume = async (volAtual, totalVols) => {
+    const page = pdfDoc.addPage([W, H]);
 
-  const foneDest = item.telefone || destInfo.telefone || destInfo.celular || ped.telefone_destinatario || "";
-  if (foneDest) {
-    drawText(`CONTATO: ${foneDest}`, { x: 16, yTop: 221, size: 7.5, font: fontBold, color: rgb(0.1, 0.3, 0.7) });
-  }
+    const drawText = (text, options) => {
+      const ptX = options.x;
+      const ptY = H - options.yTop - (options.size || 8);
+      page.drawText(sanitizeWinAnsi(text), { ...options, x: ptX, y: ptY });
+    };
 
-  // 5. BOX DE CANHOTO / ASSINATURA DE RECEBIMENTO
-  drawLine(8, 233, W - 8, 233, 0.8);
-  drawText("CANHOTO DE ENTREGA / RECEBIMENTO:", { x: 16, yTop: 238, size: 7, font: fontBold });
-  
-  drawText("RECEBEDOR:", { x: 16, yTop: 250, size: 6.5, font: fontBold });
-  drawLine(65, 256, W - 16, 256, 0.5);
+    const drawRect = (options) => {
+      const ptX = options.x;
+      const ptW = options.w;
+      const ptH = options.h;
+      const ptY = H - options.yTop - ptH;
+      page.drawRectangle({
+        x: ptX,
+        y: ptY,
+        width: ptW,
+        height: ptH,
+        color: options.color,
+        borderColor: options.borderColor,
+        borderWidth: options.borderWidth || 0
+      });
+    };
 
-  drawText("DOC / RG:", { x: 16, yTop: 264, size: 6.5, font: fontBold });
-  drawLine(60, 270, 160, 270, 0.5);
-  drawText("DATA:", { x: 170, yTop: 264, size: 6.5, font: fontBold });
-  drawLine(195, 270, W - 16, 270, 0.5);
+    const drawLine = (x1, yTop1, x2, yTop2, thickness = 0.6, color = rgb(0.1, 0.1, 0.1)) => {
+      page.drawLine({
+        start: { x: x1, y: H - yTop1 },
+        end: { x: x2, y: yTop2 === yTop1 ? H - yTop1 : H - yTop2 },
+        thickness: thickness,
+        color: color
+      });
+    };
 
-  drawText("ASSINATURA:", { x: 16, yTop: 278, size: 6.5, font: fontBold });
-  drawLine(72, 286, W - 16, 286, 0.5);
+    const drawBarcode = async (options, x, yTop, w, h) => {
+      try {
+        const canvas = document.createElement("canvas");
+        bwipjs.toCanvas(canvas, options);
+        const pngUrl = canvas.toDataURL("image/png");
+        const pngImageBytes = await fetch(pngUrl).then(res => res.arrayBuffer());
+        const pngImage = await pdfDoc.embedPng(pngImageBytes);
+        page.drawImage(pngImage, { x: x, y: H - yTop - h, width: w, height: h });
+      } catch (eBar) {
+        console.error("Erro ao gerar barcode bwipjs (Souza):", eBar);
+      }
+    };
 
-  // 6. REMETENTE
-  drawLine(8, 296, W - 8, 296, 0.8);
-  drawText("REMETENTE: COMUNIDADE CATOLICA SHALOM - DIACONIA", { x: 16, yTop: 302, size: 7, font: fontBold });
-  drawText("Estrada do Aquiraz, 501 - CE 040 KM 16 - Aquiraz/CE | CEP: 61700-000", { x: 16, yTop: 311, size: 6.2, font: fontReg });
-  drawText("CNPJ: 07.044.456/0003-64 | Telefone: (85) 3218-7800", { x: 16, yTop: 320, size: 6.2, font: fontReg });
+    // Borda Externa Térmica 100x140
+    drawRect({ x: 8, yTop: 8, w: W - 16, h: H - 16, borderColor: rgb(0,0,0), borderWidth: 1.2 });
 
-  // 7. RODAPÉ DE OBSERVAÇÃO
-  drawLine(8, 330, W - 8, 330, 0.8);
-  drawRect({ x: 8, yTop: 330, w: W - 16, h: H - 338, color: obsEntrega ? rgb(0.99, 0.95, 0.88) : rgb(0.96, 0.97, 0.98) });
-  if (obsEntrega) {
-    drawText("! ATENCAO: POSSUI OBSERVACOES ESPECIAIS (VER PAGINA 2)", { x: 14, yTop: 338, size: 6.8, font: fontBold, color: rgb(0.8, 0.2, 0) });
-    drawText(obsEntrega.substring(0, 52), { x: 14, yTop: 349, size: 6.5, font: fontReg });
-  } else {
-    drawText("ENTREGA PROPRIA ROBERTO SOUZA - CONFERIR NOTA FISCAL NO ATO", { x: 14, yTop: 342, size: 6.8, font: fontBold, color: rgb(0.2, 0.2, 0.2) });
+    // 1. CABEÇALHO
+    drawRect({ x: 8, yTop: 8, w: W - 16, h: 36, color: rgb(0.08, 0.12, 0.20) });
+    drawText("COMUNIDADE CATOLICA SHALOM", { x: 16, yTop: 14, size: 9.5, font: fontBold, color: rgb(1,1,1) });
+    if (isTranslatino) {
+      drawText("TRANSLATINO  (REDESPACHO VIA SOUZA)", { x: 16, yTop: 26, size: 8.5, font: fontBold, color: rgb(0.22, 0.74, 0.97) });
+    } else {
+      drawText("ENTREGA LOCAL  -  ROBERTO SOUZA", { x: 16, yTop: 26, size: 8.5, font: fontBold, color: rgb(0.22, 0.74, 0.97) });
+    }
+
+    // 2. PEDIDO & NOTA FISCAL & VOLUME
+    drawRect({ x: 8, yTop: 44, w: W - 16, h: 22, color: rgb(0.94, 0.96, 0.98) });
+    drawLine(8, 66, W - 8, 66, 0.8);
+    drawText(`PED: #${numPedido}`, { x: 14, yTop: 51, size: 8.8, font: fontBold, color: rgb(0.1, 0.1, 0.1) });
+    drawText(`NF: ${numNf ? numNf : 'S/N'}`, { x: 105, yTop: 51, size: 8.8, font: fontBold, color: rgb(0.1, 0.1, 0.1) });
+    drawText(`VOL: ${volAtual}/${totalVols}`, { x: 200, yTop: 51, size: 9.5, font: fontBold, color: rgb(0.8, 0.1, 0.1) });
+
+    // 3. CÓDIGO DE RASTREIO BIPÁVEL (CODE 128) - MESMO CÓDIGO PARA TODOS OS VOLUMES DO PEDIDO
+    drawText("RASTREIO / BIPAGEM MOTORISTA:", { x: 16, yTop: 72, size: 7.5, font: fontBold, color: rgb(0.3, 0.3, 0.3) });
+    if (sroCode) {
+      await drawBarcode({
+        bcid: 'code128',
+        text: sroCode,
+        scale: 3,
+        height: 16,
+        includetext: false
+      }, 16, 82, W - 32, 42);
+    }
+    drawText(sroCode, { x: 75, yTop: 128, size: 11.5, font: fontBold, color: rgb(0, 0, 0) });
+    drawLine(8, 142, W - 8, 142, 0.8);
+
+    // 4. DESTINATÁRIO
+    drawRect({ x: 8, yTop: 142, w: W - 16, h: 16, color: rgb(0.12, 0.16, 0.24) });
+    drawText(isTranslatino ? "DESTINO: TRANSLATINO (REDESPACHO)" : "DESTINATARIO (ENTREGA)", { x: 16, yTop: 146, size: 8, font: fontBold, color: rgb(1,1,1) });
+
+    drawText(destNome.substring(0, 38), { x: 16, yTop: 164, size: 9, font: fontBold });
+    if (destDoc) {
+      drawText(`CPF/CNPJ: ${destDoc}`, { x: 16, yTop: 175, size: 7.2, font: fontReg, color: rgb(0.25, 0.25, 0.25) });
+    }
+
+    // Endereço de Entrega
+    const linhaEnd = `${destLog}, ${destNum}${destCompl ? ' - ' + destCompl : ''}`;
+    drawText(linhaEnd.substring(0, 48), { x: 16, yTop: 188, size: 8.5, font: fontBold });
+    drawText(`BAIRRO: ${destBairro}`, { x: 16, yTop: 199, size: 8, font: fontReg });
+    drawText(`${destCidade} - ${destUf}  |  CEP: ${cepFmt}`, { x: 16, yTop: 210, size: 8.5, font: fontBold });
+
+    const foneDest = item.telefone || destInfo.telefone || destInfo.celular || ped.telefone_destinatario || "";
+    if (foneDest) {
+      drawText(`CONTATO: ${foneDest}`, { x: 16, yTop: 221, size: 7.5, font: fontBold, color: rgb(0.1, 0.3, 0.7) });
+    }
+
+    // 5. BOX DE CANHOTO / ASSINATURA DE RECEBIMENTO
+    drawLine(8, 233, W - 8, 233, 0.8);
+    drawText("CANHOTO DE ENTREGA / RECEBIMENTO:", { x: 16, yTop: 238, size: 7, font: fontBold });
+    
+    drawText("RECEBEDOR:", { x: 16, yTop: 250, size: 6.5, font: fontBold });
+    drawLine(65, 256, W - 16, 256, 0.5);
+
+    drawText("DOC / RG:", { x: 16, yTop: 264, size: 6.5, font: fontBold });
+    drawLine(60, 270, 160, 270, 0.5);
+    drawText("DATA:", { x: 170, yTop: 264, size: 6.5, font: fontBold });
+    drawLine(195, 270, W - 16, 270, 0.5);
+
+    drawText("ASSINATURA:", { x: 16, yTop: 278, size: 6.5, font: fontBold });
+    drawLine(72, 286, W - 16, 286, 0.5);
+
+    // 6. REMETENTE
+    drawLine(8, 296, W - 8, 296, 0.8);
+    drawText("REMETENTE: COMUNIDADE CATOLICA SHALOM - DIACONIA", { x: 16, yTop: 302, size: 7, font: fontBold });
+    drawText("Estrada do Aquiraz, 501 - CE 040 KM 16 - Aquiraz/CE | CEP: 61700-000", { x: 16, yTop: 311, size: 6.2, font: fontReg });
+    drawText("CNPJ: 07.044.456/0003-64 | Telefone: (85) 3218-7800", { x: 16, yTop: 320, size: 6.2, font: fontReg });
+
+    // 7. RODAPÉ DE OBSERVAÇÃO
+    drawLine(8, 330, W - 8, 330, 0.8);
+    drawRect({ x: 8, yTop: 330, w: W - 16, h: H - 338, color: obsEntrega ? rgb(0.99, 0.95, 0.88) : rgb(0.96, 0.97, 0.98) });
+    if (obsEntrega) {
+      drawText("! ATENCAO: POSSUI OBSERVACOES ESPECIAIS (VER SLIP)", { x: 14, yTop: 338, size: 6.8, font: fontBold, color: rgb(0.8, 0.2, 0) });
+      drawText(obsEntrega.substring(0, 52), { x: 14, yTop: 349, size: 6.5, font: fontReg });
+    } else if (isTranslatino) {
+      drawText(`REDESPACHO TRANSLATINO: ${totalVols} VOLUME(S) LEVADOS POR SOUZA`, { x: 14, yTop: 342, size: 6.5, font: fontBold, color: rgb(0.08, 0.4, 0.6) });
+    } else {
+      drawText(`ENTREGA SOUZA - VOLUME ${volAtual} DE ${totalVols} - CONFERIR NF NO ATO`, { x: 14, yTop: 342, size: 6.8, font: fontBold, color: rgb(0.2, 0.2, 0.2) });
+    }
+  };
+
+  // Gerar cada volume solicitado
+  for (let v = 1; v <= totalVolumes; v++) {
+    await desenharPaginaVolume(v, totalVolumes);
   }
 
   // =========================================================================
@@ -1365,10 +1391,17 @@ function renderEtiquetasGeradas() {
     const destStr = e.destinatario || '-';
     const cidStr = e.cidadeUf || '-';
 
+    let badgeServ = '<span class="badge badge-info">' + servStr + '</span>';
+    if (servStr.includes("TRANSLATINO")) {
+      badgeServ = '<span class="badge" style="background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid #0284c7;">🚚 TRANSLATINO (Via Souza)</span>';
+    } else if (servStr.includes("SOUZA") || servStr.includes("ENTREGA_PROPRIA")) {
+      badgeServ = '<span class="badge" style="background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid #0284c7;">🚚 SOUZA</span>';
+    }
+
     return('<tr>' +
       '<td><input type="checkbox" class="chk-gerada" data-idx="' + idx + '" checked></td>' +
       '<td><strong>' + pedNfDisplay + '</strong></td>' +
-      '<td><span class="badge badge-info">' + servStr + '</span></td>' + 
+      '<td>' + badgeServ + '</td>' + 
       '<td>' + destStr + '</td>' + 
       '<td>' + cidStr + '</td>' + 
       '<td>' + 
@@ -1861,7 +1894,7 @@ async function obterPdfRotulo(item, btnElement = null) {
     }
   }
 
-  const isSouza = serv.includes("SOUZA") || serv.includes("ENTREGA_PROPRIA") || serv.includes("LOCAL") || (item.objeto && item.objeto.startsWith("SZ")) || idPre.startsWith("SOUZA_");
+  const isSouza = serv.includes("SOUZA") || serv.includes("ENTREGA_PROPRIA") || serv.includes("LOCAL") || serv.includes("TRANSLATINO") || (item.objeto && item.objeto.startsWith("SZ")) || idPre.startsWith("SOUZA_");
   const isModico = serv.includes("MODICO") || serv.includes("20133") || (item.objeto && item.objeto.startsWith("YD")) || idPre.startsWith("MODICO_");
 
   // Rótulo Dedicado Souza / Entrega Própria (Fortaleza e RMF)
@@ -2871,7 +2904,8 @@ async function emitirPedidoObjeto(ped, qtdEtiquetas = 1) {
     }
     return resultados;
   }
-  const isSouza = transpNorm === "SOUZA" || servico.includes("SOUZA") || servico.includes("ENTREGA_PROPRIA") || servico.includes("ENTREGA LOCAL");
+  const isTranslatino = transpNorm.includes("TRANSLATINO") || servico.includes("TRANSLATINO") || (ped.observacoes || "").toUpperCase().includes("TRANSLATINO");
+  const isSouza = transpNorm === "SOUZA" || servico.includes("SOUZA") || servico.includes("ENTREGA_PROPRIA") || servico.includes("ENTREGA LOCAL") || isTranslatino;
   const isModico = servico.includes("MODICO") || servico.includes("MÓDICO") || servico.includes("20133");
   const codigoServico = servico.includes("SEDEX") ? "03220" : (servico.includes("MINI") ? "04227" : (isModico ? "20133" : (isSouza ? "SOUZA" : "03298")));
 
@@ -2900,45 +2934,55 @@ async function emitirPedidoObjeto(ped, qtdEtiquetas = 1) {
     }
   };
 
-  const resultados = [];
   const totalEmitir = Math.max(1, parseInt(qtdEtiquetas, 10) || 1);
 
+  // REGRA SOUZA / TRANSLATINO: Gera APENAS 1 código de rastreio para o pedido, informando a quantidade de volumes/caixas
+  if (isSouza) {
+    const servicoFinal = isTranslatino ? "SOUZA_TRANSLATINO" : "ENTREGA_PROPRIA";
+    const obsBase = (ped.obs_entrega || ped.obs_venda || "").trim();
+    const obsVol = totalEmitir > 1 ? `${obsBase} [${totalEmitir} Volumes / Caixas]`.trim() : obsBase;
+
+    const resTurso = await fetch("/.netlify/functions/turso-db?action=save_prepostagem", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        pedido: payload.pedido,
+        numero_nf: payload.numero_nf,
+        chave_nfe: payload.chave_nfe,
+        destinatario: payload.destinatario.nome,
+        cpf_cnpj_destinatario: payload.destinatario.cpfCnpj,
+        cep: payload.destinatario.endereco.cep,
+        logradouro: payload.destinatario.endereco.logradouro,
+        numero: payload.destinatario.endereco.numero,
+        complemento: payload.destinatario.endereco.complemento,
+        bairro: payload.destinatario.endereco.bairro,
+        cidade: payload.destinatario.endereco.cidade,
+        uf: payload.destinatario.endereco.uf,
+        servico: servicoFinal,
+        obs_entrega: obsVol,
+        valor_frete: Number(ped.valor_frete || 11.50) || 11.50,
+        origem_postagem: isTranslatino ? "SOUZA_TRANSLATINO" : "SOUZA_LOCAL",
+        volumes: totalEmitir,
+        tipo_item: totalEmitir > 1 ? `${totalEmitir}_VOLUMES` : "PEDIDO",
+        status: "PRONTO"
+      })
+    });
+    const dataTurso = await safeFetchJson(resTurso);
+    if (!resTurso.ok || dataTurso.error) {
+      throw new Error(dataTurso.error || "Erro ao salvar Entrega Própria no Turso DB");
+    }
+    return [{
+      idPrePostagem: dataTurso.id_prepostagem || `SOUZA_${dataTurso.codigo_objeto}`,
+      codigoObjeto: dataTurso.codigo_objeto,
+      servico: servicoFinal,
+      volumes: totalEmitir
+    }];
+  }
+
+  const resultados = [];
+
   for (let i = 0; i < totalEmitir; i++) {
-    if (isSouza) {
-      // Entrega Própria Souza (Fortaleza/RMF): aloca range SZ sequencial exclusivo no Turso DB
-      const resTurso = await fetch("/.netlify/functions/turso-db?action=save_prepostagem", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pedido: payload.pedido,
-          numero_nf: payload.numero_nf,
-          chave_nfe: payload.chave_nfe,
-          destinatario: payload.destinatario.nome,
-          cpf_cnpj_destinatario: payload.destinatario.cpfCnpj,
-          cep: payload.destinatario.endereco.cep,
-          logradouro: payload.destinatario.endereco.logradouro,
-          numero: payload.destinatario.endereco.numero,
-          complemento: payload.destinatario.endereco.complemento,
-          bairro: payload.destinatario.endereco.bairro,
-          cidade: payload.destinatario.endereco.cidade,
-          uf: payload.destinatario.endereco.uf,
-          servico: "ENTREGA_PROPRIA",
-          obs_entrega: totalEmitir > 1 ? `${ped.obs_entrega || ped.obs_venda || ""} (Vol. ${i + 1}/${totalEmitir})`.trim() : (ped.obs_entrega || ped.obs_venda || ""),
-          valor_frete: Number(ped.valor_frete || 11.50) || 11.50,
-          origem_postagem: "SOUZA_LOCAL",
-          status: "PRONTO"
-        })
-      });
-      const dataTurso = await safeFetchJson(resTurso);
-      if (!resTurso.ok || dataTurso.error) {
-        throw new Error(dataTurso.error || "Erro ao salvar Entrega Própria no Turso DB");
-      }
-      resultados.push({
-        idPrePostagem: dataTurso.id_prepostagem || `SOUZA_${dataTurso.codigo_objeto}`,
-        codigoObjeto: dataTurso.codigo_objeto,
-        servico: "ENTREGA_PROPRIA"
-      });
-    } else if (isModico) {
+    if (isModico) {
       // Impresso Módico: salva diretamente no Turso DB (que aloca o range e calcula o DV SRO)
       const resTurso = await fetch("/.netlify/functions/turso-db?action=save_prepostagem", {
         method: "POST",
@@ -3190,6 +3234,9 @@ async function salvarEEmitirModal() {
   } else if (formaSel === "Entrega Local (Souza)") {
     ped.transportadora_normalizada = "SOUZA";
     ped.servico = "ENTREGA_PROPRIA";
+  } else if (formaSel === "Translatino (via Roberto Souza)" || formaSel.toUpperCase().includes("TRANSLATINO")) {
+    ped.transportadora_normalizada = "SOUZA";
+    ped.servico = "SOUZA_TRANSLATINO";
   } else if (formaSel === "Total Express") {
     ped.transportadora_normalizada = "TOTAL EXPRESS";
   } else if (formaSel === "J&T Express") {
@@ -3232,7 +3279,7 @@ async function executarCancelamentoItem(item, forcarLocal = false) {
     const ped = item.dadosPedido?.numero_pedido || item.pedido || "";
     const nf = item.nf || item.numero_nf || "";
     const isModico = serv.includes("MODICO") || serv.includes("MÓDICO") || idPre.startsWith("MODICO_");
-    const isSouza = serv.includes("SOUZA") || serv.includes("ENTREGA_PROPRIA") || serv.includes("ENTREGA LOCAL") || idPre.startsWith("SOUZA_") || obj.startsWith("SZ");
+    const isSouza = serv.includes("SOUZA") || serv.includes("ENTREGA_PROPRIA") || serv.includes("ENTREGA LOCAL") || serv.includes("TRANSLATINO") || idPre.startsWith("SOUZA_") || obj.startsWith("SZ");
 
     const params = new URLSearchParams({
       id: idPre,
