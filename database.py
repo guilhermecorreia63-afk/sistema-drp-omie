@@ -874,6 +874,81 @@ def salvar_lote_manual_db(sku: str, lote: int) -> bool:
         return False
 
 
+def obter_destaques_db() -> list[dict]:
+    """Carrega todos os produtos de destaque / lançamentos forçados do Turso DB."""
+    try:
+        df = executar_query("SELECT sku, nome, cd, matriz FROM drp_destaques ORDER BY rowid DESC")
+        if df is not None and not df.empty:
+            destaques = []
+            for _, r in df.iterrows():
+                destaques.append({
+                    "sku": str(r.get("sku", "")).strip(),
+                    "nome": str(r.get("nome", "") or "").strip(),
+                    "cd": bool(r.get("cd", 1)),
+                    "matriz": bool(r.get("matriz", 0))
+                })
+            return destaques
+    except Exception as e:
+        print(f"[DB] Erro ao carregar destaques do Turso: {e}")
+
+    # Fallback para o arquivo JSON local
+    json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'produtos_destaque_drp.json')
+    if os.path.exists(json_path):
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                raw = json.load(f)
+                return [
+                    {"sku": str(it).strip(), "nome": "", "cd": True, "matriz": False} if isinstance(it, str)
+                    else {"sku": str(it.get("sku", "")).strip(), "nome": str(it.get("nome", "")).strip(), "cd": bool(it.get("cd", True)), "matriz": bool(it.get("matriz", False))}
+                    for it in raw if it
+                ]
+        except Exception:
+            pass
+    return []
+
+
+def salvar_destaques_db(destaques_lista: list) -> bool:
+    """Salva a lista completa de destaques / lançamentos forçados no Turso DB e arquivo local."""
+    try:
+        executar_query("""
+            CREATE TABLE IF NOT EXISTS drp_destaques (
+                sku TEXT PRIMARY KEY,
+                nome TEXT,
+                cd INTEGER DEFAULT 1,
+                matriz INTEGER DEFAULT 0,
+                atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """, is_select=False)
+
+        executar_query("DELETE FROM drp_destaques", is_select=False)
+        batch = []
+        for it in destaques_lista:
+            sku = str(it.get("sku", "")).strip()
+            if not sku:
+                continue
+            nome = str(it.get("nome", "") or "").strip()
+            cd = 1 if it.get("cd", True) else 0
+            matriz = 1 if it.get("matriz", False) else 0
+            batch.append({
+                "query": "INSERT INTO drp_destaques (sku, nome, cd, matriz, atualizado_em) VALUES (:sku, :nome, :cd, :matriz, CURRENT_TIMESTAMP)",
+                "params": {"sku": sku, "nome": nome, "cd": cd, "matriz": matriz}
+            })
+        if batch:
+            executar_batch_query(batch)
+    except Exception as e:
+        print(f"[DB] Erro ao salvar destaques no Turso: {e}")
+
+    # Tenta salvar no JSON local se o filesystem permitir
+    try:
+        json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'produtos_destaque_drp.json')
+        os.makedirs(os.path.dirname(json_path), exist_ok=True)
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump(destaques_lista, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+    return True
+
+
 if __name__ == "__main__":
     inicializar_banco()
     print("✅ Banco DRP inicializado com sucesso!")

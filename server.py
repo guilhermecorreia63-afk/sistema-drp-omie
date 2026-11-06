@@ -830,24 +830,27 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(json.dumps(response_payload, ensure_ascii=False).encode('utf-8'))
 
     def handle_api_destaques_get(self):
-        json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'produtos_destaque_drp.json')
         destaques = []
-        if os.path.exists(json_path):
-            try:
-                with open(json_path, 'r', encoding='utf-8') as f:
-                    raw = json.load(f)
-                    for item in raw:
-                        if isinstance(item, str):
-                            destaques.append({"sku": str(item).strip(), "nome": "", "cd": True, "matriz": False})
-                        elif isinstance(item, dict) and item.get("sku"):
-                            destaques.append({
-                                "sku": str(item["sku"]).strip(),
-                                "nome": str(item.get("nome") or "").strip(),
-                                "cd": bool(item.get("cd", True)),
-                                "matriz": bool(item.get("matriz", False))
-                            })
-            except Exception:
-                destaques = []
+        if db and hasattr(db, 'obter_destaques_db'):
+            destaques = db.obter_destaques_db()
+        else:
+            json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'produtos_destaque_drp.json')
+            if os.path.exists(json_path):
+                try:
+                    with open(json_path, 'r', encoding='utf-8') as f:
+                        raw = json.load(f)
+                        for item in raw:
+                            if isinstance(item, str):
+                                destaques.append({"sku": str(item).strip(), "nome": "", "cd": True, "matriz": False})
+                            elif isinstance(item, dict) and item.get("sku"):
+                                destaques.append({
+                                    "sku": str(item["sku"]).strip(),
+                                    "nome": str(item.get("nome") or "").strip(),
+                                    "cd": bool(item.get("cd", True)),
+                                    "matriz": bool(item.get("matriz", False))
+                                })
+                except Exception:
+                    destaques = []
         response_payload = {
             "success": True,
             "destaques": destaques
@@ -939,12 +942,15 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                         "cd": bool(it.get("cd", True)),
                         "matriz": bool(it.get("matriz", False))
                     })
-        json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'produtos_destaque_drp.json')
-        try:
-            with open(json_path, 'w', encoding='utf-8') as f:
-                json.dump(destaques_clean, f, ensure_ascii=False, indent=2)
-        except Exception as e:
-            print(f"[API SERVER] Erro ao salvar produtos_destaque_drp.json: {e}")
+        if db and hasattr(db, 'salvar_destaques_db'):
+            db.salvar_destaques_db(destaques_clean)
+        else:
+            json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'produtos_destaque_drp.json')
+            try:
+                with open(json_path, 'w', encoding='utf-8') as f:
+                    json.dump(destaques_clean, f, ensure_ascii=False, indent=2)
+            except Exception as e:
+                print(f"[API SERVER] Erro ao salvar produtos_destaque_drp.json: {e}")
         response_payload = {
             "success": True,
             "message": f"Lista de lançamentos forçados salva com sucesso ({len(destaques_clean)} itens).",
@@ -1376,14 +1382,16 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         try:
             # A. Sincronização seletiva Omie / Turso (Atualiza estoque primeiro)
             is_serverless = bool(os.getenv('VERCEL') or os.getenv('AWS_LAMBDA_FUNCTION_NAME'))
-            if not is_serverless:
+            try:
                 import sync_service
-                ok_sync, msg_sync, count_sync = sync_service.sincronizar_dados_seletivo("TUDO")
+                sync_mode = "AMBOS_ESTOQUES" if is_serverless else "TUDO"
+                ok_sync, msg_sync, count_sync = sync_service.sincronizar_dados_seletivo(sync_mode)
                 if db:
                     db.carregar_produtos_cache(force_refresh=True)
-                print(f"[CRON API] Sync de estoque finalizado: ok={ok_sync}, msg={msg_sync}, prods={count_sync}", flush=True)
-            else:
-                ok_sync, msg_sync, count_sync = True, "Ambiente Vercel: Alerta gerado a partir do Turso Cloud DB atualizado.", len(db.carregar_produtos_cache()) if db else 0
+                print(f"[CRON API] Sync de estoque finalizado ({sync_mode}): ok={ok_sync}, msg={msg_sync}, prods={count_sync}", flush=True)
+            except Exception as e_sync:
+                print(f"[CRON API] Erro sync cron: {e_sync}", flush=True)
+                ok_sync, msg_sync, count_sync = False, str(e_sync), len(db.carregar_produtos_cache()) if db else 0
 
             # B. Disparo do e-mail de alerta automático com dados atualizados
             import alertas_email
