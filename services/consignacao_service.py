@@ -403,6 +403,22 @@ class ConsignacaoService:
                         desc = prod_info.get('nome') or prod_info.get('descricao') or desc
                     if val_unit <= 0:
                         val_unit = float(prod_info.get('valor_unitario') or 0.0)
+                else:
+                    # Fallback em tempo real: busca direta no Omie se produto não constar no cache estático do Turso
+                    try:
+                        res_p = self.client.executar("geral/produtos/", "ConsultarProduto", [{"codigo_produto": ncod}])
+                        if res_p and "codigo_produto" in res_p:
+                            sku = str(res_p.get("codigo") or res_p.get("codigo_produto_integracao") or sku).strip()
+                            desc = str(res_p.get("descricao") or desc).strip()
+                            if val_unit <= 0:
+                                val_unit = float(res_p.get("valor_unitario") or 0.0)
+                            # Atualiza cache em memória para não repetir requisições
+                            prod_dinamico = {"codigo": sku, "sku": sku, "nome": desc, "descricao": desc, "id_produto": ncod, "valor_unitario": val_unit, "familia": ""}
+                            cache['by_id'][ncod] = prod_dinamico
+                            if sku:
+                                cache['by_sku'][sku] = prod_dinamico
+                    except Exception as err_p:
+                        print(f"[CONSIGNACAO] Aviso ao buscar dados do produto {ncod} no Omie: {err_p}")
 
                 # Desconto sugerido pela Política Comercial Oficial de Famílias
                 try:
@@ -430,9 +446,8 @@ class ConsignacaoService:
                 itens_agrupados[chave]["qtd_enviada"] += qtd
                 itens_agrupados[chave]["remessas_origem"][num_rem] = itens_agrupados[chave]["remessas_origem"].get(num_rem, 0) + qtd
 
-        # Converte para lista ordenada por descrição
+        # Converte para lista mantendo a ordem exata de inserção na remessa original do Omie
         lista_final = list(itens_agrupados.values())
-        lista_final.sort(key=lambda x: str(x.get("descricao") or x.get("sku") or "").upper())
 
         return {
             "remessas": remessas_info,
@@ -873,7 +888,7 @@ class ConsignacaoService:
             except Exception:
                 pass
 
-        sql_itens = "SELECT * FROM consignacao_acerto_itens WHERE acerto_id = :id ORDER BY descricao ASC"
+        sql_itens = "SELECT * FROM consignacao_acerto_itens WHERE acerto_id = :id ORDER BY id ASC"
         df_itens = db.executar_query(sql_itens, {"id": rec_id})
         rows_itens = _df_to_records(df_itens)
         cache = self._carregar_produtos_cache()
