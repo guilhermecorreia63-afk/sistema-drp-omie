@@ -6608,7 +6608,21 @@ async function unificarRemessasSelecionadas() {
 
         const resultado = data.data;
         stateConsignacao.remessasSelecionadas = resultado.remessas || [];
-        stateConsignacao.itensUnificados = resultado.itens || [];
+        stateConsignacao.itensUnificados = (resultado.itens || []).map(it => {
+            const sku = String(it.sku || '').trim();
+            const ncod = parseInt(it.codigo_produto_omie || it.codigo_produto || 0);
+            const pCat = (state.produtos || []).find(p => 
+                String(p.sku || '').trim() === sku || 
+                String(p.codigo || '').trim() === sku || 
+                (ncod && p.id_produto == ncod)
+            );
+            const eanProd = it.ean || it.codigo_barras || (pCat ? (pCat.ean || pCat.codigo_barras || '') : '');
+            return {
+                ...it,
+                ean: eanProd,
+                codigo_barras: eanProd
+            };
+        });
         stateConsignacao.statusAcerto = 'EM_CONFERENCIA';
         stateConsignacao.codigoAcerto = `AC-${new Date().toISOString().replace(/\D/g, '').substring(0, 14)}`;
 
@@ -6734,7 +6748,7 @@ function processarBipagemItem(codigoBipado) {
 
     const termo = String(codigoBipado || '').trim().toUpperCase();
     const termoSemZero = termo.replace(/^0+/, '');
-    const it = stateConsignacao.itensUnificados.find(x => {
+    let it = stateConsignacao.itensUnificados.find(x => {
         const sku = String(x.sku || '').toUpperCase();
         const pid = String(x.codigo_produto || '');
         const ean = String(x.ean || x.codigo_barras || '').toUpperCase();
@@ -6742,6 +6756,30 @@ function processarBipagemItem(codigoBipado) {
         if (termoSemZero && (sku.replace(/^0+/, '') === termoSemZero || pid === termoSemZero || (ean && ean.replace(/^0+/, '') === termoSemZero))) return true;
         return false;
     });
+
+    // Fallback inteligente: se não encontrou diretamente no item, busca no catálogo global pelo EAN/código
+    if (!it && Array.isArray(state.produtos)) {
+        const prodCat = state.produtos.find(p => {
+            const pSku = String(p.sku || p.codigo || '').toUpperCase();
+            const pEan = String(p.ean || p.codigo_barras || '').toUpperCase();
+            const pId = String(p.id_produto || '');
+            if (pSku === termo || pEan === termo || pId === termo) return true;
+            if (termoSemZero && (pSku.replace(/^0+/, '') === termoSemZero || (pEan && pEan.replace(/^0+/, '') === termoSemZero) || pId === termoSemZero)) return true;
+            return false;
+        });
+        if (prodCat) {
+            const prodSku = String(prodCat.sku || prodCat.codigo || '').toUpperCase();
+            const prodId = String(prodCat.id_produto || '');
+            it = stateConsignacao.itensUnificados.find(x => {
+                const xSku = String(x.sku || '').toUpperCase();
+                const xPid = String(x.codigo_produto || '');
+                return xSku === prodSku || (prodId && xPid === prodId);
+            });
+            if (it && !it.ean) {
+                it.ean = prodCat.ean || prodCat.codigo_barras || termo;
+            }
+        }
+    }
 
     if (!it) {
         // Toca alerta sonoro de não encontrado
@@ -7327,11 +7365,14 @@ async function carregarAcertoSalvo(acertoId) {
             if (typeof remsOrig === 'string') {
                 try { remsOrig = JSON.parse(remsOrig); } catch(e) { remsOrig = {}; }
             }
+            const eanProd = it.ean || it.codigo_barras || (pCat ? (pCat.ean || pCat.codigo_barras || '') : '');
             return {
                 sku: sku,
                 codigo_produto: ncod,
                 descricao: it.descricao || (pCat ? pCat.nome : ''),
                 familia: fam,
+                ean: eanProd,
+                codigo_barras: eanProd,
                 qtd_enviada: parseInt(it.qtd_enviada) || 0,
                 qtd_retorno: parseInt(it.qtd_retorno) || 0,
                 qtd_vendida: parseInt(it.qtd_vendida) || 0,
@@ -8414,7 +8455,113 @@ function abrirModalRemessaParoquia(linhaPlanilha) {
 
 function fecharModalParoquia() {
     document.getElementById('modal-remessa-paroquia').classList.remove('active');
+    const frenetDiv = document.getElementById('modal-paroquia-frenet-opcoes');
+    if (frenetDiv) {
+        frenetDiv.style.display = 'none';
+        frenetDiv.innerHTML = '';
+    }
     window.paroquiaSelecionadaParaRemessa = null;
+}
+
+async function cotarFreteFrenetParoquia() {
+    const cliente = window.paroquiaSelecionadaParaRemessa;
+    if (!cliente) return;
+
+    const frenetDiv = document.getElementById('modal-paroquia-frenet-opcoes');
+    if (!frenetDiv) return;
+
+    const cep = String(cliente.cep_limpo || cliente.cep || '').replace(/\D/g, '');
+    if (!cep || cep.length !== 8) {
+        alert('CEP de destino inválido ou incompleto: ' + (cliente.cep || 'não informado'));
+        return;
+    }
+
+    const qJan = parseInt(cliente.qtd_jan27 || 0);
+    const qFev = parseInt(cliente.qtd_fev27 || 0);
+    const qMar = parseInt(cliente.qtd_mar27 || 0);
+    const totalPecas = qJan + qFev + qMar;
+    const pesoKg = Math.max(0.3, +(totalPecas * 0.100).toFixed(2));
+    const valorItens = Math.max(10.0, +(totalPecas * 7.50).toFixed(2));
+
+    const inpCxManual = document.getElementById('input-qtd-caixas-paroquia');
+    const caixasManual = parseInt(inpCxManual?.value || 0);
+    const paramCaixas = caixasManual > 0 ? `&caixas=${caixasManual}` : '';
+
+    const descCaixasAviso = caixasManual > 0 ? `${caixasManual} caixa(s) manual` : 'limite 18kg/cx';
+    frenetDiv.style.display = 'block';
+    frenetDiv.innerHTML = `<span style="color: #38bdf8;"><i class="fa-solid fa-spinner fa-spin"></i> Cotando opções de frete na Frenet para ${totalPecas} exemplares (${pesoKg} kg - ${descCaixasAviso})...</span>`;
+
+    try {
+        const resp = await fetch(`/api/frenet/cotar?cep=${encodeURIComponent(cep)}&peso=${pesoKg}&valor=${valorItens}&modo=paroquia${paramCaixas}`);
+        const data = await resp.json();
+
+        if (resp.ok && data.disponivel && data.cotacoes && data.cotacoes.length > 0) {
+            const numCx = data.num_caixas || 1;
+            frenetDiv.innerHTML = `
+                <div style="font-weight: 700; color: #34d399; margin-bottom: 6px; font-size: 0.82rem; display: flex; justify-content: space-between;">
+                    <span>🚚 Melhores Opções Encontradas (${numCx} caixa(s)):</span>
+                    <span style="color: #94a3b8; font-size: 0.75rem;">Clique para aplicar</span>
+                </div>
+                <div style="display: flex; gap: 8px; flex-direction: column;">
+                    ${data.cotacoes.map((c, idx) => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 4px; padding: 6px 10px;">
+                            <div>
+                                <strong style="color: #38bdf8; font-size: 0.85rem;">${c.transportadora}</strong>
+                                <span style="color: #cbd5e1; font-size: 0.78rem; margin-left: 6px;">${c.servico}</span>
+                                <div style="color: #94a3b8; font-size: 0.72rem;">Prazo estimado: ${c.prazo_dias} dia(s) úteis</div>
+                            </div>
+                            <button type="button" onclick="aplicarFreteParoquiaDetalhado(${idx})" class="btn btn-sm" style="background: linear-gradient(135deg, #10b981, #059669); border: none; color: white; font-weight: 700; padding: 4px 12px; font-size: 0.8rem; border-radius: 4px; cursor: pointer;">
+                                R$ ${c.valor.toFixed(2).replace('.', ',')}
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            window._ultimaCotacaoParoquiaFrenet = data;
+        } else {
+            frenetDiv.innerHTML = `<span style="color: #fbbf24;">ℹ️ ${data.message || 'Nenhuma cotação retornada pela Frenet para este CEP.'}</span>`;
+        }
+    } catch (e) {
+        frenetDiv.innerHTML = `<span style="color: #f87171;">❌ Erro de comunicação com Frenet: ${e.message}</span>`;
+    }
+}
+
+function aplicarFreteParoquiaDetalhado(idx) {
+    const data = window._ultimaCotacaoParoquiaFrenet;
+    if (!data || !data.cotacoes || !data.cotacoes[idx]) return;
+    const c = data.cotacoes[idx];
+
+    const inpFrete = document.getElementById('modal-paroquia-frete');
+    if (inpFrete) inpFrete.value = c.valor.toFixed(2);
+
+    const descTransp = `${c.transportadora} - ${c.servico}`;
+    const inpTransp = document.getElementById('modal-paroquia-transp');
+    if (inpTransp) inpTransp.value = descTransp;
+
+    const obsFrete = document.getElementById('modal-paroquia-frete-obs');
+    if (obsFrete) {
+        obsFrete.innerHTML = `<strong style="color: #34d399;">Cotação Selecionada:</strong> ${descTransp} = R$ ${c.valor.toFixed(2).replace('.', ',')} (${c.caixas} caixa(s))`;
+    }
+
+    window._cotacaoSelecionadaParoquia = {
+        transportadora: c.transportadora,
+        servico: c.servico,
+        valor_total: c.valor,
+        valor_unit_caixa: c.valor_unit_caixa || c.valor,
+        caixas: c.caixas || 1,
+        tipo_calculo: c.tipo_calculo || 'POR_CAIXA'
+    };
+}
+
+function aplicarFreteParoquia(valor, descTransp) {
+    const inpFrete = document.getElementById('modal-paroquia-frete');
+    if (inpFrete) inpFrete.value = valor.toFixed(2);
+    const inpTransp = document.getElementById('modal-paroquia-transp');
+    if (inpTransp) inpTransp.value = descTransp;
+    const obsFrete = document.getElementById('modal-paroquia-frete-obs');
+    if (obsFrete) {
+        obsFrete.innerHTML = `<strong style="color: #34d399;">Cotação Selecionada:</strong> ${descTransp} = R$ ${valor.toFixed(2).replace('.', ',')}`;
+    }
 }
 
 async function executarDisparoParoquiaOmie() {
@@ -8424,6 +8571,7 @@ async function executarDisparoParoquiaOmie() {
     const btn = document.getElementById('btn-confirmar-disparo-paroquia');
     const stDiv = document.getElementById('modal-paroquia-status');
     const freteVal = document.getElementById('modal-paroquia-frete').value;
+    const cotacaoDetalhes = window._cotacaoSelecionadaParoquia || null;
 
     try {
         btn.disabled = true;
@@ -8438,7 +8586,8 @@ async function executarDisparoParoquiaOmie() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 cliente: cliente,
-                valor_frete: freteVal ? parseFloat(freteVal) : 0
+                valor_frete: freteVal ? parseFloat(freteVal) : 0,
+                cotacao_detalhes: cotacaoDetalhes
             })
         });
         const res = await resp.json();
@@ -8446,12 +8595,13 @@ async function executarDisparoParoquiaOmie() {
         if (res.sucesso) {
             stDiv.style.background = 'rgba(16, 185, 129, 0.2)';
             stDiv.style.color = '#10b981';
+            const msgCaixas = res.total_caixas > 1 ? ` (${res.total_caixas} Remessas divididas por caixa)` : '';
             stDiv.innerHTML = `
-                <div style="font-weight: bold; font-size: 1rem;"><i class="fa-solid fa-circle-check"></i> Remessa de Paróquia nº ${res.numero_remessa} emitida com sucesso!</div>
-                <div style="margin-top: 4px; font-size: 0.85rem;">Código Omie: ${res.codigo_remessa} | Cliente Omie ID: ${res.codigo_cliente_omie}</div>
-                <div style="margin-top: 4px; color: #94a3b8; font-size: 0.8rem;">CFOP: ${res.cfop} | Peças: ${res.total_pecas} un | Frete: R$ ${parseFloat(freteVal || 0).toFixed(2)}</div>
+                <div style="font-weight: bold; font-size: 1rem;"><i class="fa-solid fa-circle-check"></i> ${res.mensagem || ('Remessa de Paróquia nº ' + res.numero_remessa + ' emitida com sucesso!')}</div>
+                <div style="margin-top: 4px; font-size: 0.85rem;">Remessa(s) Omie: <strong>${res.numero_remessa}</strong>${msgCaixas}</div>
+                <div style="margin-top: 4px; color: #cbd5e1; font-size: 0.8rem;">Cliente Omie ID: ${res.codigo_cliente_omie} | CFOP: ${res.cfop} | Peças: ${res.total_pecas} un | Frete Total: R$ ${parseFloat(res.valor_frete || freteVal || 0).toFixed(2)}</div>
             `;
-            btn.innerHTML = '<i class="fa-solid fa-check-double"></i> Remessa Emitida!';
+            btn.innerHTML = '<i class="fa-solid fa-check-double"></i> Remessa(s) Emitida(s)!';
         } else {
             throw new Error(res.erro || 'Falha ao incluir remessa no Omie.');
         }
@@ -12191,7 +12341,242 @@ async function editarContatoAssinantePrompt(cpf, nome, telAtual, emailAtual) {
     }
 }
 
+// =========================================================================
+// MÓDULO 2: CLONAGEM E CRIAÇÃO DE NOVA REMESSA BASEADA NA ANTERIOR
+// =========================================================================
+let stateClonagemRemessa = {
+    itens: [],
+    cliente: null,
+    remessaOrigem: null
+};
+
+function abrirModalClonarRemessa() {
+    if (!stateConsignacao.itensUnificados || stateConsignacao.itensUnificados.length === 0) {
+        alert('Nenhum item carregado na conferência atual para clonar.');
+        return;
+    }
+
+    stateClonagemRemessa.cliente = stateConsignacao.clienteAtual;
+    stateClonagemRemessa.remessaOrigem = (stateConsignacao.remessasSelecionadas && stateConsignacao.remessasSelecionadas[0]) || null;
+    
+    // Clona os itens da conferência para o estado de edição da nova remessa
+    stateClonagemRemessa.itens = stateConsignacao.itensUnificados.map(it => {
+        // Sugestão de quantidade padrão para a nova remessa: mantém a quantidade enviada original
+        const qtdSugerida = it.qtd_enviada > 0 ? it.qtd_enviada : 10;
+        return {
+            sku: String(it.sku || '').trim(),
+            codigo_produto: it.codigo_produto || 0,
+            descricao: it.descricao || '',
+            familia: it.familia || '',
+            preco_unitario: parseFloat(it.preco_unitario) || 0.0,
+            quantidade: qtdSugerida,
+            ean: it.ean || it.codigo_barras || ''
+        };
+    });
+
+    const modal = document.getElementById('modal-clonar-remessa');
+    if (modal) modal.style.display = 'block';
+
+    renderizarTabelaClonagemRemessa();
+    setTimeout(() => {
+        const inp = document.getElementById('input-bip-adicionar-clonagem');
+        if (inp) inp.focus();
+    }, 150);
+}
+
+function fecharModalClonarRemessa() {
+    const modal = document.getElementById('modal-clonar-remessa');
+    if (modal) modal.style.display = 'none';
+}
+
+function renderizarTabelaClonagemRemessa() {
+    const tbody = document.getElementById('tbody-itens-clonagem-remessa');
+    if (!tbody) return;
+
+    if (stateClonagemRemessa.itens.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #94a3b8; padding: 20px;">Nenhum produto na nova remessa. Adicione novos itens acima ou bipe o leitor.</td></tr>';
+        atualizarTotaisClonagemRemessa();
+        return;
+    }
+
+    tbody.innerHTML = stateClonagemRemessa.itens.map((it, idx) => {
+        const subtotal = it.quantidade * it.preco_unitario;
+        return `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 8px 10px; font-weight: 700; color: #38bdf8;">${it.sku}</td>
+                <td style="padding: 8px 10px; color: #e2e8f0;">
+                    <div>${it.descricao}</div>
+                    ${it.familia ? `<span style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase;">🏷️ ${it.familia}</span>` : ''}
+                </td>
+                <td style="padding: 8px 10px; text-align: center;">
+                    <input type="number" min="1" value="${it.quantidade}" 
+                           onchange="atualizarQtdItemClonagem(${idx}, this.value)"
+                           style="width: 75px; background: #1e293b; border: 1px solid #475569; color: white; padding: 4px 6px; border-radius: 4px; text-align: center; font-weight: 700;">
+                </td>
+                <td style="padding: 8px 10px; text-align: right; color: #cbd5e1;">R$ ${it.preco_unitario.toFixed(2).replace('.', ',')}</td>
+                <td style="padding: 8px 10px; text-align: right; font-weight: 700; color: #34d399;">R$ ${subtotal.toFixed(2).replace('.', ',')}</td>
+                <td style="padding: 8px 10px; text-align: center;">
+                    <button type="button" class="btn btn-sm" onclick="removerItemClonagem(${idx})" title="Remover item fora de época ou sazonal" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #ef4444; padding: 4px 8px; border-radius: 4px; cursor: pointer;">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    atualizarTotaisClonagemRemessa();
+}
+
+function atualizarQtdItemClonagem(idx, novaQtd) {
+    const q = parseInt(novaQtd) || 1;
+    if (stateClonagemRemessa.itens[idx]) {
+        stateClonagemRemessa.itens[idx].quantidade = Math.max(1, q);
+        renderizarTabelaClonagemRemessa();
+    }
+}
+
+function removerItemClonagem(idx) {
+    if (stateClonagemRemessa.itens[idx]) {
+        stateClonagemRemessa.itens.splice(idx, 1);
+        renderizarTabelaClonagemRemessa();
+    }
+}
+
+function adicionarItemClonagemManual() {
+    const inputTermo = document.getElementById('input-bip-adicionar-clonagem');
+    const inputQtd = document.getElementById('input-qtd-adicionar-clonagem');
+    const termo = (inputTermo?.value || '').trim().toUpperCase();
+    const qtd = parseInt(inputQtd?.value || 10) || 10;
+
+    if (!termo) return;
+
+    const termoSemZero = termo.replace(/^0+/, '');
+    const pCat = (state.produtos || []).find(p => {
+        const sku = String(p.sku || p.codigo || '').toUpperCase();
+        const ean = String(p.ean || p.codigo_barras || '').toUpperCase();
+        const pid = String(p.id_produto || '');
+        if (sku === termo || ean === termo || pid === termo) return true;
+        if (termoSemZero && (sku.replace(/^0+/, '') === termoSemZero || (ean && ean.replace(/^0+/, '') === termoSemZero) || pid === termoSemZero)) return true;
+        return false;
+    });
+
+    if (!pCat) {
+        alert(`Produto "${termo}" não encontrado no catálogo geral.`);
+        return;
+    }
+
+    const skuFinal = pCat.sku || pCat.codigo;
+    // Se o item já estiver na lista, apenas soma a quantidade
+    const existente = stateClonagemRemessa.itens.find(it => it.sku === skuFinal);
+    if (existente) {
+        existente.quantidade += qtd;
+    } else {
+        stateClonagemRemessa.itens.unshift({
+            sku: skuFinal,
+            codigo_produto: pCat.id_produto || 0,
+            descricao: pCat.nome || pCat.descricao || '',
+            familia: pCat.familia || 'DIVERSOS',
+            preco_unitario: parseFloat(pCat.valor_unitario) || 0.0,
+            quantidade: qtd,
+            ean: pCat.ean || pCat.codigo_barras || ''
+        });
+    }
+
+    inputTermo.value = '';
+    inputTermo.focus();
+    renderizarTabelaClonagemRemessa();
+}
+
+function atualizarTotaisClonagemRemessa() {
+    let totPecas = 0;
+    let totValor = 0;
+    stateClonagemRemessa.itens.forEach(it => {
+        totPecas += it.quantidade;
+        totValor += (it.quantidade * it.preco_unitario);
+    });
+
+    const lblPecas = document.getElementById('lbl-total-itens-clonagem');
+    const lblVal = document.getElementById('lbl-valor-total-clonagem');
+    if (lblPecas) lblPecas.textContent = `${totPecas} peças`;
+    if (lblVal) lblVal.textContent = `R$ ${totValor.toFixed(2).replace('.', ',')}`;
+}
+
+async function confirmarGeracaoNovaRemessaOmie() {
+    if (stateClonagemRemessa.itens.length === 0) {
+        alert('A remessa precisa conter ao menos um produto.');
+        return;
+    }
+
+    const cli = stateClonagemRemessa.cliente || {};
+    const codCliente = cli.codigo_cliente || 0;
+    const nomeCliente = cli.nome_fantasia || cli.razao_social || 'Consignatário';
+
+    if (!codCliente) {
+        alert('Erro: Código do cliente não identificado.');
+        return;
+    }
+
+    const conf = confirm(`Deseja realmente gerar a Nova Remessa no Omie ERP para "${nomeCliente}" com ${stateClonagemRemessa.itens.length} itens?`);
+    if (!conf) return;
+
+    const btn = document.getElementById('btn-confirmar-gerar-nova-remessa');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gerando Remessa no Omie...';
+    }
+
+    try {
+        const payload = {
+            codigo_cliente_omie: codCliente,
+            cliente_nome: nomeCliente,
+            itens: stateClonagemRemessa.itens.map(it => ({
+                codigo_produto_omie: it.codigo_produto,
+                sku: it.sku,
+                descricao: it.descricao,
+                quantidade: it.quantidade,
+                valor_unitario: it.preco_unitario
+            }))
+        };
+
+        const resp = await fetch('/api/consignacao/gerar_remessa_clonada', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const res = await resp.json();
+        if (res.sucesso) {
+            alert(`✅ Nova Remessa criada com sucesso no Omie ERP!\nNúmero: ${res.numero_remessa || res.codigo_remessa}\n\nVocê já pode localizá-la na lista de remessas ativas.`);
+            fecharModalClonarRemessa();
+            if (typeof carregarRemessasConsignacao === 'function') {
+                carregarRemessasConsignacao();
+            }
+        } else {
+            alert(`❌ Erro ao criar remessa no Omie: ${res.erro || res.mensagem || 'Falha na API'}`);
+        }
+    } catch (e) {
+        alert('Erro de conexão ao comunicar com o servidor: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Emitir Nova Remessa no Omie';
+        }
+    }
+}
+
 // Exportações globais
+window.abrirModalClonarRemessa = abrirModalClonarRemessa;
+window.fecharModalClonarRemessa = fecharModalClonarRemessa;
+window.renderizarTabelaClonagemRemessa = renderizarTabelaClonagemRemessa;
+window.atualizarQtdItemClonagem = atualizarQtdItemClonagem;
+window.removerItemClonagem = removerItemClonagem;
+window.adicionarItemClonagemManual = adicionarItemClonagemManual;
+window.confirmarGeracaoNovaRemessaOmie = confirmarGeracaoNovaRemessaOmie;
+window.cotarFreteFrenetParoquia = cotarFreteFrenetParoquia;
+window.aplicarFreteParoquia = aplicarFreteParoquia;
+window.aplicarFreteParoquiaDetalhado = aplicarFreteParoquiaDetalhado;
+
+// Exportações globais existentes
 window.verificarAutenticacaoApp = verificarAutenticacaoApp;
 window.abrirModalLoginApp = abrirModalLoginApp;
 window.fecharModalLoginApp = fecharModalLoginApp;

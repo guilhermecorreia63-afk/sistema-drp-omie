@@ -31,7 +31,7 @@ Projeto omie/
 │   ├── omie_client.py         # Cliente de API e chamadas RPC do Omie ERP
 │   ├── correios_hub_service.py# Hub logístico: expedições, pré-postagens, listas/PLP, SRO
 │   ├── frenet_service.py      # Integração de cotação de fretes via Frenet API
-│   ├── jt_express_service.py  # Serviço de despacho e cotação J&T Express
+│   ├── jt_express_service.py  # Criação/cancelamento/rastreio J&T; cotação vem da Frenet
 │   ├── total_express_service.py # Serviço e banco local da Total Express
 │   ├── portal_postal_service.py # Integração com AGF / Portal Postal
 │   ├── assinaturas_*.py       # Regras e gestão de ciclos de assinantes
@@ -113,3 +113,26 @@ Para manter o projeto limpo, seguro e sustentável, siga rigorosamente as diretr
 1. Ambos os assistentes operam diretamente nesta mesma árvore de diretórios.
 2. Antes de iniciar qualquer alteração, confira a existência e o conteúdo real dos arquivos no disco.
 3. Respeite as pastas `services/`, `data/`, `reports/` e `scripts/maintenance/` para que o repositório permaneça organizado e profissional.
+
+## Estado verificado da J&T (09/11/2026)
+
+- O serviço implementa `order/addOrder`, `order/cancelOrder` e `logistics/trace`. Em 10/11/2026 foi adicionada a consulta `order/getOrders`, com `serialNumber[]` e `command=1`, conforme a captura fornecida pelo usuário.
+- A rota local de consulta é `/.netlify/functions/jt-express?action=trace`, com `billCode`. Usar sempre a ação explícita: a ação padrão da rota é criação de pedido.
+- O ambiente configurado foi verificado como homologação. Presença de variáveis não comprova autenticação aceita pela API. Não imprimir valores de configuração nem assinaturas de requisições reais.
+- A consulta SELECT encontrou zero pré-postagens ativas J&T na tabela `prepostagens`; faltou um código real para testar o rastreamento externo.
+- A seleção J&T na emissão da interface ainda não estava ligada ao serviço específico. Foi adicionada proteção para não despachar esse pedido indevidamente pela rota Correios. Não habilitar a emissão antes de concluir persistência, etiqueta, duplicidade e validações específicas.
+- O serviço não implementa consulta de frete faturado. Os valores J&T do levantamento das Liturgias são cotações Frenet, não comprovantes de pagamento.
+- Auditoria read-only: `python scripts/maintenance/auditar_jt_consultas.py`. A opção `--cotar-amostra-frenet` consulta uma cotação atual. `--bill-code` permite consultar um rastreio existente, sem criar pedido.
+- Testes offline: `python -m unittest discover -s scripts/maintenance -p test_jt_consultas.py -v`.
+- Diagnóstico local em `reports/jt_diagnostico/consultas_somente_leitura.json`; não publicar relatórios com informações operacionais sem revisão.
+- Teste real de 10/11/2026: `order/getOrders` no ambiente de homologação respondeu HTTP 200, código `1`, mas `data: []` para o identificador de exemplo. Consulta aceita não significa pedido localizado nem emissão/rastreio homologados.
+- Rota de consulta de pedido: `/.netlify/functions/jt-express?action=getOrders`. O script `scripts/maintenance/testar_jt_homologacao.py --serial-number IDENTIFICADOR` recusa produção, não cria/cancela pedidos e só tenta rastrear códigos de envio retornados pela consulta ou fornecidos explicitamente. Com `--reusar-consulta`, usa apenas o relatório local anterior.
+- Relatório desta tentativa: `reports/jt_diagnostico/RELATORIO_HOMOLOGACAO.md` e `homologacao_pedido_rastreio.json`, com dados sensíveis removidos.
+- Rastreio isolado de homologação: `python scripts/maintenance/testar_jt_homologacao.py --bill-code CODIGO`, sem precisar consultar pedido. A opção pode ser repetida até três vezes. Os três códigos da captura `/mock/logistics/trace` foram consultados em 10/11/2026 e retornaram `billcodes not exist`; resultado salvo em `reports/jt_diagnostico/homologacao_rastreios.json`, sem inventar eventos do mock.
+- PDFs analisados em 10/11/2026 confirmam cotação direta `spmComCost/getComCostAndTime`. O método `cotar_frete()` e a ação local `jt-express?action=quote` preservam preço base, risco e total sem dupla contagem. No demo a consulta retornou custo/prazo zero; isso não foi considerado frete grátis ou preço comercial validado.
+- Houve uma tentativa explicitamente autorizada de criar pedido no demo: código `145003050`, `Illegal parameters`, sem código de envio. Produção não foi chamada. `scripts/maintenance/executar_ciclo_jt_demo.py` mantém checkpoint para não repetir criação após recusa/timeout; `--somente-relatorio` não chama APIs. Não apagar o checkpoint para forçar outra criação sem revisar o retorno e a documentação completa.
+- Resultado e rascunho de e-mail em `reports/jt_diagnostico/ciclo_criacao_cotacao_demo.json` e `EMAIL_SUPORTE_JT.md`; não enviados automaticamente.
+- Atualização após receber o JSON completo do suporte: `criar_pedido_estruturado()` inclui `translate`, dados completos das partes e campos fiscais no nível raiz. Uma nova tentativa demo gerou `billCode=U88030069389077`; consulta e rastreio retornaram HTTP 200/código `1`, com `details=[]` (sem eventos). A autenticação dessas chamadas foi conferida sem registrar valores e aceita pelo demo; isso não homologa produção, etiqueta ou faturamento.
+- `scripts/maintenance/testar_jt_estrutura_completa.py --somente-relatorio` mostra o resultado salvo sem rede. O checkpoint da tentativa completa é separado do teste incompleto anterior. Não repetir criação nem apagar checkpoints; emissão completa na interface ainda está bloqueada até finalizar o fluxo específico. Relatório: `reports/jt_diagnostico/estrutura_completa_autenticacao.json`; o rascunho de e-mail agora pede simulação de eventos e confirmação da cotação, pois a estrutura completa já foi aceita.
+- Smart Label validada digitalmente em 10/11/2026: `order/printOrder`, `printSize=0`, HTTP 200/código `1`, PDF oficial de uma página 76 × 130 mm para o envio demo já criado. Visualização em `http://localhost:8889/reports/jt_diagnostico/etiqueta_demo.html`; arquivo e metadados em `reports/jt_diagnostico/`. Nenhuma impressão física foi executada pelo agente. Não usar esse PDF de homologação em mercadoria real.
+- `scripts/maintenance/obter_etiqueta_jt_demo.py` busca a etiqueta ou usa cache, sem criar/cancelar pedidos e com produção bloqueada. A rota `jt-express?action=printOrder` e o getter da interface agora usam o PDF oficial para itens J&T existentes; não substituem por rótulo Correios se houver erro. A fila operacional não foi alimentada com o teste; emissão completa continua pendente. Webhooks serão estudados em etapa posterior.

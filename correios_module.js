@@ -1868,6 +1868,21 @@ async function obterPdfRotulo(item, btnElement = null) {
 
   const serv = (item.servico || "").toUpperCase();
   const idPre = item.idPrePostagem || item.id_prepostagem || "";
+  const isJT = serv.includes("J&T") || /^JT(?:_|\s)/.test(serv) || idPre.startsWith("JT_");
+  if (isJT) {
+    const billCode = item.billCode || item.objeto || item.codigoObjeto || item.codigo_objeto;
+    if (!billCode) throw new Error("Etiqueta J&T sem código de envio confirmado. Não será usado rótulo dos Correios.");
+    const response = await fetch("/.netlify/functions/jt-express?action=printOrder", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ billCode, printSize: 0 })
+    });
+    const data = await safeFetchJson(response);
+    if (!response.ok || !data.sucesso || !data.pdfBase64) {
+      throw new Error(data.erro || "Não foi possível obter o PDF oficial da etiqueta J&T.");
+    }
+    item.pdfBase64 = data.pdfBase64;
+    return data.pdfBase64;
+  }
   if (serv === "RETIRADA_GUARITA" || serv === "RETIRADA_ESTOQUE") {
     const pdfB64 = await gerarRotuloRetiradaLocalPdf(item);
     item.pdfBase64 = pdfB64;
@@ -2869,6 +2884,9 @@ async function emitirPedidoObjeto(ped, qtdEtiquetas = 1) {
   }
   const transpNorm = (ped.transportadora_normalizada || "").toUpperCase();
   const servico = (ped.forma_envio || ped.servico || "PAC").toUpperCase();
+  if (transpNorm.includes("J&T") || transpNorm.includes("JT EXPRESS") || /J&T|JT[_ ]/.test(servico)) {
+    throw new Error("A emissão J&T ainda não está conectada ao fluxo de etiquetas desta tela. O pedido não foi enviado aos Correios. Consulte o rastreamento de uma etiqueta J&T já existente antes de habilitar novas emissões.");
+  }
   const isRetiradaGuarita = transpNorm === "RETIRADA GUARITA" || servico === "RETIRADA_GUARITA";
   const isRetiradaEstoque = transpNorm === "RETIRADA ESTOQUE" || servico === "RETIRADA_ESTOQUE";
   if (isRetiradaGuarita || isRetiradaEstoque) {
@@ -4887,6 +4905,27 @@ async function salvarFinalizacaoEntregaMobile() {
 
     item.status_entrega = "FINALIZADO";
     item.recebedor_nome = nome;
+
+    // Sincronizar com o Painel de Liturgias / Pão da Vida se for objeto de assinaturas
+    try {
+      const codObj = item.codigo_objeto || "";
+      const numPed = item.pedido || "";
+      const destNome = item.destinatario || "";
+      await fetch("/api/assinaturas/atualizar_status_rastreio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          codigo_objeto: codObj,
+          numero_pedido: numPed,
+          destinatario: destNome,
+          status: "Entregue",
+          recebedor_nome: nome
+        })
+      });
+    } catch (eAssin) {
+      console.warn("Aviso ao sincronizar status de entregador com liturgias:", eAssin);
+    }
+
     fecharModalBaixaEntregaMobile();
     renderEntregasMobile();
     renderEntregasAba10Cards();

@@ -220,6 +220,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_consignacao_salvar_acerto()
         elif url_path == '/api/consignacao/integrar_omie':
             self.handle_api_consignacao_integrar_omie()
+        elif url_path == '/api/consignacao/gerar_remessa_clonada':
+            self.handle_api_consignacao_gerar_remessa_clonada()
         elif url_path == '/api/consignacao/eventos/salvar':
             self.handle_api_consignacao_eventos_salvar()
         elif url_path == '/api/consignacao/vincular_remessa_aberta':
@@ -2717,6 +2719,17 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             print(f"[API SERVER] Erro em consignacao_acerto_obter: {e}")
             self._send_json({"success": False, "message": str(e)}, status=500)
 
+    def handle_api_consignacao_gerar_remessa_clonada(self):
+        try:
+            body = self._read_body()
+            from services.consignacao_service import ConsignacaoService
+            service = ConsignacaoService()
+            res = service.gerar_remessa_clonada(body)
+            self._send_json(res)
+        except Exception as e:
+            print(f"[API SERVER] Erro em consignacao_gerar_remessa_clonada: {e}")
+            self._send_json({"sucesso": False, "erro": str(e)}, status=500)
+
     def handle_api_consignacao_integrar_omie(self):
         try:
             body = self._read_body()
@@ -3319,8 +3332,16 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             cep = qs.get("cep", [""])[0].strip()
             valor = float(qs.get("valor", [45.0])[0])
             peso = float(qs.get("peso", [0.3])[0])
-            from services.frenet_service import cotar_frete_frenet
-            res = cotar_frete_frenet(cep, valor_itens=valor, peso_kg=peso)
+            modo = qs.get("modo", ["normal"])[0].strip().lower()
+            caixas_param = qs.get("caixas", [None])[0]
+            caixas_manual = int(caixas_param) if caixas_param and caixas_param.isdigit() else None
+
+            from services.frenet_service import cotar_frete_frenet, cotar_frete_paroquia_caixas
+            if modo == "paroquia" or peso > 18.0 or caixas_manual:
+                res = cotar_frete_paroquia_caixas(cep, peso_total_kg=peso, valor_total=valor, caixas_manual=caixas_manual)
+            else:
+                res = cotar_frete_frenet(cep, valor_itens=valor, peso_kg=peso)
+
             self._send_json(res)
         except Exception as e:
             print(f"[API FRENET] Erro ao cotar frete: {e}")
@@ -3427,11 +3448,12 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             cliente_dados = body.get("cliente")
             valor_frete = body.get("valor_frete")
             transportadora_id = body.get("transportadora_id")
+            cotacao_detalhes = body.get("cotacao_detalhes")
             if not cliente_dados:
                 self._send_json({"sucesso": False, "erro": "Parâmetro 'cliente' é obrigatório."}, status=400)
                 return
             from services import assinaturas_service
-            res = assinaturas_service.gerar_remessa_paroquia_omie(cliente_dados, valor_frete, transportadora_id)
+            res = assinaturas_service.gerar_remessa_paroquia_omie(cliente_dados, valor_frete, transportadora_id, cotacao_detalhes)
             self._send_json(res)
         except Exception as e:
             print(f"[API ASSINATURAS] Erro ao gerar remessa paróquia: {e}")

@@ -1390,4 +1390,112 @@ class ConsignacaoService:
             except Exception as e:
                 return {"success": False, "message": f"Exceção ao incluir remessa no Omie: {str(e)}"}
 
+    def gerar_remessa_clonada(self, dados: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Cria uma Nova Remessa no Omie baseada em remessa anterior, com itens ajustados/personalizados.
+        Permite remover itens sazonais (ex: Natal ou Liturgias passadas) e incluir novos produtos.
+        """
+        codigo_cliente = int(dados.get('codigo_cliente_omie') or 0)
+        cliente_nome = str(dados.get('cliente_nome') or '').strip()
+        itens = dados.get('itens', [])
+
+        if not codigo_cliente:
+            return {"sucesso": False, "erro": "Código do cliente Omie é obrigatório."}
+        if not itens:
+            return {"sucesso": False, "erro": "A remessa precisa conter ao menos um produto."}
+
+        cache = self._carregar_produtos_cache()
+        produtos_payload = []
+        tot_pecas = 0
+        tot_valor = 0.0
+
+        for idx, it in enumerate(itens, 1):
+            sku = str(it.get('sku') or '').strip().upper()
+            ncod = int(it.get('codigo_produto_omie') or it.get('codigo_produto') or 0)
+            qtd = int(it.get('quantidade') or 1)
+            val_unit = float(it.get('valor_unitario') or 0.0)
+
+            if ncod == 0 and sku:
+                p_info = cache.get('by_sku', {}).get(sku)
+                if p_info:
+                    ncod = int(p_info.get('id_produto') or p_info.get('codigo_produto') or 0)
+                    if val_unit <= 0:
+                        val_unit = float(p_info.get('valor_unitario') or 0.0)
+
+            if val_unit <= 0 and ncod in cache.get('by_id', {}):
+                val_unit = float(cache['by_id'][ncod].get('valor_unitario') or 0.0)
+
+            tot_pecas += qtd
+            tot_valor += (qtd * val_unit)
+
+            produtos_payload.append({
+                "cCFOP": "5.917",
+                "cCodItInt": f"REM_{idx}_{sku}"[:20],
+                "nCodIt": 0,
+                "nCodProd": ncod,
+                "nQtde": qtd,
+                "nValUnit": val_unit
+            })
+
+        cod_int_rem = f"CLON_{int(time.time())}"[:20]
+        payload_nova = {
+            "cabec": {
+                "cCodIntRem": cod_int_rem,
+                "dPrevisao": datetime.now().strftime("%d/%m/%Y"),
+                "nCodCli": codigo_cliente,
+                "nCodRem": 0,
+                "nCodVend": "1818533592", # Vendedor padrão
+                "codigo_cenario_impostos": CENARIO_FISCAL_5917
+            },
+            "frete": {
+                "cEspVol": "VOLUMES",
+                "cMarVol": "",
+                "cNumVol": "1",
+                "cPlaca": "",
+                "cTpFrete": "9",
+                "cUF": "",
+                "nCodTransp": 0,
+                "nPesoBruto": round(tot_pecas * 0.3, 2),
+                "nPesoLiq": round(tot_pecas * 0.28, 2),
+                "nQtdVol": 1,
+                "nValFrete": 0,
+                "nValOutras": 0,
+                "nValSeguro": 0
+            },
+            "infAdic": {
+                "cCodCateg": CATEGORIA_RECEITA,
+                "cConsFinal": "S",
+                "cContato": cliente_nome[:30],
+                "cDadosAdic": f"Remessa de mercadorias em consignacao - {cliente_nome}",
+                "cNumCtr": "",
+                "cPedido": "",
+                "nCodProj": 0
+            },
+            "obs": {
+                "cObs": f"Consignacao: {cliente_nome} (Nova Remessa ajustada a partir de ciclo anterior)"
+            },
+            "produtos": produtos_payload
+        }
+
+        try:
+            res = self.client.executar("produtos/remessa/", "IncluirRemessa", [payload_nova])
+            c_status = str(res.get("cCodStatus") or "")
+            num_rem = res.get("cNumeroRemessa") or str(res.get("nCodRem") or "")
+            faultstring = res.get("faultstring") or res.get("cDesStatus") or ""
+
+            if (c_status == "0" or num_rem) and not res.get("faultstring"):
+                return {
+                    "sucesso": True,
+                    "codigo_remessa": res.get("nCodRem"),
+                    "numero_remessa": num_rem,
+                    "total_pecas": tot_pecas,
+                    "valor_total": tot_valor,
+                    "mensagem": f"Nova Remessa #{num_rem} criada com sucesso para {cliente_nome} no Omie ERP!"
+                }
+            else:
+                return {"sucesso": False, "erro": f"Erro Omie: {faultstring}", "raw_omie": res}
+        except Exception as e:
+            return {"sucesso": False, "erro": f"Exceção ao incluir remessa no Omie: {str(e)}"}
+
+
 

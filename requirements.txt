@@ -7,3 +7,4 @@ fpdf2>=2.7.8
 reportlab>=4.1.0
 python-barcode>=0.15.1
 Pillow>=10.2.0
+pypdf>=5.0

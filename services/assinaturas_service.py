@@ -1,5 +1,8 @@
 import os
 import io
+import time
+import math
+import re
 import urllib.request
 import logging
 from datetime import datetime, timedelta
@@ -249,6 +252,14 @@ def mesclar_pedidos_turso_nas_assinaturas(clientes_processados):
             if cli_nome.upper() in nomes_existentes:
                 continue
 
+            # Bloqueio explícito de pedidos já enviados no 1º Lote (ex: Capelania Militar #18217 e Mitra Luziânia #18343)
+            status_ass = str(r.get("status_assinatura") or "").upper()
+            periodo = str(r.get("periodo_envio") or "").upper()
+            if "CONCLUIDO" in status_ass or num_ped in ["18217", "18343"] or "LOTE_04" in periodo or "ABRIL" in periodo:
+                continue
+            if any(termo in cli_nome.upper() for termo in ["CAPELANIA MILITAR", "LUZIANA", "LUZIÂNIA", "SAGRADA FAMILIA"]):
+                continue
+
             # Regra de Elegibilidade do Lote Atual (Jan a Mar/2027):
             # - Combo PRD00379: faturou e enviou Jan/Fev/Mar/2027 diretamente no pedido Omie faturado.
             #   Logo, o cliente JÁ RECEBEU Jan, Fev e Mar! NÃO entra no Lote 1 para evitar envio em duplicidade!
@@ -402,7 +413,8 @@ def processar_assinaturas_pdv(forcar_download=False):
         if any(n in cli_up for n in [
             "JAQUELINE ALVES DA CRUZ", "PAROQUIA DE NOSSA SENHORA DA GLORIA", "ALTO ALEGRE",
             "DIOCESE DE BONFIM", "CAMOINA GRANDE", "JOSE OPERARIO", "JOSÉ OPERÁRIO",
-            "SANTO AMARO", "CARLENE MARIA", "LUZIANA", "LUZIÂNIA", "SANTISSIMA TRINDADE", "SANTÍSSIMA TRINDADE"
+            "SANTO AMARO", "CARLENE MARIA", "LUZIANA", "LUZIÂNIA", "SANTISSIMA TRINDADE", "SANTÍSSIMA TRINDADE",
+            "CAPELANIA MILITAR", "PREPARATORIA DE CADETES DO AR", "PREPARATÓRIA DE CADETES DO AR"
         ]):
             continue
         if ("PERPETUO SOCORRO" in cli_up or "PERPÉTUO SOCORRO" in cli_up) and "SANTA MARIA" in str(r[47] or "").upper():
@@ -1015,159 +1027,289 @@ CLIENTES_PAROQUIAS_OMIE = {
 }
 
 def buscar_ou_identificar_id_cliente_omie(cliente_item):
-    """Retorna o codigo_cliente_omie para a paróquia ou busca por CNPJ/Nome."""
-    cod = str(cliente_item.get("codigo_cliente") or "").strip()
-    if cod in CLIENTES_PAROQUIAS_OMIE:
-        return CLIENTES_PAROQUIAS_OMIE[cod]
-
-    nome = cliente_item.get("cliente", "").strip()
-    for k, v in CLIENTES_PAROQUIAS_OMIE.items():
-        if k.lower() in nome.lower() or nome.lower() in k.lower():
-            return v
-    
-    cpf_cnpj = cliente_item.get("cpf_cnpj", "").strip()
+    """
+    Retorna o codigo_cliente_omie para a paróquia com prioridade absoluta no CNPJ/CPF exato.
+    Evita falsos positivos de nomes genéricos como 'Arquidiocese' ou 'Diocese'.
+    """
     key = os.getenv("APP_KEY_MATRIZ", "").strip(" \"'")
     sec = os.getenv("APP_SECRET_MATRIZ", "").strip(" \"'")
     url = "https://app.omie.com.br/api/v1/geral/clientes/"
 
-    if cpf_cnpj and len(cpf_cnpj) >= 11:
-        try:
-            r = requests.post(url, json={
-                "call": "ConsultarCliente",
-                "app_key": key,
-                "app_secret": sec,
-                "param": [{"cnpj_cpf": cpf_cnpj}]
-            }).json()
-            if r.get("codigo_cliente_omie"):
-                return r.get("codigo_cliente_omie")
-        except Exception as e:
-            logger.warning(f"Erro ao buscar cliente por CPF/CNPJ: {e}")
+    # 1. PRIORIDADE MÁXIMA: Busca por CNPJ / CPF exato
+    cpf_cnpj_raw = str(cliente_item.get("cpf_cnpj") or "").strip()
+    cpf_cnpj_limpo = re.sub(r"\D", "", cpf_cnpj_raw) if cpf_cnpj_raw else ""
 
-    # Fallback busca por fantasia
-    try:
-        palavra = nome.split()[0] if nome else ""
-        if len(palavra) >= 4:
-            r2 = requests.post(url, json={
+    if cpf_cnpj_limpo and len(cpf_cnpj_limpo) >= 11:
+        # Tenta com o CNPJ limpo e formatado via ListarClientesResumido
+        for doc in [cpf_cnpj_limpo, cpf_cnpj_raw]:
+            try:
+                r_cnpj = requests.post(url, json={
+                    "call": "ListarClientesResumido",
+                    "app_key": key,
+                    "app_secret": sec,
+                    "param": [{
+                        "pagina": 1,
+                        "registros_por_pagina": 5,
+                        "clientesFiltro": {"cnpj_cpf": doc}
+                    }]
+                }, timeout=10).json()
+                for c in r_cnpj.get("clientes_cadastro_resumido", []):
+                    if c.get("codigo_cliente"):
+                        logger.info(f"Cliente Omie localizado por CNPJ ({doc}): {c.get('codigo_cliente')} - {c.get('nome_fantasia')}")
+                        return c.get("codigo_cliente")
+            except Exception as e:
+                logger.warning(f"Erro ao buscar cliente por CNPJ ({doc}): {e}")
+
+    # 2. Código de cadastro pré-mapeado
+    cod = str(cliente_item.get("codigo_cliente") or "").strip()
+    if cod in CLIENTES_PAROQUIAS_OMIE:
+        return CLIENTES_PAROQUIAS_OMIE[cod]
+
+    # 3. Busca por Nome Fantasia Completo ou Razão Social
+    nome = cliente_item.get("cliente", "").strip()
+    if nome:
+        try:
+            r_nome = requests.post(url, json={
                 "call": "ListarClientesResumido",
                 "app_key": key,
                 "app_secret": sec,
                 "param": [{
                     "pagina": 1,
                     "registros_por_pagina": 10,
-                    "apenas_importado_api": "N",
-                    "clientesFiltro": {"nome_fantasia": palavra}
+                    "clientesFiltro": {"nome_fantasia": nome[:40]}
                 }]
-            }).json()
-            for c in r2.get("clientes_cadastro_resumido", []):
+            }, timeout=10).json()
+            for c in r_nome.get("clientes_cadastro_resumido", []):
                 if c.get("codigo_cliente"):
                     return c.get("codigo_cliente")
-    except Exception as e:
-        logger.warning(f"Erro ao buscar cliente por fantasia: {e}")
+        except Exception as e:
+            logger.warning(f"Erro ao buscar cliente por nome fantasia: {e}")
 
     return None
 
-def gerar_remessa_paroquia_omie(cliente_dados, valor_frete=None, transportadora_id=None):
+def gerar_remessa_paroquia_omie(cliente_dados, valor_frete=None, transportadora_id=None, cotacao_detalhes=None):
     """
-    Cria a Remessa padrão no Omie para uma paróquia específica.
-    Cenário padrão, CFOP 5949 (dentro do CE) ou 6949 (fora do CE),
-    Categoria Receita Comercial (1.01.01), Transportadora Roberto Souza.
+    Cria a(s) Remessa(s) padrão no Omie para uma paróquia específica.
+    Se a cotação selecionada for fracionada por caixas (J&T Express, Total Express ou Correios com múltiplas caixas):
+    - Divide a remessa no Omie em N remessas independentes (1 para cada caixa).
+    - Rateia os produtos proporcionalmente entre cada caixa.
+    - Atribui o valor do frete de cada caixa individualmente conforme cotado na Frenet.
     """
     cod_cliente_omie = buscar_ou_identificar_id_cliente_omie(cliente_dados)
     if not cod_cliente_omie:
         raise ValueError(f"Não foi possível localizar o código do cliente Omie para: {cliente_dados.get('cliente')}")
 
     is_ce = (cliente_dados.get("uf") == "CE") or is_fortaleza_metro(cliente_dados.get("cep_limpo", ""))
-    cfop = "5949" if is_ce else "6949"
+    cfop = "5.949" if is_ce else "6.949"
 
     q_jan = int(cliente_dados.get("qtd_jan27", 0))
     q_fev = int(cliente_dados.get("qtd_fev27", 0))
     q_mar = int(cliente_dados.get("qtd_mar27", 0))
 
-    if q_jan + q_fev + q_mar == 0:
+    tot_pecas = q_jan + q_fev + q_mar
+    if tot_pecas == 0:
         raise ValueError("Quantidade de itens da remessa zerada.")
 
-    itens = []
-    num_item = 1
-    if q_jan > 0:
-        itens.append({
-            "num_item": num_item,
-            "codigo_produto": PRODUTOS_LITURGIA["jan27"]["id_matriz"],
-            "quantidade": q_jan,
-            "valor_unitario": obter_valor_unitario_liturgia("jan27"),
-            "cfop": cfop
-        })
-        num_item += 1
+    # Detalhes de caixas e frete fracionado
+    cotacao = cotacao_detalhes or {}
+    num_caixas = int(cotacao.get('caixas') or 1)
+    tipo_calculo = str(cotacao.get('tipo_calculo') or '')
 
-    if q_fev > 0:
-        itens.append({
-            "num_item": num_item,
-            "codigo_produto": PRODUTOS_LITURGIA["fev27"]["id_matriz"],
-            "quantidade": q_fev,
-            "valor_unitario": obter_valor_unitario_liturgia("fev27"),
-            "cfop": cfop
-        })
-        num_item += 1
+    # Se tiver mais de 1 caixa e o tipo de cálculo for por caixa
+    if num_caixas > 1 and tipo_calculo == 'POR_CAIXA':
+        valor_frete_caixa = float(cotacao.get('valor_unit_caixa') or (float(valor_frete or 0.0) / num_caixas))
+    else:
+        num_caixas = 1
+        valor_frete_caixa = float(valor_frete or 0.0)
 
-    if q_mar > 0:
-        itens.append({
-            "num_item": num_item,
-            "codigo_produto": PRODUTOS_LITURGIA["mar27"]["id_matriz"],
-            "quantidade": q_mar,
-            "valor_unitario": obter_valor_unitario_liturgia("mar27"),
-            "cfop": cfop
-        })
-        num_item += 1
+    # Divisão dos produtos entre as caixas
+    def distribuir_itens(total, partes):
+        base = total // partes
+        resto = total % partes
+        return [base + (1 if i < resto else 0) for i in range(partes)]
 
-    transp = transportadora_id or (TRANSPORTADORA_ROBERTO_ID if is_ce else None)
-    
-    cabecalho = {
-        "codigo_cliente": cod_cliente_omie,
-        "codigo_cenario_impostos": 0,
-        "categoria": CATEGORIA_RECEITA_COMERCIAL,
-        "data_emissao": datetime.now().strftime("%d/%m/%Y"),
-        "observacoes": f"Remessa Liturgia Diária Pão da Vida (Jan/Fev/Mar 2027) - Paróquia {cliente_dados.get('cliente')}"
+    dist_jan = distribuir_itens(q_jan, num_caixas)
+    dist_fev = distribuir_itens(q_fev, num_caixas)
+    dist_mar = distribuir_itens(q_mar, num_caixas)
+
+    # Mapeamento Oficial de Transportadoras no Omie ERP
+    TRANSP_MAP = {
+        "ROBERTO": 1854969807,      # ROBERTO SOUZA DE OLIVEIRA
+        "CORREIOS": 1817912309,     # EMPRESA BRASILEIRA DE CORREIOS E TELEGRAFOS
+        "J&T": 1854970300,          # J&T EXPRESS BRAZIL LTDA
+        "TOTAL": 2199110781,        # TOTAL EXPRESS (TEX COURIER S A)
+        "BRASPRESS": 1860388311     # BRASPRESS TRANSPORTES URGENTES (FILIAL FORTALEZA)
     }
 
-    if transp:
-        cabecalho["codigo_transportadora"] = transp
+    desc_transp_upper = str(cotacao.get('transportadora') or cotacao.get('servico') or '').upper()
+    transp_escolhida_nome = "Roberto Souza" if is_ce else "Correios"
 
-    if valor_frete is not None and float(valor_frete) > 0:
-        cabecalho["valor_frete"] = float(valor_frete)
-
-    payload_remessa = {
-        "cabecalho": cabecalho,
-        "itens": itens
-    }
+    transp = 0
+    if is_ce:
+        transp = TRANSP_MAP["ROBERTO"]
+        transp_escolhida_nome = "Roberto Souza de Oliveira (Entrega Local Fortaleza)"
+    elif "J&T" in desc_transp_upper:
+        transp = TRANSP_MAP["J&T"]
+        transp_escolhida_nome = "J&T Express Brazil"
+    elif "TOTAL" in desc_transp_upper:
+        transp = TRANSP_MAP["TOTAL"]
+        transp_escolhida_nome = "Total Express (Tex Courier)"
+    elif "BRASPRESS" in desc_transp_upper:
+        transp = TRANSP_MAP["BRASPRESS"]
+        transp_escolhida_nome = "Braspress Transportes Urgentes"
+    elif "CORREIOS" in desc_transp_upper or "PAC" in desc_transp_upper or "SEDEX" in desc_transp_upper:
+        transp = TRANSP_MAP["CORREIOS"]
+        transp_escolhida_nome = "Empresa Brasileira de Correios e Telégrafos"
+    elif transportadora_id:
+        transp = int(transportadora_id)
 
     key = os.getenv("APP_KEY_MATRIZ", "").strip(" \"'")
     sec = os.getenv("APP_SECRET_MATRIZ", "").strip(" \"'")
-
-    logger.info(f"Disparando IncluirRemessa de Paróquia no Omie: {payload_remessa}")
     url = "https://app.omie.com.br/api/v1/produtos/remessa/"
-    res = requests.post(url, json={
-        "call": "IncluirRemessa",
-        "app_key": key,
-        "app_secret": sec,
-        "param": [payload_remessa]
-    }).json()
 
-    if res.get("faultstring"):
-        logger.error(f"Erro Omie ao incluir remessa de paróquia: {res.get('faultstring')}")
+    remessas_criadas = []
+    erros = []
+
+    for idx_cx in range(num_caixas):
+        q_cx_jan = dist_jan[idx_cx]
+        q_cx_fev = dist_fev[idx_cx]
+        q_cx_mar = dist_mar[idx_cx]
+        tot_pecas_cx = q_cx_jan + q_cx_fev + q_cx_mar
+        if tot_pecas_cx == 0:
+            continue
+
+        produtos_cx = []
+        item_idx = 1
+        if q_cx_jan > 0:
+            produtos_cx.append({
+                "cCFOP": cfop,
+                "cCodItInt": f"LIT_JAN_{idx_cx+1}_{item_idx}"[:20],
+                "nCodIt": 0,
+                "nCodProd": PRODUTOS_LITURGIA["jan27"]["id_matriz"],
+                "nQtde": q_cx_jan,
+                "nValUnit": obter_valor_unitario_liturgia("jan27")
+            })
+            item_idx += 1
+
+        if q_cx_fev > 0:
+            produtos_cx.append({
+                "cCFOP": cfop,
+                "cCodItInt": f"LIT_FEV_{idx_cx+1}_{item_idx}"[:20],
+                "nCodIt": 0,
+                "nCodProd": PRODUTOS_LITURGIA["fev27"]["id_matriz"],
+                "nQtde": q_cx_fev,
+                "nValUnit": obter_valor_unitario_liturgia("fev27")
+            })
+            item_idx += 1
+
+        if q_cx_mar > 0:
+            produtos_cx.append({
+                "cCFOP": cfop,
+                "cCodItInt": f"LIT_MAR_{idx_cx+1}_{item_idx}"[:20],
+                "nCodIt": 0,
+                "nCodProd": PRODUTOS_LITURGIA["mar27"]["id_matriz"],
+                "nQtde": q_cx_mar,
+                "nValUnit": obter_valor_unitario_liturgia("mar27")
+            })
+            item_idx += 1
+
+        peso_bruto_cx = round(tot_pecas_cx * 0.100, 2)
+        peso_liq_cx = round(tot_pecas_cx * 0.095, 2)
+        cod_int_rem = f"PAR_{idx_cx+1}_{int(time.time())}"[:20]
+        cli_nome = str(cliente_dados.get('cliente') or '')[:30]
+        obs_cx = f"Caixa {idx_cx+1} de {num_caixas}" if num_caixas > 1 else "Volume Unico"
+        servico_nome = cotacao.get('servico') or cotacao.get('transportadora') or transp_escolhida_nome
+        info_adic_txt = f"Remessa Liturgia Pao da Vida (Jan-Mar/27) | Transportadora: {transp_escolhida_nome} ({servico_nome}) | Frete: R$ {valor_frete_caixa:,.2f} | {obs_cx} | {cliente_dados.get('cliente')}"
+        obs_geral_txt = f"Forma de Envio: {transp_escolhida_nome} ({servico_nome}) | Frete: R$ {valor_frete_caixa:,.2f} | {obs_cx} | Total Pecas: {tot_pecas_cx} un"
+
+        payload_remessa = {
+            "cabec": {
+                "cCodIntRem": cod_int_rem,
+                "dPrevisao": datetime.now().strftime("%d/%m/%Y"),
+                "nCodCli": cod_cliente_omie,
+                "nCodRem": 0,
+                "nCodVend": "1818533592",
+                "codigo_cenario_impostos": 0
+            },
+            "frete": {
+                "cEspVol": "CAIXA",
+                "cMarVol": "",
+                "cNumVol": str(idx_cx + 1),
+                "cPlaca": "",
+                "cTpFrete": "9",
+                "cUF": "",
+                "nCodTransp": transp,
+                "nPesoBruto": peso_bruto_cx,
+                "nPesoLiq": peso_liq_cx,
+                "nQtdVol": 1,
+                "nValFrete": round(valor_frete_caixa, 2),
+                "nValOutras": 0,
+                "nValSeguro": 0
+            },
+            "infAdic": {
+                "cCodCateg": "1.01.01",
+                "cConsFinal": "S",
+                "cContato": cli_nome,
+                "cDadosAdic": info_adic_txt[:500],
+                "cNumCtr": "",
+                "cPedido": "",
+                "nCodProj": 0
+            },
+            "obs": {
+                "cObs": obs_geral_txt[:500]
+            },
+            "produtos": produtos_cx
+        }
+
+        logger.info(f"Disparando IncluirRemessa Paróquia Omie (Caixa {idx_cx+1}/{num_caixas}): {payload_remessa}")
+        try:
+            res = requests.post(url, json={
+                "call": "IncluirRemessa",
+                "app_key": key,
+                "app_secret": sec,
+                "param": [payload_remessa]
+            }).json()
+
+            c_status = str(res.get("cCodStatus") or "")
+            num_rem = res.get("cNumeroRemessa") or str(res.get("nCodRem") or "")
+            faultstring = res.get("faultstring") or res.get("cDesStatus") or ""
+
+            if (c_status == "0" or num_rem) and not res.get("faultstring"):
+                remessas_criadas.append({
+                    "caixa": idx_cx + 1,
+                    "numero_remessa": num_rem,
+                    "codigo_remessa": res.get("nCodRem"),
+                    "pecas": tot_pecas_cx,
+                    "valor_frete": round(valor_frete_caixa, 2)
+                })
+            else:
+                erros.append(f"Caixa {idx_cx+1}: {faultstring}")
+        except Exception as ex:
+            erros.append(f"Caixa {idx_cx+1}: {str(ex)}")
+
+    if not remessas_criadas:
         return {
             "sucesso": False,
-            "erro": res.get("faultstring"),
-            "detalhes": res
+            "erro": " | ".join(erros) if erros else "Falha ao emitir remessa no Omie",
+            "detalhes": erros
         }
+
+    nums_rem = ", ".join([str(r["numero_remessa"]) for r in remessas_criadas])
+    cods_rem = ", ".join([str(r["codigo_remessa"]) for r in remessas_criadas])
+    frete_total_emitido = sum(r["valor_frete"] for r in remessas_criadas)
 
     return {
         "sucesso": True,
-        "numero_remessa": res.get("numero_remessa"),
-        "codigo_remessa": res.get("codigo_remessa"),
+        "numero_remessa": nums_rem,
+        "codigo_remessa": cods_rem,
         "cliente": cliente_dados.get("cliente"),
         "codigo_cliente_omie": cod_cliente_omie,
-        "total_pecas": q_jan + q_fev + q_mar,
+        "total_pecas": tot_pecas,
+        "total_caixas": num_caixas,
+        "remessas_detalhes": remessas_criadas,
         "cfop": cfop,
-        "valor_frete": valor_frete
+        "valor_frete": frete_total_emitido,
+        "mensagem": f"{len(remessas_criadas)} Remessa(s) emitida(s) com sucesso no Omie (Nº {nums_rem})!"
     }
 
 # =============================================================================

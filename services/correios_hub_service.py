@@ -3388,10 +3388,29 @@ class CorreiosHubService:
                     res_jt = JTExpressService.criar_pedido(ped)
                     status_c = 200 if res_jt.get("sucesso") else 400
                     return status_c, res_jt
+                elif action == "getOrders":
+                    serial_numbers = body.get("serialNumber")
+                    if serial_numbers is None:
+                        serial_numbers = query_params.get("serialNumber", [])
+                    result = JTExpressService.consultar_pedidos(serial_numbers, command=body.get("command", 1))
+                    return int(result.get("httpStatus") or 502), result
+                elif action == "quote":
+                    result = JTExpressService.cotar_frete(
+                        body.get("originZipCode", ""), body.get("destinationZipCode", ""),
+                        body.get("weight"), body.get("insuredAmount"),
+                        goods_type_code=body.get("goodsTypeCode", "bm000006"),
+                        product_type_code=body.get("productTypeCode", "EZ"),
+                    )
+                    return int(result.get("httpStatus") or 502), result
+                elif action in ("printOrder", "etiqueta"):
+                    bill_code = str(body.get("billCode") or query_params.get("billCode", [""])[0])
+                    size = body.get("printSize", 0)
+                    result = JTExpressService.obter_etiqueta(bill_code, print_size=size)
+                    return int(result.get("httpStatus") or 502), result
                 elif action == "trace":
                     bill_code = str(body.get("billCode") or query_params.get("billCode", [""])[0])
                     res_tr = JTExpressService.rastrear_objeto(bill_code)
-                    return 200, res_tr
+                    return int(res_tr.get("httpStatus") or (200 if res_tr.get("sucesso") else 502)), res_tr
                 elif action == "cancelOrder":
                     bill_code = str(body.get("billCode") or query_params.get("billCode", [""])[0])
                     tx_id = str(body.get("txlogisticId") or query_params.get("txlogisticId", [""])[0])
