@@ -2891,14 +2891,24 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                     sku_p = str(d.get("sku_produto") or "").strip().upper()
                     qtd_ass = int(d.get("quantidade_assinaturas") or 1)
                     num_ped = str(d.get("numero_pedido") or d.get("codigo_pedido_omie") or "")
-                    total_contratado = int(d.get("total_exemplares_contratados") or 12) * qtd_ass
-                    entregues_por_ass = int(d.get("exemplares_entregues") or 0)
+                    total_raw = int(d.get("total_exemplares_contratados") or 0)
+                    total_contratado = total_raw if total_raw > 12 else (12 * qtd_ass)
+                    entregues_raw = int(d.get("exemplares_entregues") or 0)
+                    entregues_por_ass = (entregues_raw // qtd_ass) if qtd_ass > 0 else entregues_raw
 
                     if "PRD00379" in sku_p:
                         # Combo PRD00379: Jan, Fev e Mar/2027 já foram enviados no faturamento do pedido Omie
-                        ciclos_entregues = entregues_por_ass if entregues_por_ass > 0 else 3
-                        ja_rec_tot = ciclos_entregues * qtd_ass
+                        # Se entregues_raw já foi salvo como total de exemplares (ex: 165 = 3 * 55)
+                        if entregues_raw > 3:
+                            ja_rec_tot = entregues_raw
+                        elif entregues_raw > 0:
+                            ja_rec_tot = entregues_raw * qtd_ass
+                        else:
+                            ja_rec_tot = 3 * qtd_ass
                         restantes_tot = max(0, total_contratado - ja_rec_tot)
+                        d["exemplares_entregues"] = ja_rec_tot
+                        d["total_exemplares_contratados"] = total_contratado
+                        d["exemplares_restantes"] = restantes_tot
                         d["ciclos_info"] = {
                             "total_contratado": total_contratado,
                             "ja_recebidos": ja_rec_tot,
@@ -2906,7 +2916,7 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                             "restantes_futuros": restantes_tot,
                             "origem": f"Pedido Omie #{num_ped} (Combo PRD00379)",
                             "etapas": [
-                                {"ciclo": "Jan, Fev, Mar/2027", "status": "ENVIADO", "badge": "success", "obs": f"Enviado no Pedido Omie #{num_ped} em 23/10/2026", "qtd": 3 * qtd_ass},
+                                {"ciclo": "Jan, Fev, Mar/2027", "status": "ENVIADO", "badge": "success", "obs": f"Enviado no Pedido Omie #{num_ped} (Faturado)", "qtd": 3 * qtd_ass},
                                 {"ciclo": "Lote 2 (Abr, Mai, Jun/2027)", "status": "PENDENTE", "badge": "secondary", "obs": "Aguardando 2º Lote Trimestral", "qtd": 3 * qtd_ass},
                                 {"ciclo": "Lote 3 (Jul a Dez/2027 - 6 meses)", "status": "PENDENTE", "badge": "secondary", "obs": "Envio Semestral Consolidado (fechamento)", "qtd": 6 * qtd_ass}
                             ]
