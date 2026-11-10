@@ -1286,7 +1286,7 @@ def gerar_remessa_paroquia_omie(cliente_dados, valor_frete=None, transportadora_
                     "numero_remessa": num_rem,
                     "codigo_remessa": res.get("nCodRem"),
                     "pecas": tot_pecas_cx,
-                    "valor_frete": round(valor_frete_caixa, 2)
+                    "valor_frete": round(valor_frete_por_remessa, 2)
                 })
             else:
                 erros.append(f"Caixa {idx_cx+1}: {faultstring}")
