@@ -1115,22 +1115,28 @@ def gerar_remessa_paroquia_omie(cliente_dados, valor_frete=None, transportadora_
     num_caixas = int(cotacao.get('caixas') or 1)
     tipo_calculo = str(cotacao.get('tipo_calculo') or '')
 
-    # Se tiver mais de 1 caixa e o tipo de cálculo for por caixa
-    if num_caixas > 1 and tipo_calculo == 'POR_CAIXA':
-        valor_frete_caixa = float(cotacao.get('valor_unit_caixa') or (float(valor_frete or 0.0) / num_caixas))
-    else:
-        num_caixas = 1
-        valor_frete_caixa = float(valor_frete or 0.0)
+    # Regra de divisão de remessas:
+    # Apenas J&T Express e Total Express dividem fisicamente as remessas quando houver > 1 caixa.
+    # Correios, Braspress e Entrega Própria: cotam pela soma dos volumes/caixas, mas lançam em 1 ÚNICA remessa.
+    desc_transp_upper = str(cotacao.get('transportadora') or cotacao.get('servico') or '').upper()
+    divide_remessa_fisica = ("J&T" in desc_transp_upper or "JT" in desc_transp_upper or "TOTAL" in desc_transp_upper) and (num_caixas > 1)
 
-    # Divisão dos produtos entre as caixas
+    if divide_remessa_fisica and tipo_calculo == 'POR_CAIXA':
+        remessas_a_criar = num_caixas
+        valor_frete_por_remessa = float(cotacao.get('valor_unit_caixa') or (float(valor_frete or 0.0) / num_caixas))
+    else:
+        remessas_a_criar = 1
+        valor_frete_por_remessa = float(valor_frete or 0.0)
+
+    # Divisão dos produtos entre as remessas
     def distribuir_itens(total, partes):
         base = total // partes
         resto = total % partes
         return [base + (1 if i < resto else 0) for i in range(partes)]
 
-    dist_jan = distribuir_itens(q_jan, num_caixas)
-    dist_fev = distribuir_itens(q_fev, num_caixas)
-    dist_mar = distribuir_itens(q_mar, num_caixas)
+    dist_jan = distribuir_itens(q_jan, remessas_a_criar)
+    dist_fev = distribuir_itens(q_fev, remessas_a_criar)
+    dist_mar = distribuir_itens(q_mar, remessas_a_criar)
 
     # Mapeamento Oficial de Transportadoras no Omie ERP
     TRANSP_MAP = {
@@ -1170,7 +1176,7 @@ def gerar_remessa_paroquia_omie(cliente_dados, valor_frete=None, transportadora_
     remessas_criadas = []
     erros = []
 
-    for idx_cx in range(num_caixas):
+    for idx_cx in range(remessas_a_criar):
         q_cx_jan = dist_jan[idx_cx]
         q_cx_fev = dist_fev[idx_cx]
         q_cx_mar = dist_mar[idx_cx]
@@ -1217,10 +1223,10 @@ def gerar_remessa_paroquia_omie(cliente_dados, valor_frete=None, transportadora_
         peso_liq_cx = round(tot_pecas_cx * 0.095, 2)
         cod_int_rem = f"PAR_{idx_cx+1}_{int(time.time())}"[:20]
         cli_nome = str(cliente_dados.get('cliente') or '')[:30]
-        obs_cx = f"Caixa {idx_cx+1} de {num_caixas}" if num_caixas > 1 else "Volume Unico"
+        obs_cx = f"Caixa {idx_cx+1} de {remessas_a_criar}" if remessas_a_criar > 1 else (f"{num_caixas} Volumes / Caixas" if num_caixas > 1 else "Volume Unico")
         servico_nome = cotacao.get('servico') or cotacao.get('transportadora') or transp_escolhida_nome
-        info_adic_txt = f"Remessa Liturgia Pao da Vida (Jan-Mar/27) | Transportadora: {transp_escolhida_nome} ({servico_nome}) | Frete: R$ {valor_frete_caixa:,.2f} | {obs_cx} | {cliente_dados.get('cliente')}"
-        obs_geral_txt = f"Forma de Envio: {transp_escolhida_nome} ({servico_nome}) | Frete: R$ {valor_frete_caixa:,.2f} | {obs_cx} | Total Pecas: {tot_pecas_cx} un"
+        info_adic_txt = f"Remessa Liturgia Pao da Vida (Jan-Mar/27) | Transportadora: {transp_escolhida_nome} ({servico_nome}) | Frete: R$ {valor_frete_por_remessa:,.2f} | {obs_cx} | {cliente_dados.get('cliente')}"
+        obs_geral_txt = f"Forma de Envio: {transp_escolhida_nome} ({servico_nome}) | Frete: R$ {valor_frete_por_remessa:,.2f} | {obs_cx} | Total Pecas: {tot_pecas_cx} un"
 
         payload_remessa = {
             "cabec": {
@@ -1229,7 +1235,7 @@ def gerar_remessa_paroquia_omie(cliente_dados, valor_frete=None, transportadora_
                 "nCodCli": cod_cliente_omie,
                 "nCodRem": 0,
                 "nCodVend": "1818533592",
-                "codigo_cenario_impostos": 0
+                "codigo_cenario_impostos": 1797980038
             },
             "frete": {
                 "cEspVol": "CAIXA",
@@ -1241,8 +1247,8 @@ def gerar_remessa_paroquia_omie(cliente_dados, valor_frete=None, transportadora_
                 "nCodTransp": transp,
                 "nPesoBruto": peso_bruto_cx,
                 "nPesoLiq": peso_liq_cx,
-                "nQtdVol": 1,
-                "nValFrete": round(valor_frete_caixa, 2),
+                "nQtdVol": num_caixas if remessas_a_criar == 1 else 1,
+                "nValFrete": round(valor_frete_por_remessa, 2),
                 "nValOutras": 0,
                 "nValSeguro": 0
             },
@@ -1261,7 +1267,7 @@ def gerar_remessa_paroquia_omie(cliente_dados, valor_frete=None, transportadora_
             "produtos": produtos_cx
         }
 
-        logger.info(f"Disparando IncluirRemessa Paróquia Omie (Caixa {idx_cx+1}/{num_caixas}): {payload_remessa}")
+        logger.info(f"Disparando IncluirRemessa Paróquia Omie (Caixa {idx_cx+1}/{remessas_a_criar}): {payload_remessa}")
         try:
             res = requests.post(url, json={
                 "call": "IncluirRemessa",

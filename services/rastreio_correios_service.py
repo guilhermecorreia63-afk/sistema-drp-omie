@@ -285,7 +285,7 @@ def sincronizar_rastreios_correios():
                 st_exist = str(r_exist.get("status_rastreio") or "")
                 
                 # Se era um placeholder AGUARDANDO_POSTAGEM_ e encontramos o código real no Portal Postal, atualiza
-                if cod_exist.startswith("AGUARDANDO_") and sro_encontrado:
+                if (cod_exist.startswith("AGUARDANDO_") or not cod_exist) and sro_encontrado:
                     st_atual = "Entregue" if "ENTREG" in (evento_portal or "").upper() else "Em Trânsito"
                     db.executar_query(
                         """UPDATE assinaturas_rastreios 
@@ -408,12 +408,20 @@ def sincronizar_rastreios_correios():
                 "cid": cidade_uf, "ped": ped_ref, "cod": cod_objeto
             }, is_select=False)
         else:
-            # Se o pedido já possui um rastreio oficial válido e ativo registrado, não cria duplicata
+            # Se o pedido já possui um rastreio oficial válido e ativo registrado, atualiza
             if ped_ref and ped_ref in mapa_rastreios_por_ped:
                 r_exist = mapa_rastreios_por_ped[ped_ref]
                 cod_exist = str(r_exist.get("codigo_rastreio") or "")
-                if not cod_exist.startswith("AGUARDANDO_"):
-                    continue
+                if cod_exist.startswith("AGUARDANDO_") or not cod_exist:
+                    db.executar_query(
+                        """UPDATE assinaturas_rastreios 
+                           SET codigo_rastreio = :cod, data_postagem = :dt, status_rastreio = :st 
+                           WHERE id = :id""",
+                        {"cod": cod_objeto, "dt": criado, "st": status_post, "id": int(r_exist["id"])},
+                        is_select=False
+                    )
+                    atualizados += 1
+                continue
 
             sql_ins = """
                 INSERT INTO assinaturas_rastreios (
@@ -432,7 +440,41 @@ def sincronizar_rastreios_correios():
             existentes_codigos.add(cod_objeto)
             novos_inseridos += 1
 
-    msg = f"Sincronização de assinaturas concluída! {novos_inseridos} registros atualizados com sucesso (dados de testes do Projeto Correios foram 100% filtrados e descartados)."
+    # 5. Atualizar status e datas de rastreios reais via SRO Rastro / CWS Oficial dos Correios
+    try:
+        from services.sro_correios_service import consultar_sro_objeto
+        df_ativos_correios = db.executar_query("SELECT id, codigo_rastreio, status_rastreio, data_postagem FROM assinaturas_rastreios WHERE codigo_rastreio LIKE '%BR'")
+        if df_ativos_correios is not None and not df_ativos_correios.empty:
+            for _, r_sro in df_ativos_correios.iterrows():
+                c_sro = str(r_sro.get("codigo_rastreio") or "").strip().upper()
+                st_antigo = str(r_sro.get("status_rastreio") or "")
+                res_sro = consultar_sro_objeto(c_sro)
+                if res_sro.get("sucesso"):
+                    st_desc = res_sro.get("status_geral") or "Em Trânsito"
+                    st_novo = "Entregue" if any(k in st_desc.upper() for k in ["ENTREGUE", "ENTREGA EFETUADA", "BDE"]) else "Em Trânsito"
+                    dt_post_sro = res_sro.get("data_postagem")
+                    dt_post_fmt = None
+                    if dt_post_sro:
+                        try:
+                            # Converte de YYYY-MM-DD para DD/MM/YYYY
+                            partes = dt_post_sro.split("-")
+                            if len(partes) == 3:
+                                dt_post_fmt = f"{partes[2]}/{partes[1]}/{partes[0]}"
+                        except Exception:
+                            pass
+
+                    campos_upd = ["status_rastreio = :st", "ultimo_evento = :ev"]
+                    p_upd = {"st": st_novo, "ev": st_desc, "id": int(r_sro["id"])}
+                    if dt_post_fmt and (not r_sro.get("data_postagem") or "/" not in str(r_sro.get("data_postagem")) or st_antigo != st_novo):
+                        campos_upd.append("data_postagem = :dt")
+                        p_upd["dt"] = dt_post_fmt
+
+                    db.executar_query(f"UPDATE assinaturas_rastreios SET {', '.join(campos_upd)} WHERE id = :id", p_upd, is_select=False)
+                    atualizados += 1
+    except Exception as e:
+        print(f"Aviso ao consultar SRO Correios: {e}")
+
+    msg = f"Sincronização de assinaturas concluída! {novos_inseridos} novos e {atualizados} atualizados via Portal Postal e SRO Correios."
     return {
         "sucesso": True,
         "mensagem": msg,

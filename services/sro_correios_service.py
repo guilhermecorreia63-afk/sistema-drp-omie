@@ -133,12 +133,13 @@ def consultar_sro_objeto(codigo_objeto: str) -> Dict[str, Any]:
                         "cidade_uf": f"{end_dest.get('cidade', '')}/{end_dest.get('uf', '')}".strip("/")
                     }
 
+                dt_raw = ev.get("dtHrCriado") or ev.get("dtCriacao") or ""
                 eventos_norm.append({
                     "codigo": ev.get("codigo", ""),
                     "tipo": ev.get("tipo", ""),
                     "descricao": ev.get("descricao", ""),
                     "detalhe": ev.get("detalhe", ""),
-                    "data_hora": ev.get("dtCriacao", ""),
+                    "data_hora": dt_raw,
                     "unidade_nome": unidade.get("nome") or unidade.get("tipo", ""),
                     "cidade_uf": cidade_uf_origem,
                     "destino": dest_info
@@ -147,10 +148,20 @@ def consultar_sro_objeto(codigo_objeto: str) -> Dict[str, Any]:
             ultimo = eventos_norm[0] if eventos_norm else {}
             status_geral = ultimo.get("descricao", "Em Trânsito")
 
+            # Localiza a data de postagem real (evento PO ou primeiro evento de postagem cronológico)
+            data_postagem_real = None
+            for ev_cron in reversed(eventos_norm):
+                if ev_cron.get("codigo") in ["PO", "PIC", "PIX", "PAR"] or "POSTADO" in str(ev_cron.get("descricao", "")).upper():
+                    data_postagem_real = ev_cron.get("data_hora", "")[:10]
+                    break
+            if not data_postagem_real and eventos_norm:
+                data_postagem_real = eventos_norm[-1].get("data_hora", "")[:10]
+
             return {
                 "sucesso": True,
                 "codigo": cod,
                 "status_geral": status_geral,
+                "data_postagem": data_postagem_real,
                 "data_ultimo_evento": ultimo.get("data_hora", ""),
                 "local_ultimo_evento": ultimo.get("cidade_uf", ""),
                 "eventos": eventos_norm
