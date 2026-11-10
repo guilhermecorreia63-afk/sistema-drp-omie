@@ -3361,14 +3361,19 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     def handle_api_painel_liturgias_html(self):
         try:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
             caminhos = [
-                os.path.join(os.path.dirname(__file__), "data", "painel_liturgias", "painel_clientes_liturgias.html"),
-                os.path.join(os.path.dirname(__file__), "reports", "liturgias_jul_dez_2026", "painel_clientes_liturgias.html")
+                os.path.join(base_dir, "data", "painel_liturgias", "painel_clientes_liturgias.html"),
+                os.path.join(base_dir, "reports", "liturgias_jul_dez_2026", "painel_clientes_liturgias.html"),
+                os.path.join(os.getcwd(), "data", "painel_liturgias", "painel_clientes_liturgias.html"),
+                os.path.join(os.getcwd(), "reports", "liturgias_jul_dez_2026", "painel_clientes_liturgias.html"),
+                os.path.join(base_dir, "..", "data", "painel_liturgias", "painel_clientes_liturgias.html")
             ]
             caminho_final = None
             for p in caminhos:
-                if os.path.exists(p):
-                    caminho_final = p
+                p_norm = os.path.normpath(p)
+                if os.path.exists(p_norm):
+                    caminho_final = p_norm
                     break
 
             if not caminho_final:
