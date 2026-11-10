@@ -118,6 +118,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_sync_requisicoes()
         elif url_path == '/api/assinaturas/dados':
             self.handle_api_assinaturas_dados()
+        elif url_path in ['/api/liturgias/painel_html', '/reports/liturgias_jul_dez_2026/painel_clientes_liturgias.html']:
+            self.handle_api_painel_liturgias_html()
         elif url_path == '/api/assinaturas/exportar_etiquetas':
             self.handle_api_assinaturas_exportar_etiquetas()
         elif url_path == '/api/assinaturas/exportar_correios':
@@ -3356,6 +3358,38 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             print(f"[API FRENET] Erro ao cotar frete: {e}")
             self._send_json({"disponivel": False, "message": str(e)}, status=500)
+
+    def handle_api_painel_liturgias_html(self):
+        try:
+            caminhos = [
+                os.path.join(os.path.dirname(__file__), "data", "painel_liturgias", "painel_clientes_liturgias.html"),
+                os.path.join(os.path.dirname(__file__), "reports", "liturgias_jul_dez_2026", "painel_clientes_liturgias.html")
+            ]
+            caminho_final = None
+            for p in caminhos:
+                if os.path.exists(p):
+                    caminho_final = p
+                    break
+
+            if not caminho_final:
+                self.send_response(404)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(b"Painel de Auditoria nao encontrado.")
+                return
+
+            with open(caminho_final, "rb") as f:
+                conteudo = f.read()
+
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(conteudo)))
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            self.wfile.write(conteudo)
+        except Exception as e:
+            print(f"[API SERVER] Erro ao servir painel de liturgias: {e}")
+            self._send_json({"error": str(e)}, status=500)
 
     # =========================================================================
     # MÓDULO 3: ASSINATURAS PÃO DA VIDA (LITURGIA DIÁRIA)
