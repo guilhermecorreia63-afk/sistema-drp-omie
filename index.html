@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- jsPDF para Geração de PDFs no Navegador -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <!-- Chart.js para Gráficos Dinâmicos de Tendência -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -5631,10 +5632,12 @@
             <tr>
               <th style="padding: 10px; text-align: left;">SKU</th>
               <th style="padding: 10px; text-align: left;">Descrição do Livro / Produto</th>
-              <th style="padding: 10px; text-align: center; width: 110px;">Qtd Nova</th>
-              <th style="padding: 10px; text-align: right; width: 100px;">Preço Capa</th>
-              <th style="padding: 10px; text-align: right; width: 110px;">Subtotal</th>
-              <th style="padding: 10px; text-align: center; width: 60px;">Ação</th>
+              <th style="padding: 10px; text-align: center; width: 100px;">Status / Origem</th>
+              <th style="padding: 10px; text-align: center; width: 100px;">Estoque Matriz</th>
+              <th style="padding: 10px; text-align: center; width: 110px;">Qtd Nova Remessa</th>
+              <th style="padding: 10px; text-align: right; width: 90px;">Preço Capa</th>
+              <th style="padding: 10px; text-align: right; width: 100px;">Subtotal</th>
+              <th style="padding: 10px; text-align: center; width: 50px;">Ação</th>
             </tr>
           </thead>
           <tbody id="tbody-itens-clonagem-remessa">
@@ -5652,6 +5655,9 @@
           <strong id="lbl-valor-total-clonagem" style="color: #34d399; font-size: 1.05rem;">R$ 0,00</strong>
         </div>
         <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn btn-secondary" onclick="gerarPdfRomaneioNovaRemessa()" style="background: rgba(56, 189, 248, 0.15); border: 1px solid #38bdf8; color: #38bdf8; padding: 8px 16px; font-weight: 600;">
+            <i class="fa-solid fa-file-pdf"></i> Imprimir Romaneio / Reposição (PDF)
+          </button>
           <button type="button" class="btn btn-secondary" onclick="fecharModalClonarRemessa()" style="padding: 8px 18px;">Cancelar</button>
           <button type="button" id="btn-confirmar-gerar-nova-remessa" class="btn btn-success" onclick="confirmarGeracaoNovaRemessaOmie()" style="background: linear-gradient(135deg, #10b981, #059669); border: none; font-weight: 700; padding: 8px 20px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
             <i class="fa-solid fa-paper-plane"></i> Emitir Nova Remessa no Omie

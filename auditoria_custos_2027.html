@@ -3,52 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auditoria de Custos & Projeção DRE Liturgias 2027 (12 Meses)</title>
+    <title>Proposta Comercial & Operacional — Total Express | Liturgias Pão da Vida 2027</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-body: #090d16;
+            --bg-base: #0b1120;
             --bg-card: #0f172a;
-            --bg-card-sub: #162036;
             --border: #1e293b;
-            --border-highlight: #334155;
-            --primary: #38bdf8;
-            --primary-dark: #0284c7;
-            --success: #34d399;
-            --danger: #f87171;
-            --warning: #fbbf24;
-            --purple: #c084fc;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
+            --primary: #38bdf8;
+            --success: #34d399;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --total-orange: #f97316;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--bg-body);
+            background-color: var(--bg-base);
             color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
             padding: 24px;
-            font-size: 14px;
+            max-width: 1380px;
+            margin: 0 auto;
             line-height: 1.5;
         }
 
         .header-box {
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-            border: 1px solid rgba(56, 189, 248, 0.25);
-            border-radius: 14px;
-            padding: 24px 28px;
-            margin-bottom: 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
             gap: 16px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 24px;
         }
 
         .header-title h1 {
-            font-size: 1.45rem;
+            font-size: 1.5rem;
             font-weight: 800;
             color: #fff;
             display: flex;
@@ -58,17 +53,17 @@
 
         .header-title p {
             color: var(--text-muted);
-            font-size: 0.85rem;
+            font-size: 0.88rem;
             margin-top: 4px;
         }
 
         .badge-live {
-            background: rgba(56, 189, 248, 0.15);
-            border: 1px solid rgba(56, 189, 248, 0.4);
-            color: var(--primary);
+            background: rgba(249, 115, 22, 0.15);
+            color: var(--total-orange);
+            border: 1px solid rgba(249, 115, 22, 0.35);
             padding: 6px 14px;
             border-radius: 20px;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             font-weight: 700;
             display: inline-flex;
             align-items: center;
@@ -77,7 +72,7 @@
 
         .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 16px;
             margin-bottom: 24px;
         }
@@ -86,7 +81,7 @@
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 18px 20px;
+            padding: 18px;
             position: relative;
             overflow: hidden;
         }
@@ -94,13 +89,16 @@
         .kpi-card::before {
             content: '';
             position: absolute;
-            top: 0; left: 0; width: 4px; height: 100%;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
         }
 
         .kpi-card.blue::before { background: var(--primary); }
-        .kpi-card.green::before { background: var(--success); }
+        .kpi-card.orange::before { background: var(--total-orange); }
         .kpi-card.yellow::before { background: var(--warning); }
-        .kpi-card.purple::before { background: var(--purple); }
+        .kpi-card.danger::before { background: var(--danger); }
 
         .kpi-label {
             font-size: 0.75rem;
@@ -183,8 +181,7 @@
         }
 
         .badge-paroquia { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
-        .badge-modico { background: rgba(168, 85, 247, 0.15); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.3); }
-        .badge-local { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .badge-modico { background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.3); }
         .badge-pac { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
 
         .dre-row {
@@ -205,14 +202,29 @@
         }
 
         .alert-box {
-            background: rgba(245, 158, 11, 0.1);
-            border: 1px solid rgba(245, 158, 11, 0.3);
+            background: rgba(249, 115, 22, 0.08);
+            border: 1px solid rgba(249, 115, 22, 0.3);
             border-radius: 10px;
-            padding: 14px 18px;
-            color: #fde68a;
-            font-size: 0.84rem;
-            line-height: 1.5;
+            padding: 16px 20px;
+            color: #fdba74;
+            font-size: 0.85rem;
+            line-height: 1.6;
             margin-top: 14px;
+        }
+
+        .geo-card {
+            background: #020617;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .geo-title {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #38bdf8;
+            margin-bottom: 6px;
+            text-transform: uppercase;
         }
     </style>
 </head>
@@ -221,256 +233,201 @@
     <!-- CABEÇALHO -->
     <div class="header-box">
         <div class="header-title">
-            <h1><i class="fa-solid fa-calculator" style="color: var(--primary);"></i> Auditoria de Custos & DRE Projetada Liturgias 2027</h1>
-            <p>Análise de Gastos de Produção, Direitos CNBB e Frete Real por Exemplar e Envio (Lote 1 e Ciclo Anual de 12 Exemplares)</p>
+            <h1>
+                <i class="fa-solid fa-truck-fast" style="color: var(--total-orange);"></i> 
+                Projeto Logístico & Proposta de Parceria — Total Express
+            </h1>
+            <p>Operação Nacional das Liturgias Diárias "Pão da Vida" (Ciclo Anual de 4 Envios — Destinos Fora de Fortaleza)</p>
         </div>
         <div>
-            <span class="badge-live"><i class="fa-solid fa-circle-dot"></i> Base Auditada: 462 Clientes | 1.038 Assinaturas</span>
+            <span class="badge-live"><i class="fa-solid fa-handshake"></i> Volume Anual: 1.500 Pacotes / 9.680 Exemplares</span>
         </div>
     </div>
 
-    <!-- CARDS DE RESUMO DO LOTE 1 (JAN A MAR/2027) -->
+    <!-- CARDS DE RESUMO DO LOTE & VOLUME PARA A TOTAL EXPRESS -->
     <div class="kpi-grid">
+        <div class="kpi-card orange">
+            <div class="kpi-label">Destinatários / Ciclo (Fora Fortaleza)</div>
+            <div class="kpi-val" style="color: #fb923c;">375 envios</div>
+            <div class="kpi-sub">Recorrência garantida a cada 3 meses</div>
+        </div>
         <div class="kpi-card blue">
-            <div class="kpi-label">Envios do Lote 1 (3 Meses)</div>
-            <div class="kpi-val" style="color: #38bdf8;">2.660 un</div>
-            <div class="kpi-sub">462 destinatários ativos</div>
+            <div class="kpi-label">Exemplares por Ciclo Trimestral</div>
+            <div class="kpi-val" style="color: #38bdf8;">2.420 un</div>
+            <div class="kpi-sub">Total anual: 9.680 livros distribuídos</div>
         </div>
         <div class="kpi-card yellow">
-            <div class="kpi-label">Frete Previsto Lote 1</div>
-            <div class="kpi-val" style="color: #fbbf24;">R$ 6.773,98</div>
-            <div class="kpi-sub">Custo médio: R$ 2,55 por exemplar</div>
+            <div class="kpi-label">Gasto Atual Correios por Ciclo</div>
+            <div class="kpi-val" style="color: #fbbf24;">R$ 6.382,48</div>
+            <div class="kpi-sub">Impresso Módico + PAC + Paróquias</div>
         </div>
-        <div class="kpi-card green">
-            <div class="kpi-label">Faturamento Total Anual</div>
-            <div class="kpi-val" style="color: #34d399;">R$ 77.151,40</div>
-            <div class="kpi-sub">537 ass. Paróquia + 501 ass. Final</div>
-        </div>
-        <div class="kpi-card purple">
-            <div class="kpi-label">Lucro Líquido Projetado (12M)</div>
-            <div class="kpi-val" style="color: #c084fc;">+ R$ 11.238,98</div>
-            <div class="kpi-sub">Margem média consolidada: + 14,6%</div>
+        <div class="kpi-card danger">
+            <div class="kpi-label">Impacto no Custo dos Livros</div>
+            <div class="kpi-val" style="color: #f87171;">45,8%</div>
+            <div class="kpi-sub">Frete atual absorve quase metade da operação</div>
         </div>
     </div>
 
-    <!-- SEÇÃO 1: DETALHAMENTO DO LOTE 1 POR GRUPO DE ENVIO -->
+    <!-- SEÇÃO 1: PERFIL DE CARGA, PESO MÉDIO E DESTINOS -->
     <div class="section-box">
         <div class="section-title">
-            <i class="fa-solid fa-truck-ramp-box" style="color: var(--primary);"></i> 
-            1. Custos e Fretes do Lote 1 (Janeiro a Março/2027) por Modalidade
+            <i class="fa-solid fa-boxes-stacked" style="color: var(--total-orange);"></i> 
+            1. Perfil da Carga, Pesos Médios e Destinos dos Envios
         </div>
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>Grupo / Modalidade</th>
-                    <th class="text-center">Clientes</th>
-                    <th class="text-center">Assinaturas</th>
-                    <th class="text-center">Exemplares Lote 1</th>
-                    <th class="text-right">Frete Total Lote 1</th>
-                    <th class="text-right">Frete / Exemplar</th>
-                    <th class="text-right">Frete / Destinatário</th>
-                    <th>Estratégia Recomendada</th>
+                    <th>Modalidade de Envio</th>
+                    <th class="text-center">Destinatários</th>
+                    <th class="text-center">Unidades / Ciclo</th>
+                    <th class="text-center">Peso Médio / Pacote</th>
+                    <th class="text-center">Peso Total do Ciclo</th>
+                    <th class="text-right">Frete Atual Correios (Ciclo)</th>
+                    <th class="text-right">Frete Médio / Pacote</th>
+                    <th>Principais Regiões e Estados de Destino</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td><span class="badge-tag badge-paroquia">Paróquias Fora do CE</span></td>
-                    <td class="text-center mono">4</td>
-                    <td class="text-center mono">537</td>
-                    <td class="text-center mono font-bold">1.509 un</td>
-                    <td class="text-right mono font-bold" style="color: #38bdf8;">R$ 1.506,72</td>
-                    <td class="text-right mono" style="color: #34d399;">R$ 1,00</td>
+                    <td><span class="badge-tag badge-modico">Pacotes Pequenos (Clientes Finais)</span></td>
+                    <td class="text-center mono font-bold">351</td>
+                    <td class="text-center mono">871 un</td>
+                    <td class="text-center mono" style="color: #38bdf8;">0,250 kg (1 a 3 livros)</td>
+                    <td class="text-center mono">87,1 kg</td>
+                    <td class="text-right mono font-bold" style="color: #f87171;">R$ 4.195,76</td>
+                    <td class="text-right mono" style="color: #f87171;">R$ 11,95</td>
+                    <td><strong>SP (73)</strong>, MG (31), CE interior (28), BA (28), RJ (21), PR (21), PE (19), PI (18)</td>
+                </tr>
+                <tr>
+                    <td><span class="badge-tag badge-paroquia">Caixas Pesadas (Paróquias Fora CE)</span></td>
+                    <td class="text-center mono font-bold">4</td>
+                    <td class="text-center mono">1.509 un</td>
+                    <td class="text-center mono" style="color: #38bdf8;">37,7 kg (div. 3 a 4 caixas)</td>
+                    <td class="text-center mono">150,9 kg</td>
+                    <td class="text-right mono font-bold" style="color: #fbbf24;">R$ 1.506,72</td>
                     <td class="text-right mono">R$ 376,68</td>
-                    <td>Fracionado em Caixas Frenet (J&T e PAC Correios)</td>
+                    <td>Marituba/PA (51 un), Alfredo Vasconcelos/MG (453 un), Rosário Oeste/MT (615 un), Goianésia/PA (390 un)</td>
                 </tr>
                 <tr>
-                    <td><span class="badge-tag badge-modico">Impresso Módico Brasil</span></td>
-                    <td class="text-center mono">351</td>
-                    <td class="text-center mono">385</td>
-                    <td class="text-center mono font-bold">871 un</td>
-                    <td class="text-right mono font-bold" style="color: #fbbf24;">R$ 4.195,76</td>
-                    <td class="text-right mono" style="color: #fbbf24;">R$ 4,82</td>
-                    <td class="text-right mono">R$ 11,95</td>
-                    <td>Tabela Correios com Registro (R$ 9,79 a R$ 12,68)</td>
-                </tr>
-                <tr>
-                    <td><span class="badge-tag badge-local">Fortaleza (Entrega Própria)</span></td>
-                    <td class="text-center mono">87</td>
-                    <td class="text-center mono">96</td>
-                    <td class="text-center mono font-bold">240 un</td>
-                    <td class="text-right mono font-bold" style="color: #34d399;">R$ 391,50</td>
-                    <td class="text-right mono" style="color: #34d399;">R$ 1,63</td>
-                    <td class="text-right mono">R$ 4,50</td>
-                    <td>Motorista Próprio (Roberto Souza a R$ 4,50/entrega)</td>
-                </tr>
-                <tr>
-                    <td><span class="badge-tag badge-pac">Regiões Afastadas (PAC / J&T)</span></td>
-                    <td class="text-center mono">20</td>
-                    <td class="text-center mono">20</td>
-                    <td class="text-center mono font-bold">40 un</td>
+                    <td><span class="badge-tag badge-pac">Regiões Afastadas (Norte / Centro-Oeste)</span></td>
+                    <td class="text-center mono font-bold">20</td>
+                    <td class="text-center mono">40 un</td>
+                    <td class="text-center mono" style="color: #38bdf8;">0,200 kg</td>
+                    <td class="text-center mono">4,0 kg</td>
                     <td class="text-right mono font-bold" style="color: #f87171;">R$ 680,00</td>
-                    <td class="text-right mono" style="color: #f87171;">R$ 17,00</td>
-                    <td class="text-right mono">R$ 34,00</td>
-                    <td>Priorizar J&T Express (R$ 26 vs R$ 45 dos Correios)</td>
+                    <td class="text-right mono" style="color: #f87171;">R$ 34,00</td>
+                    <td>PA (7), TO (6), RO (2), AM (2), AC (2), RR (1) — Alto custo via PAC Correios</td>
                 </tr>
             </tbody>
             <tfoot>
                 <tr style="background: #020617; font-weight: 800;">
-                    <td style="color: #fff;">TOTAL CONSOLIDADO LOTE 1</td>
-                    <td class="text-center mono" style="color: #38bdf8;">462</td>
-                    <td class="text-center mono" style="color: #38bdf8;">1.038</td>
-                    <td class="text-center mono" style="color: #38bdf8;">2.660 un</td>
-                    <td class="text-right mono" style="color: #38bdf8; font-size: 1rem;">R$ 6.773,98</td>
-                    <td class="text-right mono" style="color: #38bdf8;">R$ 2,55</td>
-                    <td class="text-right mono">R$ 14,66</td>
-                    <td style="color: #34d399;">4 Lotes ao longo do ano</td>
+                    <td style="color: #fff;">TOTAL FORA DE FORTALEZA (1 CICLO)</td>
+                    <td class="text-center mono" style="color: #fb923c; font-size: 1rem;">375</td>
+                    <td class="text-center mono" style="color: #fb923c;">2.420 un</td>
+                    <td class="text-center mono" style="color: #fb923c;">~ 0,645 kg</td>
+                    <td class="text-center mono font-bold" style="color: #fb923c;">242,0 kg</td>
+                    <td class="text-right mono" style="color: #f87171; font-size: 1rem;">R$ 6.382,48</td>
+                    <td class="text-right mono" style="color: #f87171;">R$ 17,02</td>
+                    <td style="color: #38bdf8;">Base consolidada em 4 ciclos anuais = 1.500 envios/ano</td>
                 </tr>
             </tfoot>
         </table>
     </div>
 
-    <!-- SEÇÃO 2: DRE PROJETADA DO CICLO DE 12 EXEMPLARES (ANO INTEIRO) -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; margin-bottom: 24px;">
-        
-        <!-- DRE PARÓQUIAS -->
-        <div class="section-box" style="margin-bottom: 0;">
-            <div class="section-title">
-                <i class="fa-solid fa-church" style="color: #38bdf8;"></i> 
-                Paróquias (537 Assinaturas / 6.444 Exemplares Ano)
+    <!-- SEÇÃO 2: DISTRIBUIÇÃO REGIONAL DOS DESTINOS -->
+    <div class="section-box">
+        <div class="section-title">
+            <i class="fa-solid fa-map-location-dot" style="color: #38bdf8;"></i> 
+            2. Distribuição Geográfica dos Destinos (Total: 375 Destinatários Recorrentes)
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
+            <div class="geo-card">
+                <div class="geo-title">Nordeste (Fora Fortaleza)</div>
+                <div style="font-size: 1.4rem; font-weight: 800; color: #fff; font-family: 'JetBrains Mono';">147 pacotes</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Interior CE (28), BA (28), PE (19), PI (18), RN (14), PB (12), MA (10), AL (10), SE (8)</div>
             </div>
-            <div style="margin-bottom: 12px; font-size: 0.8rem; color: var(--text-muted);">
-                Preço médio de venda: <strong>R$ 59,80</strong> por assinatura anual (R$ 4,98 / exemplar).
+            <div class="geo-card">
+                <div class="geo-title">Sudeste</div>
+                <div style="font-size: 1.4rem; font-weight: 800; color: #fff; font-family: 'JetBrains Mono';">127 pacotes</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">São Paulo (73 pacotes), Minas Gerais (32 pacotes com paróquia), Rio de Janeiro (21), Espírito Santo (1)</div>
             </div>
-
-            <div class="dre-row">
-                <span>Receita Bruta Total (537 × R$ 59,80)</span>
-                <span class="mono" style="color: #34d399; font-weight: 700;">+ R$ 32.112,60</span>
+            <div class="geo-card">
+                <div class="geo-title">Sul</div>
+                <div style="font-size: 1.4rem; font-weight: 800; color: #fff; font-family: 'JetBrains Mono';">40 pacotes</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Paraná (21 pacotes), Santa Catarina (11 pacotes), Rio Grande do Sul (8 pacotes)</div>
             </div>
-            <div class="dre-row">
-                <span>(-) Custo Gráfico dos Livros (6.444 × CMC R$ 2,79)</span>
-                <span class="mono" style="color: #f87171;">- R$ 17.978,76</span>
+            <div class="geo-card">
+                <div class="geo-title">Centro-Oeste</div>
+                <div style="font-size: 1.4rem; font-weight: 800; color: #fff; font-family: 'JetBrains Mono';">30 pacotes</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Distrito Federal (15 pacotes), Goiás (10 pacotes), Mato Grosso (4 pacotes com paróquia de 615 un), MS (1)</div>
             </div>
-            <div class="dre-row">
-                <span>(-) Direitos CNBB Pão da Vida (6.444 × R$ 0,368)</span>
-                <span class="mono" style="color: #f87171;">- R$ 2.368,17</span>
-            </div>
-            <div class="dre-row">
-                <span>(-) Frete Total Anual dos 4 Lotes (J&T + PAC)</span>
-                <span class="mono" style="color: #f87171;">- R$ 6.026,88</span>
-            </div>
-            <div class="dre-row total">
-                <span style="color: #38bdf8;">LUCRO LÍQUIDO ANUAL PARÓQUIAS</span>
-                <span class="mono" style="color: #34d399; font-size: 1.05rem;">+ R$ 5.738,79 (+17,9%)</span>
-            </div>
-            <div style="margin-top: 10px; font-size: 0.76rem; color: #94a3b8; line-height: 1.4;">
-                • Frete anual por assinatura: <strong>R$ 11,22</strong> (R$ 0,94 por exemplar).<br>
-                • Lucro líquido por assinatura: <strong style="color: #34d399;">+ R$ 10,69 por ano</strong>.
+            <div class="geo-card">
+                <div class="geo-title">Norte</div>
+                <div style="font-size: 1.4rem; font-weight: 800; color: #fff; font-family: 'JetBrains Mono';">22 pacotes</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Pará (9 pacotes incluindo 2 paróquias com 441 un), Tocantins (6), Rondônia (2), Amazonas (2), Acre (2), Roraima (1)</div>
             </div>
         </div>
-
-        <!-- DRE CLIENTE FINAL -->
-        <div class="section-box" style="margin-bottom: 0;">
-            <div class="section-title">
-                <i class="fa-solid fa-users" style="color: #c084fc;"></i> 
-                Clientes Finais (501 Assinaturas / 6.012 Exemplares Ano)
-            </div>
-            <div style="margin-bottom: 12px; font-size: 0.8rem; color: var(--text-muted);">
-                Preço tabelado de venda: <strong>R$ 89,90</strong> por assinatura anual (R$ 7,49 / exemplar).
-            </div>
-
-            <div class="dre-row">
-                <span>Receita Bruta Total (501 × R$ 89,90)</span>
-                <span class="mono" style="color: #34d399; font-weight: 700;">+ R$ 45.039,90</span>
-            </div>
-            <div class="dre-row">
-                <span>(-) Custo Gráfico dos Livros (6.012 × CMC R$ 2,79)</span>
-                <span class="mono" style="color: #f87171;">- R$ 16.773,48</span>
-            </div>
-            <div class="dre-row">
-                <span>(-) Direitos CNBB Pão da Vida (6.012 × R$ 0,368)</span>
-                <span class="mono" style="color: #f87171;">- R$ 2.209,41</span>
-            </div>
-            <div class="dre-row">
-                <span>(-) Fretes Totais Anuais (Módico + Local + PAC)</span>
-                <span class="mono" style="color: #f87171;">- R$ 20.556,82</span>
-            </div>
-            <div class="dre-row total">
-                <span style="color: #c084fc;">LUCRO LÍQUIDO ANUAL CLIENTE FINAL</span>
-                <span class="mono" style="color: #34d399; font-size: 1.05rem;">+ R$ 5.500,19 (+12,2%)</span>
-            </div>
-            <div style="margin-top: 10px; font-size: 0.76rem; color: #94a3b8; line-height: 1.4;">
-                • Fortaleza: <strong style="color: #34d399;">+ R$ 35,70 de lucro por assinatura (+39,7%)</strong>.<br>
-                • Impresso Módico: <strong style="color: #38bdf8;">+ R$ 5,77 a + R$ 20,76 de lucro anual</strong>.<br>
-                • PAC Norte/Nordeste: Prejuízo que é absorvido pelo lucro de Fortaleza.
-            </div>
-        </div>
-
     </div>
 
-    <!-- SEÇÃO 3: RESULTADO GERAL CONSOLIDADO DE 2027 -->
-    <div class="section-box" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-color: rgba(52, 211, 153, 0.3);">
-        <div class="section-title" style="color: #34d399;">
-            <i class="fa-solid fa-chart-pie"></i> 
-            3. Demonstrativo Consolidado Geral (12 Meses de 2027)
+    <!-- SEÇÃO 3: DEMONSTRATIVO DE CUSTOS & PESO DO FRETE ATUAL -->
+    <div class="section-box">
+        <div class="section-title">
+            <i class="fa-solid fa-scale-unbalanced" style="color: #f87171;"></i> 
+            3. Balanço de Custos Operacionais & Inviabilidade do Frete Atual dos Correios
         </div>
         
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>Linha do Demonstrativo (DRE)</th>
-                    <th class="text-right">Valor Total Anual</th>
-                    <th class="text-right">Por Assinatura (1.038)</th>
-                    <th class="text-right">Por Exemplar (12.456)</th>
-                    <th class="text-right">% s/ Receita</th>
+                    <th>Composição dos Custos da Operação</th>
+                    <th class="text-right">Gasto por Ciclo (3 Meses)</th>
+                    <th class="text-right">Projeção Anual (4 Envios)</th>
+                    <th class="text-right">Custo / Livro</th>
+                    <th class="text-right">% Absorvida do Fundo</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td style="font-weight: 700; color: #fff;">(+) RECEITA BRUTA OPERACIONAL</td>
-                    <td class="text-right mono font-bold" style="color: #34d399; font-size: 1.05rem;">R$ 77.152,50</td>
-                    <td class="text-right mono">R$ 74,33</td>
-                    <td class="text-right mono">R$ 6,19</td>
+                    <td style="font-weight: 700; color: #fff;">Custo Gráfico dos Livros (CMC Fiscal Gráfica)</td>
+                    <td class="text-right mono">R$ 6.751,80</td>
+                    <td class="text-right mono">R$ 27.007,20</td>
+                    <td class="text-right mono">R$ 2,79</td>
+                    <td class="text-right mono">48,4%</td>
+                </tr>
+                <tr>
+                    <td>Direitos Autorais CNBB (Pão da Vida)</td>
+                    <td class="text-right mono">R$ 889,68</td>
+                    <td class="text-right mono">R$ 3.558,72</td>
+                    <td class="text-right mono">R$ 0,368</td>
+                    <td class="text-right mono">6,4%</td>
+                </tr>
+                <tr style="background: rgba(248, 113, 113, 0.08);">
+                    <td style="font-weight: 700; color: #f87171;">Frete Atual Correios (Impresso Módico + PAC + Paróquias)</td>
+                    <td class="text-right mono font-bold" style="color: #f87171;">R$ 6.382,48</td>
+                    <td class="text-right mono font-bold" style="color: #f87171;">R$ 25.529,92</td>
+                    <td class="text-right mono" style="color: #f87171;">R$ 2,64</td>
+                    <td class="text-right mono font-bold" style="color: #f87171;">45,8%</td>
+                </tr>
+                <tr style="background: #020617; font-weight: 800;">
+                    <td style="color: #fff;">CUSTO TOTAL DIRETO DA OPERAÇÃO</td>
+                    <td class="text-right mono" style="color: #fbbf24;">R$ 14.023,96</td>
+                    <td class="text-right mono" style="color: #fbbf24;">R$ 56.095,84</td>
+                    <td class="text-right mono" style="color: #fbbf24;">R$ 5,79</td>
                     <td class="text-right mono">100,0%</td>
-                </tr>
-                <tr>
-                    <td>(-) Custo Gráfico dos Livros (CMC Fiscal R$ 2,79)</td>
-                    <td class="text-right mono" style="color: #f87171;">- R$ 34.752,24</td>
-                    <td class="text-right mono">- R$ 33,48</td>
-                    <td class="text-right mono">- R$ 2,79</td>
-                    <td class="text-right mono">45,0%</td>
-                </tr>
-                <tr>
-                    <td>(-) Royalties CNBB Pão da Vida (4,9% s/ Capa R$ 7,50)</td>
-                    <td class="text-right mono" style="color: #f87171;">- R$ 4.577,58</td>
-                    <td class="text-right mono">- R$ 4,41</td>
-                    <td class="text-right mono">- R$ 0,37</td>
-                    <td class="text-right mono">5,9%</td>
-                </tr>
-                <tr>
-                    <td>(-) Custos Totais de Frete dos 4 Lotes</td>
-                    <td class="text-right mono" style="color: #f87171;">- R$ 26.583,70</td>
-                    <td class="text-right mono">- R$ 25,61</td>
-                    <td class="text-right mono">- R$ 2,13</td>
-                    <td class="text-right mono">34,5%</td>
-                </tr>
-                <tr style="background: rgba(52, 211, 153, 0.08); font-weight: 800;">
-                    <td style="color: #34d399; font-size: 1rem;">(=) RESULTADO LÍQUIDO OPERACIONAL</td>
-                    <td class="text-right mono" style="color: #34d399; font-size: 1.15rem;">+ R$ 11.238,98</td>
-                    <td class="text-right mono" style="color: #34d399; font-size: 1.05rem;">+ R$ 10,83</td>
-                    <td class="text-right mono" style="color: #34d399; font-size: 1.05rem;">+ R$ 0,90</td>
-                    <td class="text-right mono" style="color: #34d399; font-size: 1.05rem;">+ 14,6%</td>
                 </tr>
             </tbody>
         </table>
 
         <div class="alert-box">
-            <strong><i class="fa-solid fa-lightbulb"></i> Conclusão Executiva da Auditoria:</strong><br>
-            • <strong>Não há prejuízo no modelo consolidado!</strong> Mesmo pagando os <strong>R$ 34.752,24</strong> de impressão gráfica, <strong>R$ 4.577,58</strong> de direitos autorais à CNBB e <strong>R$ 26.583,70</strong> em logística e fretes, a operação fecha com <strong>lucro líquido positivo de + R$ 11.238,98 (+14,6% de margem)</strong>.<br>
-            • <strong>O segredo da sustentabilidade:</strong> O volume das paróquias (frete diluído a R$ 1,00/ex) e os clientes de Fortaleza com entregador próprio (frete a R$ 4,50 gerando +39,7% de lucro) compensam com folga as despesas de fretes dos clientes mais distantes.<br>
-            • <strong>Otimização recomendada:</strong> Para clientes finais de outros estados, manter o envio semestral consolidado (2 envios de 6 exemplares a ~R$ 17,14) garante uma margem líquida ainda maior (+23,1%).
+            <strong><i class="fa-solid fa-hand-holding-heart" style="color: var(--total-orange);"></i> Propósito Vocacional da Obra & Proposta à Total Express:</strong><br>
+            • <strong>Natureza da Obra:</strong> As assinaturas das Liturgias Diárias "Pão da Vida" são um projeto sem fins lucrativos da Comunidade Católica Shalom, cuja finalidade é o sustento e a <strong>formação de padres, seminaristas e jovens missionários</strong> em todo o Brasil.<br>
+            • <strong>O Gargalo Logístico:</strong> Hoje, a tabela de balcão dos Correios (Impresso Módico entre <strong>R$ 9,79 e R$ 12,68</strong> e PAC a <strong>R$ 34,00</strong>) drena <strong>45,8% de tudo o que é arrecadado</strong> com os fiéis e paróquias, gerando déficit na distribuição e comprometendo a missão.<br>
+            • <strong>O que propomos à Total Express:</strong>
+            <br>1. Tornar a <strong>Total Express a Transportadora Oficial Exclusiva das Liturgias Pão da Vida</strong> para todo o Brasil (com divulgação institucional nas comunicações oficiais e redes da obra).
+            <br>2. Estabelecer uma <strong>tabela corporativa especial / humanitária</strong> compatível para pacotes pequenos (até 500g) em torno de <strong>R$ 10,00 a R$ 12,00 por pacote</strong> e tarifas consolidadas para as caixas fracionadas das paróquias.
+            <br>3. Em contrapartida, a Total Express ganha uma conta recorrente, com <strong>1.500 coletas programadas ao longo do ano</strong>, alto apelo social de responsabilidade corporativa e fidelização contínua.
         </div>
     </div>
 
 </body>
 </html>
-

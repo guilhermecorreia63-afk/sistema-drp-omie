@@ -12380,16 +12380,28 @@ function abrirModalClonarRemessa() {
     
     // Clona os itens da conferência para o estado de edição da nova remessa
     stateClonagemRemessa.itens = stateConsignacao.itensUnificados.map(it => {
-        // Sugestão de quantidade padrão para a nova remessa: mantém a quantidade enviada original
-        const qtdSugerida = it.qtd_enviada > 0 ? it.qtd_enviada : 10;
+        // Quantidade vendida que precisa ser reposta para completar a remessa original
+        const qtdVendida = parseInt(it.qtd_vendida) || 0;
+        const qtdOriginal = parseInt(it.qtd_enviada) || 10;
+        const qtdSugerida = qtdOriginal; // Remessa Total para recompletar o saldo
+
+        // Buscar estoque disponível na Matriz no catálogo carregado em state.produtos
+        const skuLimpo = String(it.sku || '').trim().toUpperCase();
+        const pCat = (state.produtos || []).find(p => String(p.sku || p.codigo || '').trim().toUpperCase() === skuLimpo);
+        const estoqueDisp = pCat ? (pCat.matriz_disponivel !== undefined ? pCat.matriz_disponivel : (pCat.matriz || 0)) : 0;
+
         return {
             sku: String(it.sku || '').trim(),
-            codigo_produto: it.codigo_produto || 0,
-            descricao: it.descricao || '',
-            familia: it.familia || '',
-            preco_unitario: parseFloat(it.preco_unitario) || 0.0,
+            codigo_produto: it.codigo_produto || (pCat ? pCat.id_produto : 0),
+            descricao: it.descricao || (pCat ? pCat.nome : ''),
+            familia: it.familia || (pCat ? pCat.familia : ''),
+            preco_unitario: parseFloat(it.preco_unitario) || (pCat ? parseFloat(pCat.valor_unitario || 0) : 0.0),
             quantidade: qtdSugerida,
-            ean: it.ean || it.codigo_barras || ''
+            qtd_vendida_acerto: qtdVendida,
+            qtd_original_remessa: qtdOriginal,
+            estoque_matriz: estoqueDisp,
+            tipo_item: qtdVendida > 0 ? 'REPOSICAO' : 'MANTER',
+            ean: it.ean || it.codigo_barras || (pCat ? (pCat.ean || pCat.codigo_barras) : '')
         };
     });
 
@@ -12413,19 +12425,38 @@ function renderizarTabelaClonagemRemessa() {
     if (!tbody) return;
 
     if (stateClonagemRemessa.itens.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #94a3b8; padding: 20px;">Nenhum produto na nova remessa. Adicione novos itens acima ou bipe o leitor.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #94a3b8; padding: 20px;">Nenhum produto na nova remessa. Adicione novos itens acima ou bipe o leitor.</td></tr>';
         atualizarTotaisClonagemRemessa();
         return;
     }
 
     tbody.innerHTML = stateClonagemRemessa.itens.map((it, idx) => {
         const subtotal = it.quantidade * it.preco_unitario;
+        const estDisp = parseInt(it.estoque_matriz) || 0;
+        const temEstoque = estDisp >= it.quantidade;
+        
+        let badgeTipo = '';
+        if (it.tipo_item === 'NOVO') {
+            badgeTipo = '<span class="badge" style="background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4); font-size: 0.7rem; padding: 2px 6px;">✨ NOVO ITEM</span>';
+        } else if (it.qtd_vendida_acerto > 0) {
+            badgeTipo = `<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); font-size: 0.7rem; padding: 2px 6px;" title="Vendido no acerto: ${it.qtd_vendida_acerto} un">🔄 REPOR (${it.qtd_vendida_acerto} un)</span>`;
+        } else {
+            badgeTipo = '<span class="badge" style="background: rgba(100, 116, 139, 0.2); color: #94a3b8; font-size: 0.7rem; padding: 2px 6px;">INALTERADO</span>';
+        }
+
+        let corEstoque = temEstoque ? '#34d399' : '#f87171';
+        let txtEstoque = temEstoque ? `${estDisp} un` : `⚠️ ${estDisp} un (Baixo)`;
+
         return `
             <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                 <td style="padding: 8px 10px; font-weight: 700; color: #38bdf8;">${it.sku}</td>
                 <td style="padding: 8px 10px; color: #e2e8f0;">
                     <div>${it.descricao}</div>
                     ${it.familia ? `<span style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase;">🏷️ ${it.familia}</span>` : ''}
+                </td>
+                <td style="padding: 8px 10px; text-align: center;">${badgeTipo}</td>
+                <td style="padding: 8px 10px; text-align: center; font-weight: 700; color: ${corEstoque};">
+                    ${txtEstoque}
                 </td>
                 <td style="padding: 8px 10px; text-align: center;">
                     <input type="number" min="1" value="${it.quantidade}" 
@@ -12487,8 +12518,10 @@ function adicionarItemClonagemManual() {
     const skuFinal = pCat.sku || pCat.codigo;
     // Se o item já estiver na lista, apenas soma a quantidade
     const existente = stateClonagemRemessa.itens.find(it => it.sku === skuFinal);
+    const estDisp = pCat ? (pCat.matriz_disponivel !== undefined ? pCat.matriz_disponivel : (pCat.matriz || 0)) : 0;
     if (existente) {
         existente.quantidade += qtd;
+        existente.tipo_item = 'NOVO';
     } else {
         stateClonagemRemessa.itens.unshift({
             sku: skuFinal,
@@ -12497,6 +12530,10 @@ function adicionarItemClonagemManual() {
             familia: pCat.familia || 'DIVERSOS',
             preco_unitario: parseFloat(pCat.valor_unitario) || 0.0,
             quantidade: qtd,
+            qtd_vendida_acerto: 0,
+            qtd_original_remessa: 0,
+            estoque_matriz: estDisp,
+            tipo_item: 'NOVO',
             ean: pCat.ean || pCat.codigo_barras || ''
         });
     }
@@ -12583,7 +12620,169 @@ async function confirmarGeracaoNovaRemessaOmie() {
     }
 }
 
+async function gerarPdfRomaneioNovaRemessa() {
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+        alert('Biblioteca jsPDF não carregada. Verifique sua conexão.');
+        return;
+    }
+
+    if (!stateClonagemRemessa.itens || stateClonagemRemessa.itens.length === 0) {
+        alert('Nenhum item adicionado para gerar o romaneio.');
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    const cli = stateClonagemRemessa.cliente || stateConsignacao.clienteAtual || {};
+    const itens = stateClonagemRemessa.itens;
+    const nomeCliente = cli.nome_fantasia || cli.razao_social || 'Consignatário';
+    const remOrig = stateClonagemRemessa.remessaOrigem?.numero_remessa || 'Anterior';
+
+    // 1. Cabeçalho
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, 210, 32, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(255, 255, 255);
+    doc.text("EDIÇÕES SHALOM — ROMANEIO DE REPOSIÇÃO & NOVA REMESSA", 14, 13);
+
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(148, 163, 184);
+    doc.text(`Cliente: ${nomeCliente} | CNPJ/CPF: ${cli.cnpj_cpf || '-'}`, 14, 20);
+    doc.text(`Base de Reposição: Remessa #${remOrig} | Data Emissão: ${new Date().toLocaleDateString('pt-BR')}`, 14, 26);
+
+    let y = 38;
+
+    // Resumo dos Itens a Separar
+    const itensRepor = itens.filter(x => x.qtd_vendida_acerto > 0);
+    const itensNovos = itens.filter(x => x.tipo_item === 'NOVO');
+    const totPecas = itens.reduce((acc, it) => acc + it.quantidade, 0);
+
+    doc.setFillColor(241, 245, 249);
+    doc.rect(14, y, 182, 14, 'F');
+    doc.setFontSize(8.5);
+    doc.setTextColor(30, 41, 59);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Total da Remessa: ${totPecas} peças  |  Itens a Repor (Venda): ${itensRepor.length}  |  Itens Novos: ${itensNovos.length}`, 18, y + 6);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.text(`* Itens em destaque indicam peças que saíram na venda e devem ser repostas para completar a remessa total.`, 18, y + 11);
+
+    y += 18;
+
+    // Cabeçalho da Tabela
+    const desenharCabecalhoTabela = (curY) => {
+        doc.setFillColor(30, 41, 59);
+        doc.rect(14, curY, 182, 6.5, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(255, 255, 255);
+        doc.text("SKU", 16, curY + 4.5);
+        doc.text("Descrição do Livro / Produto", 38, curY + 4.5);
+        doc.text("Status", 108, curY + 4.5, { align: 'center' });
+        doc.text("Estoque Matriz", 132, curY + 4.5, { align: 'center' });
+        doc.text("Repor", 152, curY + 4.5, { align: 'center' });
+        doc.text("Total", 168, curY + 4.5, { align: 'center' });
+        doc.text("Visto", 188, curY + 4.5, { align: 'center' });
+    };
+
+    desenharCabecalhoTabela(y);
+    y += 6.5;
+
+    itens.forEach((it, idx) => {
+        if (y > 275) {
+            doc.addPage();
+            y = 15;
+            desenharCabecalhoTabela(y);
+            y += 6.5;
+        }
+
+        const isRepor = (it.qtd_vendida_acerto > 0);
+        const isNovo = (it.tipo_item === 'NOVO');
+
+        // Cores de fundo das linhas: Reposição (amarelo), Novo (azul), Par (cinza claro), Ímpar (branco)
+        if (isRepor) {
+            doc.setFillColor(254, 243, 199); // Amarelo suave destaque reposição
+            doc.rect(14, y, 182, 5.8, 'F');
+        } else if (isNovo) {
+            doc.setFillColor(224, 242, 254); // Azul suave novos itens
+            doc.rect(14, y, 182, 5.8, 'F');
+        } else if (idx % 2 === 1) {
+            doc.setFillColor(248, 250, 252);
+            doc.rect(14, y, 182, 5.8, 'F');
+        }
+
+        doc.setFont('helvetica', isRepor ? 'bold' : 'normal');
+        doc.setFontSize(7.2);
+        doc.setTextColor(30, 41, 59);
+
+        // SKU
+        doc.text(it.sku || '-', 16, y + 4);
+
+        // Descrição
+        const descTrunc = (it.descricao || '').length > 44 ? (it.descricao || '').substring(0, 44) + '...' : (it.descricao || '');
+        doc.text(descTrunc, 38, y + 4);
+
+        // Status
+        if (isRepor) {
+            doc.setTextColor(180, 83, 9);
+            doc.text(`REPOR (${it.qtd_vendida_acerto})`, 108, y + 4, { align: 'center' });
+        } else if (isNovo) {
+            doc.setTextColor(2, 132, 199);
+            doc.text("NOVO", 108, y + 4, { align: 'center' });
+        } else {
+            doc.setTextColor(100, 116, 139);
+            doc.text("Manter", 108, y + 4, { align: 'center' });
+        }
+
+        // Saldo Matriz
+        const estDisp = parseInt(it.estoque_matriz) || 0;
+        if (estDisp >= it.quantidade) {
+            doc.setTextColor(22, 163, 74);
+            doc.text(`${estDisp} un`, 132, y + 4, { align: 'center' });
+        } else {
+            doc.setTextColor(220, 38, 38);
+            doc.text(`${estDisp} un (Baixo)`, 132, y + 4, { align: 'center' });
+        }
+
+        // Qtd a Repor
+        doc.setTextColor(30, 41, 59);
+        doc.setFont('helvetica', isRepor ? 'bold' : 'normal');
+        doc.text(isRepor ? String(it.qtd_vendida_acerto) : '-', 152, y + 4, { align: 'center' });
+
+        // Qtd Total Nova Remessa
+        doc.setFont('helvetica', 'bold');
+        doc.text(String(it.quantidade), 168, y + 4, { align: 'center' });
+
+        // Visto de Separação
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(148, 163, 184);
+        doc.text("[   ]", 188, y + 4, { align: 'center' });
+
+        y += 5.8;
+    });
+
+    // Rodapé de Conferência
+    if (y > 265) {
+        doc.addPage();
+        y = 15;
+    }
+    y += 10;
+    doc.setDrawColor(203, 213, 225);
+    doc.line(14, y, 196, y);
+    y += 8;
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text("Separado por: ____________________________     Data: ____/____/2026     Conferido por: ____________________________", 14, y);
+
+    doc.save(`romaneio_reposicao_${(nomeCliente || 'cliente').replace(/[^a-z0-9]/gi, '_')}.pdf`);
+}
+
 // Exportações globais
+window.gerarPdfRomaneioNovaRemessa = gerarPdfRomaneioNovaRemessa;
 window.abrirModalClonarRemessa = abrirModalClonarRemessa;
 window.fecharModalClonarRemessa = fecharModalClonarRemessa;
 window.renderizarTabelaClonagemRemessa = renderizarTabelaClonagemRemessa;
@@ -12595,7 +12794,169 @@ window.cotarFreteFrenetParoquia = cotarFreteFrenetParoquia;
 window.aplicarFreteParoquia = aplicarFreteParoquia;
 window.aplicarFreteParoquiaDetalhado = aplicarFreteParoquiaDetalhado;
 
-// Exportações globais existentes
+async function gerarPdfRomaneioNovaRemessa() {
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+        alert('Biblioteca jsPDF não carregada. Verifique sua conexão.');
+        return;
+    }
+
+    if (!stateClonagemRemessa.itens || stateClonagemRemessa.itens.length === 0) {
+        alert('Nenhum item adicionado para gerar o romaneio.');
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    const cli = stateClonagemRemessa.cliente || stateConsignacao.clienteAtual || {};
+    const itens = stateClonagemRemessa.itens;
+    const nomeCliente = cli.nome_fantasia || cli.razao_social || 'Consignatário';
+    const remOrig = stateClonagemRemessa.remessaOrigem?.numero_remessa || 'Anterior';
+
+    // 1. Cabeçalho
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, 210, 32, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(255, 255, 255);
+    doc.text("EDIÇÕES SHALOM — ROMANEIO DE REPOSIÇÃO & NOVA REMESSA", 14, 13);
+
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(148, 163, 184);
+    doc.text(`Cliente: ${nomeCliente} | CNPJ/CPF: ${cli.cnpj_cpf || '-'}`, 14, 20);
+    doc.text(`Base de Reposição: Remessa #${remOrig} | Data Emissão: ${new Date().toLocaleDateString('pt-BR')}`, 14, 26);
+
+    let y = 38;
+
+    // Resumo dos Itens a Separar
+    const itensRepor = itens.filter(x => x.qtd_vendida_acerto > 0);
+    const itensNovos = itens.filter(x => x.tipo_item === 'NOVO');
+    const totPecas = itens.reduce((acc, it) => acc + it.quantidade, 0);
+
+    doc.setFillColor(241, 245, 249);
+    doc.rect(14, y, 182, 14, 'F');
+    doc.setFontSize(8.5);
+    doc.setTextColor(30, 41, 59);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Total da Remessa: ${totPecas} peças  |  Itens a Repor (Venda): ${itensRepor.length}  |  Itens Novos: ${itensNovos.length}`, 18, y + 6);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.text(`* Itens em destaque indicam peças que saíram na venda e devem ser repostas para completar a remessa total.`, 18, y + 11);
+
+    y += 18;
+
+    // Cabeçalho da Tabela
+    const desenharCabecalhoTabela = (curY) => {
+        doc.setFillColor(30, 41, 59);
+        doc.rect(14, curY, 182, 6.5, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(255, 255, 255);
+        doc.text("SKU", 16, curY + 4.5);
+        doc.text("Descrição do Livro / Produto", 38, curY + 4.5);
+        doc.text("Status", 108, curY + 4.5, { align: 'center' });
+        doc.text("Estoque Matriz", 132, curY + 4.5, { align: 'center' });
+        doc.text("Repor", 152, curY + 4.5, { align: 'center' });
+        doc.text("Total", 168, curY + 4.5, { align: 'center' });
+        doc.text("Visto", 188, curY + 4.5, { align: 'center' });
+    };
+
+    desenharCabecalhoTabela(y);
+    y += 6.5;
+
+    itens.forEach((it, idx) => {
+        if (y > 275) {
+            doc.addPage();
+            y = 15;
+            desenharCabecalhoTabela(y);
+            y += 6.5;
+        }
+
+        const isRepor = (it.qtd_vendida_acerto > 0);
+        const isNovo = (it.tipo_item === 'NOVO');
+
+        // Cores de fundo das linhas: Reposição (amarelo), Novo (azul), Par (cinza claro), Ímpar (branco)
+        if (isRepor) {
+            doc.setFillColor(254, 243, 199); // Amarelo suave destaque reposição
+            doc.rect(14, y, 182, 5.8, 'F');
+        } else if (isNovo) {
+            doc.setFillColor(224, 242, 254); // Azul suave novos itens
+            doc.rect(14, y, 182, 5.8, 'F');
+        } else if (idx % 2 === 1) {
+            doc.setFillColor(248, 250, 252);
+            doc.rect(14, y, 182, 5.8, 'F');
+        }
+
+        doc.setFont('helvetica', isRepor ? 'bold' : 'normal');
+        doc.setFontSize(7.2);
+        doc.setTextColor(30, 41, 59);
+
+        // SKU
+        doc.text(it.sku || '-', 16, y + 4);
+
+        // Descrição
+        const descTrunc = (it.descricao || '').length > 44 ? (it.descricao || '').substring(0, 44) + '...' : (it.descricao || '');
+        doc.text(descTrunc, 38, y + 4);
+
+        // Status
+        if (isRepor) {
+            doc.setTextColor(180, 83, 9);
+            doc.text(`REPOR (${it.qtd_vendida_acerto})`, 108, y + 4, { align: 'center' });
+        } else if (isNovo) {
+            doc.setTextColor(2, 132, 199);
+            doc.text("NOVO", 108, y + 4, { align: 'center' });
+        } else {
+            doc.setTextColor(100, 116, 139);
+            doc.text("Manter", 108, y + 4, { align: 'center' });
+        }
+
+        // Saldo Matriz
+        const estDisp = parseInt(it.estoque_matriz) || 0;
+        if (estDisp >= it.quantidade) {
+            doc.setTextColor(22, 163, 74);
+            doc.text(`${estDisp} un`, 132, y + 4, { align: 'center' });
+        } else {
+            doc.setTextColor(220, 38, 38);
+            doc.text(`${estDisp} un (Baixo)`, 132, y + 4, { align: 'center' });
+        }
+
+        // Qtd a Repor
+        doc.setTextColor(30, 41, 59);
+        doc.setFont('helvetica', isRepor ? 'bold' : 'normal');
+        doc.text(isRepor ? String(it.qtd_vendida_acerto) : '-', 152, y + 4, { align: 'center' });
+
+        // Qtd Total Nova Remessa
+        doc.setFont('helvetica', 'bold');
+        doc.text(String(it.quantidade), 168, y + 4, { align: 'center' });
+
+        // Visto de Separação
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(148, 163, 184);
+        doc.text("[   ]", 188, y + 4, { align: 'center' });
+
+        y += 5.8;
+    });
+
+    // Rodapé de Conferência
+    if (y > 265) {
+        doc.addPage();
+        y = 15;
+    }
+    y += 10;
+    doc.setDrawColor(203, 213, 225);
+    doc.line(14, y, 196, y);
+    y += 8;
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text("Separado por: ____________________________     Data: ____/____/2026     Conferido por: ____________________________", 14, y);
+
+    doc.save(`romaneio_reposicao_${(nomeCliente || 'cliente').replace(/[^a-z0-9]/gi, '_')}.pdf`);
+}
+
+// Exportações globais
+window.gerarPdfRomaneioNovaRemessa = gerarPdfRomaneioNovaRemessa; existentes
 window.verificarAutenticacaoApp = verificarAutenticacaoApp;
 window.abrirModalLoginApp = abrirModalLoginApp;
 window.fecharModalLoginApp = fecharModalLoginApp;

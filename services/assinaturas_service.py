@@ -1193,7 +1193,10 @@ def gerar_remessa_paroquia_omie(cliente_dados, valor_frete=None, transportadora_
                 "nCodIt": 0,
                 "nCodProd": PRODUTOS_LITURGIA["jan27"]["id_matriz"],
                 "nQtde": q_cx_jan,
-                "nValUnit": obter_valor_unitario_liturgia("jan27")
+                "nValUnit": obter_valor_unitario_liturgia("jan27"),
+                "ICMS": {"cSitTrib": "41", "nAliq": 0, "nBC": 0, "nValor": 0},
+                "PIS": {"cSitTribPIS": "07", "nAliqPIS": 0, "nBCPIS": 0, "nValPIS": 0},
+                "COFINS": {"cSitTribCOFINS": "07", "nAliqCOFINS": 0, "nBCCOFINS": 0, "nValCOFINS": 0}
             })
             item_idx += 1
 
@@ -1204,7 +1207,10 @@ def gerar_remessa_paroquia_omie(cliente_dados, valor_frete=None, transportadora_
                 "nCodIt": 0,
                 "nCodProd": PRODUTOS_LITURGIA["fev27"]["id_matriz"],
                 "nQtde": q_cx_fev,
-                "nValUnit": obter_valor_unitario_liturgia("fev27")
+                "nValUnit": obter_valor_unitario_liturgia("fev27"),
+                "ICMS": {"cSitTrib": "41", "nAliq": 0, "nBC": 0, "nValor": 0},
+                "PIS": {"cSitTribPIS": "07", "nAliqPIS": 0, "nBCPIS": 0, "nValPIS": 0},
+                "COFINS": {"cSitTribCOFINS": "07", "nAliqCOFINS": 0, "nBCCOFINS": 0, "nValCOFINS": 0}
             })
             item_idx += 1
 
@@ -1215,7 +1221,10 @@ def gerar_remessa_paroquia_omie(cliente_dados, valor_frete=None, transportadora_
                 "nCodIt": 0,
                 "nCodProd": PRODUTOS_LITURGIA["mar27"]["id_matriz"],
                 "nQtde": q_cx_mar,
-                "nValUnit": obter_valor_unitario_liturgia("mar27")
+                "nValUnit": obter_valor_unitario_liturgia("mar27"),
+                "ICMS": {"cSitTrib": "41", "nAliq": 0, "nBC": 0, "nValor": 0},
+                "PIS": {"cSitTribPIS": "07", "nAliqPIS": 0, "nBCPIS": 0, "nValPIS": 0},
+                "COFINS": {"cSitTribCOFINS": "07", "nAliqCOFINS": 0, "nBCCOFINS": 0, "nValCOFINS": 0}
             })
             item_idx += 1
 

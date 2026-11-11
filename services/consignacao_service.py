@@ -934,6 +934,20 @@ class ConsignacaoService:
             "erros": []
         }
 
+        # 0. Garantir cliente e remessa corretos para o Pedido de Venda
+        remessas_unificadas = acerto.get("remessas_unificadas", [])
+        if remessas_unificadas:
+            prim_rem = remessas_unificadas[0]
+            n_rem_cod = prim_rem.get("nCodRem") if isinstance(prim_rem, dict) else None
+            if n_rem_cod:
+                try:
+                    r_det_info = self.obter_detalhes_remessa(n_rem_cod)
+                    cli_rem_omie = int(r_det_info.get("cabec", {}).get("nCodCli") or 0)
+                    if cli_rem_omie and cli_rem_omie != cod_cli:
+                        cod_cli = cli_rem_omie
+                except Exception:
+                    pass
+
         # 1. Gerar Pedido de Venda no Omie para os itens vendidos (ou vincular pedido já lançado manualmente)
         pedido_manual = str(acerto.get("numero_pedido_manual") or "").strip()
         
@@ -1024,7 +1038,29 @@ class ConsignacaoService:
                     }
                 else:
                     msg_erro = res_pv.get("faultstring") or res_pv.get("descricao_status") or res_pv.get("cDesStatus") or "Erro ao gerar pedido no Omie"
-                    resultado["erros"].append(f"Erro Pedido de Venda: {msg_erro}")
+                    # Se o Omie já havia criado o pedido com sucesso antes do timeout/retry:
+                    # Exemplo: "ERROR: Pedido já cadastrado para o Código de Integração [PV_CONSIG_...], Código [2275865017] e Número [18490] !"
+                    import re
+                    match_recup = re.search(r"Código \[(\d+)\].*?Número \[(\d+)\]", msg_erro, re.IGNORECASE)
+                    if not match_recup:
+                        match_recup = re.search(r"Número \[(\d+)\].*?Código \[(\d+)\]", msg_erro, re.IGNORECASE)
+                        if match_recup:
+                            cod_recup, num_recup = match_recup.group(2), match_recup.group(1)
+                        else:
+                            cod_recup, num_recup = None, None
+                    else:
+                        cod_recup, num_recup = match_recup.group(1), match_recup.group(2)
+
+                    if num_recup and ("já cadastrado" in msg_erro.lower() or "ja cadastrado" in msg_erro.lower()):
+                        print(f"[CONSIGNACAO] Pedido #{num_recup} já havia sido cadastrado com sucesso no Omie (Código {cod_recup}). Recuperando integração...")
+                        resultado["pedido_venda"] = {
+                            "numero_pedido": num_recup,
+                            "codigo_pedido": int(cod_recup) if cod_recup and cod_recup.isdigit() else 0,
+                            "codigo_status": "0",
+                            "descricao_status": f"Pedido #{num_recup} confirmado no Omie ERP."
+                        }
+                    else:
+                        resultado["erros"].append(f"Erro Pedido de Venda: {msg_erro}")
             except Exception as e:
                 resultado["erros"].append(f"Exceção Pedido de Venda: {str(e)}")
 
@@ -1051,12 +1087,23 @@ class ConsignacaoService:
                 if is_faturada is None:
                     try:
                         r_det = self.obter_detalhes_remessa(nCodRem)
-                        is_faturada = (r_det.get("cabec", {}).get("faturada") == "S")
+                        c_cab = r_det.get("cabec", {})
+                        # Se tem campo faturada=='S', ou cEtapa=='10', ou se número de NF preenchido
+                        is_faturada = (c_cab.get("faturada") == "S" or c_cab.get("cEtapa") == "10" or bool(c_cab.get("cNumeroNF")))
                     except Exception:
                         is_faturada = True # fallback
                 
-                # Se a remessa NÃO foi faturada no Omie (manual em aberto), NÃO gera devolução fiscal
-                if not is_faturada:
+                # Se a remessa NÃO foi faturada no Omie (manual em aberto), tenta DevolverRemessa e se não for faturada avisa exclusão manual
+                res_dev_tentativa = None
+                try:
+                    payload_dev = {"nCodRem": int(nCodRem)}
+                    res_dev = self.client.executar("produtos/remessa/", "DevolverRemessa", [payload_dev])
+                    if res_dev and (res_dev.get("cCodStatus") == "0" or res_dev.get("nIdDevolucao")):
+                        res_dev_tentativa = res_dev
+                except Exception as ex_t:
+                    pass
+
+                if not is_faturada and not res_dev_tentativa:
                     resultado["devolucoes"].append({
                         "numero_remessa": num_rem,
                         "nCodRem": nCodRem,
@@ -1066,10 +1113,9 @@ class ConsignacaoService:
                     })
                     continue
 
-                # Se a remessa FOI faturada no Omie, gera a Devolução de Remessa oficial (CFOP 1.917)
+                # Se a remessa FOI faturada no Omie (ou aceitou DevolverRemessa), gera/processa a Devolução de Remessa oficial
                 try:
-                    payload_dev = {"nCodRem": int(nCodRem)}
-                    res_dev = self.client.executar("produtos/remessa/", "DevolverRemessa", [payload_dev])
+                    res_dev = res_dev_tentativa or self.client.executar("produtos/remessa/", "DevolverRemessa", [{"nCodRem": int(nCodRem)}])
                     
                     # 2.1 Ajustar a Nota de Entrada gerada automaticamente: Categoria 2.01.01, CFOP correto e Movimentar Estoque (cNaoMovEstoque: 'N')
                     nIdDev = res_dev.get("nIdDevolucao")
