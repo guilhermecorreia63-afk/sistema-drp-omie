@@ -150,6 +150,8 @@ window.navegarParaAba = function(tabId) {
         'tab-assinaturas': 'nav-group-modulo-3',
         'tab-assinaturas-pedidos': 'nav-group-modulo-3',
         'tab-combos-kit': 'nav-group-modulo-3',
+        'tab-analise-liturgias': 'nav-group-modulo-3',
+        'tab-custos-2027': 'nav-group-modulo-3',
         'tab-etiquetas': 'nav-group-modulo-4',
         'tab-correios-dashboard': 'nav-group-modulo-5',
         'tab-correios-faturados': 'nav-group-modulo-5',

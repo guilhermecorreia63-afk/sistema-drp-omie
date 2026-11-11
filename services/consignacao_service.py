@@ -968,7 +968,6 @@ class ConsignacaoService:
                             "valor_unitario": preco_tab,
                             "percentual_desconto": desc_pct,
                             "tipo_desconto": "P",
-                            "codigo_local_estoque": LOCAL_ESTOQUE_MATRIZ,
                             "reservado": "S"
                         },
                         "inf_adic": {

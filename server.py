@@ -120,6 +120,8 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_api_assinaturas_dados()
         elif url_path in ['/api/liturgias/painel_html', '/reports/liturgias_jul_dez_2026/painel_clientes_liturgias.html']:
             self.handle_api_painel_liturgias_html()
+        elif url_path in ['/api/liturgias/auditoria_2027_html', '/auditoria_custos_2027.html']:
+            self.handle_api_auditoria_2027_html()
         elif url_path == '/api/assinaturas/exportar_etiquetas':
             self.handle_api_assinaturas_exportar_etiquetas()
         elif url_path == '/api/assinaturas/exportar_correios':
@@ -3394,6 +3396,41 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(conteudo)
         except Exception as e:
             print(f"[API SERVER] Erro ao servir painel de liturgias: {e}")
+            self._send_json({"error": str(e)}, status=500)
+
+    def handle_api_auditoria_2027_html(self):
+        try:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            caminhos = [
+                os.path.join(base_dir, "data", "painel_liturgias", "auditoria_custos_2027.html"),
+                os.path.join(os.getcwd(), "data", "painel_liturgias", "auditoria_custos_2027.html"),
+                os.path.join(base_dir, "auditoria_custos_2027.html")
+            ]
+            caminho_final = None
+            for p in caminhos:
+                p_norm = os.path.normpath(p)
+                if os.path.exists(p_norm):
+                    caminho_final = p_norm
+                    break
+
+            if not caminho_final:
+                self.send_response(404)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(b"Painel de Custos e DRE 2027 nao encontrado.")
+                return
+
+            with open(caminho_final, "rb") as f:
+                conteudo = f.read()
+
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(conteudo)))
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            self.wfile.write(conteudo)
+        except Exception as e:
+            print(f"[API SERVER] Erro ao servir auditoria 2027: {e}")
             self._send_json({"error": str(e)}, status=500)
 
     # =========================================================================

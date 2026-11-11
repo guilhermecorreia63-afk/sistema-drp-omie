@@ -120,7 +120,11 @@
                     </button>
                     <button class="nav-tab" data-tab="tab-analise-liturgias" onclick="navegarParaAba('tab-analise-liturgias')" style="color: #38bdf8; border-left: 3px solid #38bdf8;">
                         <i class="fa-solid fa-chart-line"></i>
-                        <span>4. Auditoria & Análise de Fretes</span>
+                        <span>4. Auditoria de Fretes (2026)</span>
+                    </button>
+                    <button class="nav-tab" data-tab="tab-custos-2027" onclick="navegarParaAba('tab-custos-2027')" style="color: #34d399; border-left: 3px solid #34d399; font-weight: 600;">
+                        <i class="fa-solid fa-calculator"></i>
+                        <span>5. Custos & DRE 2027 (12 Meses)</span>
                     </button>
                 </div>
 
@@ -1225,7 +1229,7 @@
                     </button>
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <span style="font-size: 0.82rem; color: #38bdf8; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); padding: 6px 14px; border-radius: 6px;">
-                            <i class="fa-solid fa-server"></i> Painel Integrado de Auditoria & DRE Pão da Vida
+                            <i class="fa-solid fa-server"></i> Painel Integrado de Auditoria & DRE Pão da Vida (Histórico 2026)
                         </span>
                         <a href="/painel_clientes_liturgias.html" target="_blank" class="btn btn-primary" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); border: none; font-weight: 700; padding: 6px 14px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
                             <i class="fa-solid fa-up-right-from-square"></i> Abrir em Nova Aba
@@ -1235,6 +1239,27 @@
 
                 <div style="width: 100%; height: calc(100vh - 170px); border: 1px solid #1e293b; border-radius: 12px; overflow: hidden; background: #0b1120; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
                     <iframe src="/painel_clientes_liturgias.html" style="width: 100%; height: 100%; border: none;"></iframe>
+                </div>
+            </section>
+
+            <!-- ABA 5: AUDITORIA DE CUSTOS & DRE LITURGIAS 2027 (12 MESES) -->
+            <section id="tab-custos-2027" class="tab-content">
+                <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="navegarParaAba('tab-hub')" style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-arrow-left"></i> Voltar ao Hub Principal
+                    </button>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 0.82rem; color: #34d399; background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.3); padding: 6px 14px; border-radius: 6px; font-weight: 600;">
+                            <i class="fa-solid fa-calculator"></i> Custos Reais & Projeção DRE Liturgias 2027 (Jan-Mar / 12 Meses)
+                        </span>
+                        <a href="/auditoria_custos_2027.html" target="_blank" class="btn btn-primary" style="background: linear-gradient(135deg, #059669, #10b981); border: none; font-weight: 700; padding: 6px 14px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+                            <i class="fa-solid fa-up-right-from-square"></i> Abrir em Nova Aba
+                        </a>
+                    </div>
+                </div>
+
+                <div style="width: 100%; height: calc(100vh - 170px); border: 1px solid #1e293b; border-radius: 12px; overflow: hidden; background: #0b1120; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
+                    <iframe src="/auditoria_custos_2027.html" style="width: 100%; height: 100%; border: none;"></iframe>
                 </div>
             </section>
 

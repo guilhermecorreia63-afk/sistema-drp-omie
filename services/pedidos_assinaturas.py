@@ -268,7 +268,9 @@ class PedidosAssinaturasService:
                         "quantidade": qtd,
                         "valor_unitario": val_unit,
                         "tipo_desconto": "V",
-                        "valor_desconto": 0,
+                        "valor_desconto": 0
+                    },
+                    "inf_adic": {
                         "codigo_local_estoque": LOCAL_ESTOQUE_MATRIZ
                     }
                 }

@@ -13,6 +13,7 @@
   "rewrites": [
     { "source": "/api/cron_sync", "destination": "/api/cron_sync.py" },
     { "source": "/api/liturgias/painel_html", "destination": "/api/index.py" },
+    { "source": "/api/liturgias/auditoria_2027_html", "destination": "/api/index.py" },
     { "source": "/reports/liturgias_jul_dez_2026/painel_clientes_liturgias.html", "destination": "/api/index.py" },
     { "source": "/data/produtos_turso.json", "destination": "/api/index.py" },
     { "source": "/.netlify/functions/(.*)", "destination": "/api/index.py" },
