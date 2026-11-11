@@ -11901,12 +11901,13 @@ function aplicarPermissoesModulos() {
     const isMotorista = usuarioLogado.perfil === 'motorista' || modsPermitidos.includes(10);
     const navBtnMotorista = document.getElementById('nav-btn-motorista-souza');
 
-    // Bloqueia ou exibe na Sidebar (Modulo 5 restrito para Admin, exceto se motorista)
+    // Bloqueia ou exibe na Sidebar
     for (let m = 1; m <= 5; m++) {
         const el = modGroupsSidebar[m];
         if (el) {
             if (m === 5) {
-                el.style.display = (isAdmin || isMotorista) ? 'block' : 'none';
+                // Módulo 5 liberado para Admin, se o perfil tiver permissão 5 (Gestor de Logística) ou se for Motorista (10)
+                el.style.display = (isAdmin || modsPermitidos.includes(5) || isMotorista) ? 'block' : 'none';
             } else {
                 el.style.display = (isAdmin || modsPermitidos.includes(m)) && !isMotorista ? 'block' : 'none';
             }
@@ -11997,8 +11998,17 @@ async function carregarUsuariosCadastrados() {
 
         tbody.innerHTML = users.map(u => {
             const mods = String(u.modulos_permitidos || '').split(',').map(m => m.trim()).filter(Boolean);
+            const moduloNomes = {
+                '1': '1. DRP Matriz',
+                '2': '2. Logística',
+                '3': '3. Assinaturas',
+                '4': '4. Térmicas',
+                '5': '📦 5. Gestor Logística',
+                '10': '📱 10. Motorista'
+            };
+
             const badgesMods = mods.map(m => {
-                const cor = m === '3' ? '#a855f7' : (m === '2' ? '#0284c7' : (m === '4' ? '#38bdf8' : '#10b981'));
+                const cor = m === '3' ? '#a855f7' : (m === '2' ? '#0284c7' : (m === '4' ? '#38bdf8' : (m === '5' ? '#0ea5e9' : '#10b981')));
                 return `<span class="badge" style="background: rgba(255,255,255,0.08); border: 1px solid ${cor}; color: #fff; font-size: 0.72rem; margin-right: 4px; padding: 2px 6px;">${moduloNomes[m] || ('Módulo ' + m)}</span>`;
             }).join(' ');
 
@@ -12042,6 +12052,10 @@ function abrirFormularioNovoUsuario() {
     document.getElementById('chk-mod-2').checked = false;
     document.getElementById('chk-mod-3').checked = true;
     document.getElementById('chk-mod-4').checked = false;
+    const chk5 = document.getElementById('chk-mod-5');
+    if (chk5) chk5.checked = false;
+    const chk10 = document.getElementById('chk-mod-10');
+    if (chk10) chk10.checked = false;
 
     if (titulo) titulo.innerText = 'Novo Usuário';
     container.style.display = 'block';
@@ -12063,6 +12077,8 @@ function editarUsuarioForm(u) {
     document.getElementById('chk-mod-2').checked = mods.includes('2');
     document.getElementById('chk-mod-3').checked = mods.includes('3');
     document.getElementById('chk-mod-4').checked = mods.includes('4');
+    const chk5 = document.getElementById('chk-mod-5');
+    if (chk5) chk5.checked = mods.includes('5');
     const chk10 = document.getElementById('chk-mod-10');
     if (chk10) chk10.checked = mods.includes('10');
 
@@ -12087,6 +12103,7 @@ async function salvarUsuarioCrud() {
     if (document.getElementById('chk-mod-2').checked) mods.push(2);
     if (document.getElementById('chk-mod-3').checked) mods.push(3);
     if (document.getElementById('chk-mod-4').checked) mods.push(4);
+    if (document.getElementById('chk-mod-5') && document.getElementById('chk-mod-5').checked) mods.push(5);
     if (document.getElementById('chk-mod-10') && document.getElementById('chk-mod-10').checked) mods.push(10);
 
     if (mods.length === 0) {
