@@ -1252,8 +1252,20 @@ class CorreiosHubService:
 
             # --- ACTION: update_status_entrega ---
             if action == "update_status_entrega":
-                ids = b.get("ids") or ([b.get("id")] if b.get("id") else [])
-                novo_status = str(b.get("status") or "EM_TRANSPORTE").upper()
+                raw_ids = b.get("ids") or []
+                if not raw_ids:
+                    for k in ("id", "prepostagem_id"):
+                        if b.get(k): raw_ids.append(b.get(k))
+                
+                # Se passou codigo_objeto mas nao passou id, buscar o id da prepostagem
+                cod_obj = str(b.get("codigo_objeto") or "").strip()
+                if not raw_ids and cod_obj:
+                    res_p = execute_turso_query("SELECT id FROM prepostagens WHERE codigo_objeto = ? LIMIT 1", [cod_obj])
+                    for row_p in ((res_p or {}).get("rows") or []):
+                        raw_ids.append(_cell_val(row_p[0]))
+
+                ids = raw_ids
+                novo_status = str(b.get("status") or b.get("status_entrega") or "EM_TRANSPORTE").upper()
                 rec_nome = str(b.get("recebedor_nome") or "")
                 rec_doc = str(b.get("recebedor_doc") or "")
                 rec_ass = str(b.get("assinatura_base64") or "")

@@ -49,6 +49,14 @@ except Exception as e:
 PORT = 8889
 
 class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
+
+    def send_head(self):
+        # Keep the new financial source cache out of static GET and HEAD responses.
+        from services.frete_financeiro_http import private_cache_path
+        if private_cache_path(self.path):
+            self.send_error(403, "Cache financeiro privado.")
+            return None
+        return super().send_head()
     
     def end_headers(self):
         # Desativa cache HTTP para garantir atualizações em tempo real
@@ -58,6 +66,10 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
     def do_GET(self):
+        if self.path.startswith('/api/frete_financeiro/'):
+            from services.frete_financeiro_http import handle
+            handle(self, 'GET')
+            return
         url_path = self.path.split('?')[0].rstrip('/')
         if url_path == '/api/cron_sync':
             self.handle_api_cron_sync()
@@ -161,6 +173,10 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.send_error(404, f"Endpoint não encontrado: {self.path}")
 
     def do_POST(self):
+        if self.path.startswith('/api/frete_financeiro/'):
+            from services.frete_financeiro_http import handle
+            handle(self, 'POST')
+            return
         url_path = self.path.split('?')[0].rstrip('/')
         if url_path.startswith('/.netlify/functions/') or url_path.startswith('/api/correios_bridge/'):
             self.handle_api_correios_bridge('POST', url_path)
@@ -1711,26 +1727,40 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 fam_p = str(p_info.get('familia') or '').upper()
                 is_icone = 'ICONE' in fam_p or 'ÍCONE' in fam_p or 'ICONE' in nome_p or 'ÍCONE' in nome_p
 
-                if (preco <= 0 or preco == 10.0) and is_icone:
-                    import re
-                    if 'DUAS FACE' in nome_p or '2 FACE' in nome_p or 'DUPLA FACE' in nome_p:
-                        preco = 30.40 # 38.00 - 20%
-                    elif 'CRUZ' in nome_p:
-                        if re.search(r'\bA7\b', nome_p): preco = 5.60 # 7.00 - 20%
-                        elif re.search(r'\bA6\b', nome_p): preco = 9.60 # 12.00 - 20%
-                        elif re.search(r'\bA5\b', nome_p): preco = 14.40 # 18.00 - 20%
-                        elif re.search(r'\bA4\b', nome_p): preco = 30.40 # 38.00 - 20%
-                        elif re.search(r'\bA3\b', nome_p): preco = 48.00 # 60.00 - 20%
-                        else: preco = 9.60
-                    elif 'GOLD' not in nome_p:
-                        if re.search(r'\bA7\b', nome_p): preco = 5.60 # 7.00 - 20%
-                        elif re.search(r'\bA6\b', nome_p): preco = 9.60 # 12.00 - 20%
-                        elif re.search(r'\bA5\b', nome_p): preco = 12.80 # 16.00 - 20%
-                        elif re.search(r'\bA4\b', nome_p): preco = 28.00 # 35.00 - 20%
-                        elif re.search(r'\bA3\b', nome_p): preco = 44.00 # 55.00 - 20%
-                        else: preco = 9.60
-                elif preco <= 0:
-                    preco = float(p_info.get('preco_custo') or p_info.get('valor_unitario') or 10.0)
+                # Se preco for zero ou invalido, prioriza CMC -> preco_custo -> valor_unitario
+                if preco <= 0:
+                    cmc_val = float(p_info.get('cmc') or 0.0)
+                    pcusto_val = float(p_info.get('preco_custo') or 0.0)
+                    vunit_val = float(p_info.get('valor_unitario') or 0.0)
+
+                    if cmc_val > 0:
+                        preco = cmc_val
+                    elif is_icone:
+                        import re
+                        if 'DUAS FACE' in nome_p or '2 FACE' in nome_p or 'DUPLA FACE' in nome_p:
+                            preco = 30.40 # 38.00 - 20%
+                        elif 'CRUZ' in nome_p:
+                            if re.search(r'\bA7\b', nome_p): preco = 5.60 # 7.00 - 20%
+                            elif re.search(r'\bA6\b', nome_p): preco = 9.60 # 12.00 - 20%
+                            elif re.search(r'\bA5\b', nome_p): preco = 14.40 # 18.00 - 20%
+                            elif re.search(r'\bA4\b', nome_p): preco = 30.40 # 38.00 - 20%
+                            elif re.search(r'\bA3\b', nome_p): preco = 48.00 # 60.00 - 20%
+                            else: preco = 9.60
+                        elif 'GOLD' not in nome_p:
+                            if re.search(r'\bA7\b', nome_p): preco = 5.60 # 7.00 - 20%
+                            elif re.search(r'\bA6\b', nome_p): preco = 9.60 # 12.00 - 20%
+                            elif re.search(r'\bA5\b', nome_p): preco = 12.80 # 16.00 - 20%
+                            elif re.search(r'\bA4\b', nome_p): preco = 28.00 # 35.00 - 20%
+                            elif re.search(r'\bA3\b', nome_p): preco = 44.00 # 55.00 - 20%
+                            else: preco = 9.60
+                        else:
+                            preco = pcusto_val if pcusto_val > 0 else (vunit_val if vunit_val > 0 else 10.0)
+                    elif pcusto_val > 0:
+                        preco = pcusto_val
+                    elif vunit_val > 0:
+                        preco = vunit_val
+                    else:
+                        preco = 10.0
 
                 cod_prod = None
 

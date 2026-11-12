@@ -2,6 +2,36 @@
 
 Aplicação web local para operações integradas ao Omie ERP e ao banco Turso, incluindo expedição, geração/impressão de etiquetas, listas de postagem, romaneios locais e controle operacional de DRP.
 
+## Financeiro de Fretes (Módulo 5)
+
+Painel separado do rastreamento: compara cobrança de frete na NF/pedido com o custo registrado da postagem, por Comercial e Ecommerce. Não é lucro líquido do pedido nem comprovação de recebimento/pagamento bancário.
+
+- Fontes desta etapa: Portal Postal (Correios) e consultas Omie somente leitura. A Total Express tem leitura do registro local de AWB, mas não entra no saldo até existir fonte confiável de custo faturado; cotações não são usadas como frete pago. J&T fica fora do escopo financeiro desta etapa.
+- Exclui e mantém auditáveis as referências com meses e `-001`, conforme regra do operador para Liturgias. Não vincula postagem a NF por nome do cliente apenas. Referências sem vínculo, NFs ambíguas, devoluções ou metadados desconhecidos permanecem pendentes.
+- Soma SRO sem duplicação. Cobrança conta uma vez na primeira postagem CONHECIDA da NF; ao importar histórico anterior, essa alocação pode mudar. Não comparar períodos sem conferir cobertura de histórico.
+- Custo do frete grátis é separado de repasse deficitário e de Comercial sem cobrança. Valor ausente não vira zero. NF explicitamente zerada + pedido consultado sem campo de frete segue a regra de ausência de cobrança informada pelo operador, identificada na coluna de origem.
+- Período padrão é o mês atual; cada atualização aceita até 31 dias. Sincronização manual em job, cache, checkpoint, orçamento de 25 chamadas externas por rodada, sem retentativas agressivas; resultados parciais são preservados. Cache fiscal/pedidos é reaproveitado por até 24h; Portal Postal por 15 minutos.
+- Serviço: `services/frete_financeiro_service.py`; HTTP local: `services/frete_financeiro_http.py`; interface: `static/frete_financeiro/`. Cache privado próprio em `data/frete_financeiro/financeiro.sqlite3`, sem alteração dos bancos operacionais Omie/Turso/Total.
+- Rotas: GET `/api/frete_financeiro/painel`, POST `/api/frete_financeiro/sincronizar`, GET `/api/frete_financeiro/job/ID`. Restritas ao localhost e origem autorizada; o diretório do novo cache é bloqueado em GET/HEAD quando o servidor principal carregar o código atualizado. Não expor à rede/WhatsApp sem autenticação e autorização de backend adequadas.
+
+O menu "Financeiro de Fretes" foi adicionado ao Módulo 5. O servidor principal precisa carregar as novas rotas; não foi reiniciado automaticamente, para preservar o trabalho dos demais agentes. A edição concorrente de `app.js` também deve passar por verificação de sintaxe antes de usar a navegação principal.
+
+Para testar isoladamente, sem agendador do DRP nem sincronização automática:
+
+```powershell
+python scripts/maintenance/servidor_financeiro_fretes.py
+```
+
+Abra `http://127.0.0.1:8898`. Carregar a página só consulta o cache; as fontes externas são acessadas apenas por atualização manual.
+
+```powershell
+# Resumo do cache, sem API externa:
+python scripts/maintenance/atualizar_financeiro_fretes.py
+# Atualização limitada e somente leitura das fontes:
+python scripts/maintenance/atualizar_financeiro_fretes.py --atualizar
+python -m unittest discover -s scripts/maintenance -p test_frete_financeiro.py -v
+```
+
 ---
 
 ## 🚀 Executar Localmente

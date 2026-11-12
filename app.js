@@ -154,6 +154,7 @@ window.navegarParaAba = function(tabId) {
         'tab-custos-2027': 'nav-group-modulo-3',
         'tab-etiquetas': 'nav-group-modulo-4',
         'tab-correios-dashboard': 'nav-group-modulo-5',
+        'tab-correios-financeiro': 'nav-group-modulo-5',
         'tab-correios-faturados': 'nav-group-modulo-5',
         'tab-correios-aguardando': 'nav-group-modulo-5',
         'tab-correios-arquivo': 'nav-group-modulo-5',
@@ -290,6 +291,7 @@ window.navegarParaAba = function(tabId) {
     } else if (tabId.startsWith('tab-correios-')) {
         const CORREIOS_HEADERS = {
             'tab-correios-dashboard': ['📊 Início / Dashboard Operacional', 'Visão geral de expedições faturadas, pré-postagens Correios CWS, status SRO e indicadores.'],
+            'tab-correios-financeiro': ['Financeiro de Fretes', 'Cobrança do cliente, custo registrado e subsídio por departamento — separado do acompanhamento de entregas.'],
             'tab-correios-faturados': ['📋 1. Omie Pedidos & Remessas Faturadas', 'Fonte Principal: <strong>Turso DB (Camada Prata)</strong> | Sincronização incremental do Omie ERP e geração de etiquetas em lote.'],
             'tab-correios-aguardando': ['🖨️ 2. Etiquetas para Impressão', 'Pré-postagens emitidas aguardando impressão de Rótulo Padrão + DANFE Simplificada / Declaração de Conteúdo.'],
             'tab-correios-arquivo': ['📁 3. Etiquetas Reimpressão (Arquivo)', 'Histórico de etiquetas já impressas e arquivadas para consulta rápida ou segunda via.'],
@@ -3229,6 +3231,18 @@ function gerarRequisicaoVelasFerias() {
 // ----------------------------------------------------------------------
 // MODAL 3: REQUIÇÃO / PEDIDO DE COMPRA OMIE ERP (ABA 2 MATRIZ)
 // ----------------------------------------------------------------------
+// Obter o custo unitario real do produto (CMC prioritario, fallback para preco de custo ou valor unitario)
+function obterCustoUnitarioProduto(p) {
+    if (!p) return 10.00;
+    const cmc = Number(p.cmc || 0);
+    if (cmc > 0) return Math.round(cmc * 100) / 100;
+    const pcusto = Number(p.preco_custo || 0);
+    if (pcusto > 0) return Math.round(pcusto * 100) / 100;
+    const vunit = Number(p.valor_unitario || 0);
+    if (vunit > 0) return Math.round(vunit * 100) / 100;
+    return 10.00;
+}
+
 function abrirModalRequisicaoCompra(itensExclusivos = null) {
     const tbody = document.getElementById('tbody-requisicao-compra');
     tbody.innerHTML = '';
@@ -3237,7 +3251,7 @@ function abrirModalRequisicaoCompra(itensExclusivos = null) {
     if (itensExclusivos && itensExclusivos.length > 0) {
         produtosCompra = itensExclusivos;
     } else if (state.skusChecadosMatriz && state.skusChecadosMatriz.size > 0) {
-        // Se o usuário selecionou checkboxes específicas na Aba 2, filtrar SOMENTE os produtos selecionados!
+        // Se o usuario selecionou checkboxes especificas na Aba 2, filtrar SOMENTE os produtos selecionados!
         produtosCompra = state.produtos.filter(p => state.skusChecadosMatriz.has(p.sku));
     } else {
         // Se nenhum checkbox estiver marcado, sugere os produtos em Ruptura / Alerta
@@ -3256,37 +3270,48 @@ function abrirModalRequisicaoCompra(itensExclusivos = null) {
     }
 
     if (produtosCompra.length === 0) {
-        alert('Nenhum produto selecionado para requisição de compra.');
+        alert('Nenhum produto selecionado para requisicao de compra.');
         return;
     }
 
-    const payloadOmie = {
-        codCateg: "2.04.06",
-        codIntReqCompra: `REQ_${Date.now()}`,
-        codProj: 0,
-        dtSugestao: new Date(Date.now() + 15 * 86400000).toLocaleDateString('pt-BR'),
-        obsReqCompra: `Requisição de Compra gerada pelo DRP Omie (${produtosCompra.length} itens)`,
-        ItensReqCompra: produtosCompra.map(p => {
-            let nec = p.quantidade_sugerida || velasFeriasSelecionadas[p.sku] || 0;
-            if (nec <= 0) {
-                const vendas = p[`vendas_geral_${state.periodoDias}d`] || 0;
-                const lt = getLeadTimeFamilia(p.familia, 'matriz');
-                const estAlvo = calcularEstoqueAlvo(vendas, state.periodoDias, state.abastecimentoDias, lt);
-                nec = Math.max(1, Math.ceil(estAlvo - (p.matriz || 0)));
+    // Funcao interna para recalcular payload e subtotal da tabela
+    function atualizarPreviewReqCompra() {
+        const trs = tbody.querySelectorAll('tr');
+        const itensPayload = [];
+        trs.forEach(tr => {
+            const inpQtd = tr.querySelector('.input-qtd-compra');
+            const inpCusto = tr.querySelector('.input-custo-compra');
+            const tdSub = tr.querySelector('.subtotal-compra');
+            if (inpQtd && inpCusto) {
+                const sku = inpQtd.getAttribute('data-sku');
+                const qtd = parseFloat(inpQtd.value) || 0;
+                const custo = parseFloat(inpCusto.value) || 0;
+                const sub = qtd * custo;
+                if (tdSub) tdSub.innerText = `R$ ${sub.toFixed(2).replace('.', ',')}`;
+                const pObj = state.produtos.find(prod => prod.sku === sku) || {};
+                itensPayload.push({
+                    codProd: pObj.id_produto || sku,
+                    codIntProd: sku,
+                    qtde: qtd,
+                    precoUnit: custo
+                });
             }
-            return {
-                codProd: p.id_produto || p.sku,
-                codIntProd: p.sku,
-                qtde: nec,
-                precoUnit: p.valor_unitario || 10.00
-            };
-        })
-    };
+        });
 
-    document.getElementById('json-requisicao-compra').innerText = JSON.stringify(payloadOmie, null, 2);
+        const payloadOmie = {
+            codCateg: "2.01.01",
+            codIntReqCompra: `REQ_${Date.now()}`,
+            codProj: 0,
+            dtSugestao: new Date(Date.now() + 15 * 86400000).toLocaleDateString('pt-BR'),
+            obsReqCompra: `Requisicao de Compra gerada pelo DRP Omie (${itensPayload.length} itens)`,
+            ItensReqCompra: itensPayload
+        };
+        const preJson = document.getElementById('json-requisicao-compra');
+        if (preJson) preJson.innerText = JSON.stringify(payloadOmie, null, 2);
+    }
 
     produtosCompra.forEach(p => {
-        let nec = p.quantidade_sugerida || velasFeriasSelecionadas[p.sku] || 0;
+        let nec = p.quantidade_sugerida || (typeof velasFeriasSelecionadas !== 'undefined' ? velasFeriasSelecionadas[p.sku] : 0) || 0;
         const vendas = p[`vendas_geral_${state.periodoDias}d`] || 0;
         const lt = getLeadTimeFamilia(p.familia, 'matriz');
         const estAlvo = calcularEstoqueAlvo(vendas, state.periodoDias, state.abastecimentoDias, lt);
@@ -3295,17 +3320,28 @@ function abrirModalRequisicaoCompra(itensExclusivos = null) {
             nec = Math.max(1, Math.ceil(estAlvo - estMatrizDisp));
         }
 
+        const custoUnit = obterCustoUnitarioProduto(p);
+        const subtotal = nec * custoUnit;
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td><strong>${p.sku}</strong></td>
             <td>${p.nome}</td>
-            <td>${estMatrizDisp} un ${p.matriz_reservado > 0 ? `<small style="font-size:0.75rem; color:var(--text-muted);">(Fís: ${p.matriz})</small>` : ''}</td>
+            <td>${estMatrizDisp} un ${p.matriz_reservado > 0 ? `<small style="font-size:0.75rem; color:var(--text-muted);">(Fis: ${p.matriz})</small>` : ''}</td>
             <td>${estAlvo.toFixed(1)} un</td>
-            <td><input type="number" min="1" value="${nec}" class="input-number input-qtd-compra" data-sku="${p.sku}"></td>
+            <td><input type="number" min="1" value="${nec}" class="input-number input-qtd-compra" data-sku="${p.sku}" style="width: 80px;"></td>
+            <td><input type="number" step="0.01" min="0.01" value="${custoUnit.toFixed(2)}" class="input-number input-custo-compra" data-sku="${p.sku}" style="width: 100px;"></td>
+            <td class="subtotal-compra" style="font-weight: 600; color: #10b981;">R$ ${subtotal.toFixed(2).replace('.', ',')}</td>
         `;
         tbody.appendChild(tr);
+
+        const inpQtd = tr.querySelector('.input-qtd-compra');
+        const inpCusto = tr.querySelector('.input-custo-compra');
+        if (inpQtd) inpQtd.addEventListener('input', atualizarPreviewReqCompra);
+        if (inpCusto) inpCusto.addEventListener('input', atualizarPreviewReqCompra);
     });
 
+    atualizarPreviewReqCompra();
     document.getElementById('modal-requisicao-compra').classList.add('active');
 }
 
@@ -3316,7 +3352,7 @@ function fecharModalRequisicaoCompra() {
 function copiarJsonCompra() {
     const jsonTxt = document.getElementById('json-requisicao-compra').innerText;
     navigator.clipboard.writeText(jsonTxt).then(() => {
-        alert('Payload JSON de Requisição de Compra Omie copiado para a área de transferência!');
+        alert('Payload JSON de Requisicao de Compra Omie copiado para a area de transferencia!');
     });
 }
 
@@ -3329,22 +3365,32 @@ async function enviarCompraOmie() {
     }
 
     try {
-        const inputs = document.querySelectorAll('.input-qtd-compra');
+        const tbody = document.getElementById('tbody-requisicao-compra');
+        const trs = tbody ? tbody.querySelectorAll('tr') : [];
         const itens = [];
-        inputs.forEach(inp => {
-            const sku = inp.getAttribute('data-sku');
-            const qtd = parseFloat(inp.value) || 1;
-            if (sku && qtd > 0) {
-                itens.push({
-                    sku: sku,
-                    quantidade: qtd,
-                    valor_unitario: 10.00
-                });
+        trs.forEach(tr => {
+            const inpQtd = tr.querySelector('.input-qtd-compra');
+            const inpCusto = tr.querySelector('.input-custo-compra');
+            if (inpQtd) {
+                const sku = inpQtd.getAttribute('data-sku');
+                const qtd = parseFloat(inpQtd.value) || 0;
+                let precoUnit = inpCusto ? parseFloat(inpCusto.value) : 0;
+                if (!precoUnit || precoUnit <= 0) {
+                    const prod = state.produtos.find(p => p.sku === sku);
+                    precoUnit = obterCustoUnitarioProduto(prod);
+                }
+                if (sku && qtd > 0) {
+                    itens.push({
+                        sku: sku,
+                        quantidade: qtd,
+                        valor_unitario: precoUnit
+                    });
+                }
             }
         });
 
         if (itens.length === 0) {
-            alert('Nenhum item selecionado ou com quantidade válida.');
+            alert('Nenhum item selecionado ou com quantidade valida.');
             return;
         }
 
@@ -3352,35 +3398,36 @@ async function enviarCompraOmie() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                codCateg: '2.04.06',
+                codCateg: '2.01.01',
                 dtSugestao: new Date(Date.now() + 15 * 86400000).toLocaleDateString('pt-BR'),
-                obsReqCompra: `Requisição DRP Omie ERP (${itens.length} itens)`,
+                obsReqCompra: `Requisicao DRP Omie ERP (${itens.length} itens)`,
                 itens: itens
             })
         });
 
         const data = await res.json();
         if (data.success) {
-            // Adicionar automaticamente os SKUs enviados à lista de Produção
+            // Adicionar automaticamente os SKUs enviados a lista de Producao
             itens.forEach(item => {
                 if (item.sku) state.producao.add(item.sku);
             });
             localStorage.setItem('drp_producao', JSON.stringify(Array.from(state.producao)));
 
-            alert(`🎉 ${data.message}\n\nCódigo da Requisição no Omie: ${data.codReqCompra}\nTotal de Itens: ${data.itens_enviados}\n\n📦 ${itens.length} produto(s) entrara(m) automaticamente no status 'Em Produção / Compra 🟣'!`);
+            alert(`🎉 ${data.message}\n\nCodigo da Requisicao no Omie: ${data.codReqCompra}\nTotal de Itens: ${data.itens_enviados}\n\n📦 ${itens.length} produto(s) entrara(m) automaticamente no status 'Em Producao / Compra 🟣'!`);
             
-            // Limpar seleções
+            // Limpar selecoes
             state.skusChecadosMatriz.clear();
-            velasFeriasSelecionadas = {};
+            if (typeof velasFeriasSelecionadas !== 'undefined') velasFeriasSelecionadas = {};
             localStorage.removeItem('drp_velas_discipulado_selecao');
 
             fecharModalRequisicaoCompra();
-            render();
+            if (typeof render === 'function') render();
+            else if (typeof renderTabelaMatriz === 'function') renderTabelaMatriz();
         } else {
-            alert(`❌ Erro ao enviar requisição ao Omie ERP:\n${data.message}`);
+            alert(`❌ Erro ao enviar requisicao ao Omie ERP:\n${data.message}`);
         }
     } catch (err) {
-        alert(`❌ Erro na comunicação com o servidor: ${err.message}`);
+        alert(`❌ Erro na comunicacao com o servidor: ${err.message}`);
     } finally {
         if (btn) {
             btn.disabled = false;
@@ -3441,14 +3488,24 @@ function gerarPDFVelasFerias() {
 
 // Gerar PDF da Requisição de Compra / Pedido Omie
 function gerarPDFRequisicaoCompra() {
-    const inputs = document.querySelectorAll('.input-qtd-compra');
+    const tbody = document.getElementById('tbody-requisicao-compra');
+    const trs = tbody ? tbody.querySelectorAll('tr') : [];
     const itens = [];
-    inputs.forEach(inp => {
-        const sku = inp.getAttribute('data-sku');
-        const qtd = parseFloat(inp.value) || 0;
-        if (sku && qtd > 0) {
-            const p = state.produtos.find(prod => prod.sku === sku) || { sku, nome: 'PRODUTO' };
-            itens.push({ sku: p.sku, nome: p.nome, qtd });
+    let valorTotalReq = 0;
+
+    trs.forEach(tr => {
+        const inpQtd = tr.querySelector('.input-qtd-compra');
+        const inpCusto = tr.querySelector('.input-custo-compra');
+        if (inpQtd) {
+            const sku = inpQtd.getAttribute('data-sku');
+            const qtd = parseFloat(inpQtd.value) || 0;
+            const custo = inpCusto ? (parseFloat(inpCusto.value) || 0) : 0;
+            const sub = qtd * custo;
+            if (sku && qtd > 0) {
+                const p = state.produtos.find(prod => prod.sku === sku) || { sku, nome: 'PRODUTO' };
+                itens.push({ sku: p.sku, nome: p.nome, qtd, custo, sub });
+                valorTotalReq += sub;
+            }
         }
     });
 
@@ -3467,17 +3524,19 @@ function gerarPDFRequisicaoCompra() {
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text(`Data Sugestão: ${dataStr} | Total de Itens: ${itens.length}`, 14, 25);
-    doc.text("--------------------------------------------------------------------------------------------------", 14, 30);
+    doc.text(`Data Sugestão: ${dataStr} | Itens: ${itens.length} | Total Previsto: R$ ${valorTotalReq.toFixed(2).replace('.', ',')}`, 14, 25);
+    doc.text("--------------------------------------------------------------------------------------------------------------------------------", 14, 30);
 
     let y = 38;
     doc.setFont("helvetica", "bold");
     doc.text("SKU", 14, y);
-    doc.text("Produto", 45, y);
-    doc.text("Qtd Solicitada", 160, y);
+    doc.text("Produto", 38, y);
+    doc.text("Qtd", 130, y);
+    doc.text("Custo Unit", 148, y);
+    doc.text("Subtotal", 175, y);
 
     y += 4;
-    doc.text("--------------------------------------------------------------------------------------------------", 14, y);
+    doc.text("--------------------------------------------------------------------------------------------------------------------------------", 14, y);
     y += 6;
 
     doc.setFont("helvetica", "normal");
@@ -3487,10 +3546,16 @@ function gerarPDFRequisicaoCompra() {
             y = 20;
         }
         doc.text(item.sku, 14, y);
-        doc.text((item.nome || '').slice(0, 50), 45, y);
-        doc.text(`${item.qtd} un`, 160, y);
+        doc.text((item.nome || '').slice(0, 42), 38, y);
+        doc.text(`${item.qtd}`, 130, y);
+        doc.text(`R$ ${item.custo.toFixed(2).replace('.', ',')}`, 148, y);
+        doc.text(`R$ ${item.sub.toFixed(2).replace('.', ',')}`, 175, y);
         y += 6;
     });
+
+    y += 4;
+    doc.setFont("helvetica", "bold");
+    doc.text(`VALOR TOTAL ESTIMADO: R$ ${valorTotalReq.toFixed(2).replace('.', ',')}`, 14, y);
 
     doc.save(`requisicao_compra_omie_${new Date().toISOString().slice(0,10)}.pdf`);
 }

@@ -1539,7 +1539,13 @@ function initArquivoTab() {
   const inputDtInicio = document.getElementById("filterArqDataInicio");
   const inputDtFim = document.getElementById("filterArqDataFim");
   const hoje = getHojeBrasiliaISO();
-  if (inputDtInicio && !inputDtInicio.value) inputDtInicio.value = hoje;
+  // Inicializa o filtro de reimpressão com os últimos 15 dias para exibir histórico recente
+  const d15 = new Date(Date.now() - 15 * 86400000);
+  const ano15 = d15.getFullYear();
+  const mes15 = String(d15.getMonth() + 1).padStart(2, '0');
+  const dia15 = String(d15.getDate()).padStart(2, '0');
+  const d15Str = `${ano15}-${mes15}-${dia15}`;
+  if (inputDtInicio && !inputDtInicio.value) inputDtInicio.value = d15Str;
   if (inputDtFim && !inputDtFim.value) inputDtFim.value = hoje;
   if (inputDtInicio) inputDtInicio.addEventListener("change", aplicarFiltrosArquivo);
   if (inputDtFim) inputDtFim.addEventListener("change", aplicarFiltrosArquivo);

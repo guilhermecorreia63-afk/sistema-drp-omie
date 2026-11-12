@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Financeiro de Fretes</title>
+  <link rel="stylesheet" href="painel.css">
+  <script src="painel.js" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="title-block">
+        <span class="eyebrow">MÓDULO 5 · CONCILIAÇÃO</span>
+        <h1>Financeiro de Fretes</h1>
+        <p>Cobrança do cliente x custo registrado — não é lucro líquido</p>
+      </div>
+      <button id="sync-button" class="button button-primary" type="button">↻ <span>Atualizar fontes (leitura)</span></button>
+    </header>
+
+    <section class="filters panel" aria-label="Filtros do painel">
+      <label>Início<input id="date-start" type="date"></label>
+      <label>Fim<input id="date-end" type="date"></label>
+      <label>Departamento<select id="department"><option value="">Todos</option><option>Comercial</option><option>Ecommerce</option></select></label>
+      <label>Transportadora<select id="carrier"><option value="">Todas</option><option value="CORREIOS">Correios</option><option value="TOTAL EXPRESS">Total Express</option></select></label>
+      <label class="search-label">Buscar NF, pedido ou cliente<input id="search" type="search" placeholder="Digite para filtrar"></label>
+      <button id="apply-filters" class="button button-secondary" type="button">Aplicar</button>
+    </section>
+
+    <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+    <section id="source-warning" class="source-warning" hidden></section>
+
+    <section class="metrics" aria-label="Indicadores conciliados">
+      <article class="metric panel"><span>Notas conciliadas</span><strong id="metric-notes">—</strong><small>Contagem única por NF</small></article>
+      <article class="metric panel"><span>Objetos</span><strong id="metric-objects">—</strong><small>Objetos associados</small></article>
+      <article class="metric panel"><span>Custo registrado</span><strong id="metric-cost">—</strong><small>Somente conciliados</small></article>
+      <article class="metric panel"><span>Cobrança ao cliente</span><strong id="metric-charge">—</strong><small>Origem cadastral, não pagamento</small></article>
+      <article class="metric panel"><span>Saldo</span><strong id="metric-balance">—</strong><small>Cobrança menos custo registrado</small></article>
+    </section>
+
+    <section class="secondary-metrics" aria-label="Alertas e indicadores auxiliares">
+      <div><span>Frete grátis Ecommerce</span><strong id="free-shipping">—</strong></div>
+      <div><span>Comercial sem cobrança</span><strong id="no-charge">—</strong></div>
+      <div><span>Déficit de repasses</span><strong id="deficit">—</strong></div>
+      <div><span>Recuperação</span><strong id="recovery">—</strong></div>
+      <div><span>Custo conhecido pendente</span><strong id="pending-cost">—</strong></div>
+    </section>
+
+    <section id="comparison" class="comparison panel" hidden>
+      <div class="section-heading"><div><span class="eyebrow">COMPARATIVO</span><h2>Cobrança x custo registrado</h2></div><span class="muted">Valores conciliados por departamento</span></div>
+      <div id="department-bars" class="department-bars"></div>
+      <div class="legend"><span><i class="legend-charge"></i>Cobrança</span><span><i class="legend-cost"></i>Custo registrado</span></div>
+    </section>
+
+    <nav class="tabs" aria-label="Registros de frete">
+      <button class="tab active" data-tab="conciliados" type="button">Conciliados <span id="count-conciliados">0</span></button>
+      <button class="tab" data-tab="pendentes" type="button">Pendentes / sem NF <span id="count-pendentes">0</span></button>
+      <button class="tab" data-tab="excluidos" type="button">Excluídos (Liturgias) <span id="count-excluidos">0</span></button>
+      <button id="export-csv" class="button button-secondary export-button" type="button">Exportar CSV</button>
+    </nav>
+
+    <section class="table-panel panel">
+      <div class="table-heading"><h2 id="table-title">Conciliados</h2><span id="table-summary" class="muted"></span></div>
+      <div class="table-scroll"><table><thead id="table-head"></thead><tbody id="table-body"></tbody></table></div>
+      <div id="empty-state" class="empty-state" hidden>Nenhum registro para os filtros selecionados.</div>
+    </section>
+
+    <footer class="footer"><span id="updated-at">Última atualização: não informada</span><span id="refresh-status"></span></footer>
+  </main>
+</body>
+</html>

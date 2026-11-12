@@ -21,7 +21,7 @@ from omie_client import OmieClient
 
 # ID do cenário fiscal oficial no Omie para Venda Mercadoria (Consignação sem contrato / 1818515488)
 CENARIO_VENDA_CONSIGNACAO = 1818515488
-CENARIO_FISCAL_5917 = 0
+CENARIO_FISCAL_5917 = 1800980891 # Remessa em Consignação (sem contrato) - CFOP 5.917
 # ID da categoria comercial padrão Matriz
 CATEGORIA_COMERCIAL_PADRAO = "1.01.01"
 # Categoria padrão para o Retorno de Remessa (Nota de Entrada): Compras de Mercadorias para Revenda
@@ -1401,7 +1401,7 @@ class ConsignacaoService:
                     "nValSeguro": 0
                 },
                 "infAdic": {
-                    "cCodCateg": CATEGORIA_RECEITA,
+                    "cCodCateg": CATEGORIA_COMERCIAL_PADRAO,
                     "cConsFinal": "S",
                     "cContato": "EVENTOS SHALOM",
                     "cDadosAdic": f"Remessa de mercadorias para evento em consignacao - {nome_evento}",
@@ -1479,7 +1479,12 @@ class ConsignacaoService:
                 "nCodIt": 0,
                 "nCodProd": ncod,
                 "nQtde": qtd,
-                "nValUnit": val_unit
+                "nValUnit": val_unit,
+                "infAdicItem": {
+                    "codigo_cenario_impostos_item": CENARIO_FISCAL_5917,
+                    "cNaoMovEstoque": "N"
+                }
+
             })
 
         cod_int_rem = f"CLON_{int(time.time())}"[:20]
@@ -1508,7 +1513,7 @@ class ConsignacaoService:
                 "nValSeguro": 0
             },
             "infAdic": {
-                "cCodCateg": CATEGORIA_RECEITA,
+                "cCodCateg": CATEGORIA_COMERCIAL_PADRAO,
                 "cConsFinal": "S",
                 "cContato": cliente_nome[:30],
                 "cDadosAdic": f"Remessa de mercadorias em consignacao - {cliente_nome}",
