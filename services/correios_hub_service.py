@@ -2020,7 +2020,7 @@ class CorreiosHubService:
     @staticmethod
     def handle_correios_prepostagem(body: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
         cws_token = (os.getenv("CWS_TOKEN") or "").strip()
-        cartao_postagem = (os.getenv("CARTAO_POSTAGEM_CORREIOS") or "0066578957").strip()
+        cartao_postagem = re.sub(r"\D", "", os.getenv("CARTAO_POSTAGEM_CORREIOS") or "0066578957").zfill(10)
         if not cws_token:
             return 500, {"error": "CWS_TOKEN nao configurado no ambiente."}
 
