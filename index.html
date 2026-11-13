@@ -3826,16 +3826,21 @@
                         <input type="text" id="end-produto-nome" class="form-control" readonly style="background: rgba(15, 23, 42, 0.8); font-weight: 600;">
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
                         <div class="form-group">
                             <label><b>📍 Fracionado (Picking):</b></label>
-                            <input type="text" id="end-fracionado" class="form-control" placeholder="Ex: C3N5, A1N1, E-N2..." style="text-transform: uppercase;">
+                            <input type="text" id="end-fracionado" class="form-control" placeholder="Ex: B1-N5, A1N1..." style="text-transform: uppercase;">
                             <small style="font-size:0.75rem; color:var(--text-muted);">Prateleira A1..H1 | Nível N1..N9</small>
                         </div>
                         <div class="form-group">
                             <label><b>🏭 Depósito 1 (Armazenado):</b></label>
-                            <input type="text" id="end-deposito1" class="form-control" placeholder="Ex: D1N1, D1N2, D4N4..." style="text-transform: uppercase;">
+                            <input type="text" id="end-deposito1" class="form-control" placeholder="Ex: D1.3-N3, D1N1..." style="text-transform: uppercase;">
                             <small style="font-size:0.75rem; color:var(--text-muted);">Prateleira D1..D4 | Nível N1..N4</small>
+                        </div>
+                        <div class="form-group">
+                            <label><b>📦 Depósito 2 (Reserva/Paletes/3D):</b></label>
+                            <input type="text" id="end-deposito2" class="form-control" placeholder="Ex: P1-N1, PAL-02..." style="text-transform: uppercase;">
+                            <small style="font-size:0.75rem; color:var(--text-muted);">Palete / Posição 3D Reserva</small>
                         </div>
                     </div>
 

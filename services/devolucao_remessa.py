@@ -60,8 +60,9 @@ def executar_devolucao_seletiva_remessa(
     
     # 1. Devolver a remessa via API
     res_dev = client.executar("produtos/remessa/", "DevolverRemessa", [{"nCodRem": int(nCodRem)}])
-    if not res_dev or res_dev.get("cStatus") not in ["0", 0]:
-        erro_msg = res_dev.get("cDescStatus") or res_dev.get("faultstring") or str(res_dev)
+    c_status = str(res_dev.get("cCodStatus") or res_dev.get("cStatus") or "")
+    if not res_dev or (c_status not in ["0", 0] and not res_dev.get("nIdDevolucao")):
+        erro_msg = res_dev.get("cDescStatus") or res_dev.get("cDesStatus") or res_dev.get("faultstring") or str(res_dev)
         raise RuntimeError(f"Erro ao devolver remessa {nCodRem} no Omie: {erro_msg}")
 
     nIdDevolucao = res_dev.get("nIdDevolucao")

@@ -4136,9 +4136,13 @@ function renderizarAbaDepositosMatriz() {
         const endObj = (state.enderecos || {})[skuStr] || {};
         const endFrac = endObj.fracionado || '';
         const endDep1 = endObj.deposito_1 || '';
+        const endDep2 = endObj.deposito_2 || '';
+        const endRaw = endObj.raw || '';
 
-        const badgeEndFrac = endFrac ? `<div style="font-size:0.75rem; color:#38bdf8; font-weight:600; margin-top:2px;" title="Endereço de Picking (Omie)"><i class="fa-solid fa-location-dot"></i> ${endFrac}</div>` : `<div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px; opacity:0.6;">📍 S/ End.</div>`;
-        const badgeEndDep1 = endDep1 ? `<div style="font-size:0.75rem; color:#f59e0b; font-weight:600; margin-top:2px;" title="Endereço no Depósito 1 (Omie)"><i class="fa-solid fa-warehouse"></i> ${endDep1}</div>` : `<div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px; opacity:0.6;">🏭 S/ End.</div>`;
+        // Exibir endereço do Depósito 1 (se vazio mas tiver fracionado ou raw, exibir de forma inteligente)
+        const endDep1Exibir = endDep1 || endFrac || endRaw;
+        const badgeEndDep1 = endDep1Exibir ? `<div style="font-size:0.75rem; color:#38bdf8; font-weight:600; margin-top:2px;" title="Endereço no Omie ERP"><i class="fa-solid fa-location-dot"></i> ${endDep1Exibir}</div>` : `<div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px; opacity:0.6;">📍 S/ End.</div>`;
+        const badgeEndDep2 = endDep2 ? `<div style="font-size:0.75rem; color:#a855f7; font-weight:600; margin-top:2px;" title="Endereço Palete / Reserva 3D"><i class="fa-solid fa-cubes"></i> ${endDep2}</div>` : `<div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px; opacity:0.6;">📦 S/ End.</div>`;
 
         // Status & Alertas de Busca
         let statusBadge = '';
@@ -4176,6 +4180,7 @@ function renderizarAbaDepositosMatriz() {
                 <td style="text-align:center;">
                     <input type="number" class="deposito-input dep-2" value="${deposito2}" min="0" onchange="atualizarContagemInline('${p.sku}')" style="width:70px; text-align:center; font-weight:700; background:#0f172a; color:#8b5cf6; border:1px solid rgba(139,92,246,0.4); border-radius:4px; padding:3px;" title="Estoque contado na Reserva / Paletes">
                     <div style="font-size:0.68rem; color:var(--text-muted); font-weight:400;">(Reserva)</div>
+                    ${badgeEndDep2}
                 </td>
                 <td style="text-align:center; font-weight:700; color:${colorALocalizar}; font-size:0.95rem;">
                     ${aLocalizar === 0 ? '<span style="color:#34d399;">0 un</span>' : (aLocalizar < 0 ? `<span style="color:#f87171;">${aLocalizar} un</span>` : `${aLocalizar} un`)}
@@ -4557,6 +4562,8 @@ function abrirModalEndereco(sku, nomeProduto, idProduto) {
     document.getElementById('end-produto-nome').value = `${skuStr} - ${nomeProduto}`;
     document.getElementById('end-fracionado').value = endObj.fracionado || '';
     document.getElementById('end-deposito1').value = endObj.deposito_1 || '';
+    const elDep2 = document.getElementById('end-deposito2');
+    if (elDep2) elDep2.value = endObj.deposito_2 || '';
 
     const stEl = document.getElementById('end-status-omie');
     if (stEl) { stEl.style.display = 'none'; stEl.innerHTML = ''; }
@@ -4575,6 +4582,7 @@ async function confirmarSalvarEndereco() {
     const idProduto = document.getElementById('end-id-produto').value;
     const fracionado = document.getElementById('end-fracionado').value.trim().toUpperCase();
     const deposito1 = document.getElementById('end-deposito1').value.trim().toUpperCase();
+    const deposito2 = (document.getElementById('end-deposito2')?.value || '').trim().toUpperCase();
 
     const btn = document.getElementById('btn-salvar-endereco-omie');
     const stEl = document.getElementById('end-status-omie');
@@ -4597,14 +4605,15 @@ async function confirmarSalvarEndereco() {
                 sku,
                 id_produto: idProduto,
                 fracionado,
-                deposito_1: deposito1
+                deposito_1: deposito1,
+                deposito_2: deposito2
             })
         });
 
         const res = await resp.json();
         if (resp.ok && res.success) {
             state.enderecos = state.enderecos || {};
-            state.enderecos[sku] = res.endereco || { fracionado, deposito_1: deposito1 };
+            state.enderecos[sku] = res.endereco || { fracionado, deposito_1: deposito1, deposito_2: deposito2 };
             renderizarAbaDepositosMatriz();
             fecharModalEndereco();
             const msgFinal = res.omie_msg ? `${res.message}\nℹ️ ${res.omie_msg}` : res.message;

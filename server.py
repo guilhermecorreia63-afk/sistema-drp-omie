@@ -378,6 +378,7 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         file_data[sku] = {
             "fracionado": fracionado,
             "deposito_1": deposito_1,
+            "deposito_2": deposito_2,
             "deposito_2": deposito_2
         }
         try:
@@ -473,6 +474,7 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         id_produto = body.get('id_produto')
         fracionado = str(body.get('fracionado', '')).strip()
         deposito_1 = str(body.get('deposito_1', '')).strip()
+        deposito_2 = str(body.get('deposito_2', '')).strip()
 
         if not sku:
             self._send_json({"success": False, "message": "SKU é obrigatório."}, status=400)
@@ -482,6 +484,7 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
         partes = []
         if fracionado: partes.append(fracionado)
         if deposito_1: partes.append(deposito_1)
+        if deposito_2: partes.append(deposito_2)
         raw_texto = ", ".join(partes)
 
         json_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'enderecos_depositos.json')
@@ -498,6 +501,7 @@ class DRPRequestHandler(http.server.SimpleHTTPRequestHandler):
             "id_produto": id_produto,
             "fracionado": fracionado,
             "deposito_1": deposito_1,
+            "deposito_2": deposito_2,
             "raw": raw_texto,
             "ultima_atualizacao": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
