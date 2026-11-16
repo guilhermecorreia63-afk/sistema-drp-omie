@@ -929,53 +929,90 @@ def gerar_remessa_baixa_omie(grupo_id, conta="MATRIZ"):
         raise ValueError("Não há itens para gerar remessa neste grupo.")
 
     obs_map = {
-        "finais_fortaleza": "Baixa de Liturgias enviadas a clientes finais Fortaleza",
-        "finais_modico_brasil": "Baixa de Liturgias enviadas a clientes finais Brasil - Impresso Módico",
-        "finais_pac_norte": "Baixa de Liturgias enviadas a clientes finais Brasil - PAC Norte",
+        "finais_fortaleza": "Baixa de Estoque Clientes do Envio Fortaleza Jan à Mar",
+        "finais_modico_brasil": "Baixa de Estoque Clientes do Envio Impresso Módico Jan à Mar",
+        "finais_pac_norte": "Baixa de Estoque Clientes do Envio PAC Jan à Mar",
     }
-    observacao = obs_map.get(grupo_id, f"Baixa de Liturgias enviadas a {grupo['titulo']}")
+    observacao = obs_map.get(grupo_id, f"Baixa de Estoque Clientes do Envio {grupo['titulo']} Jan à Mar")
 
-    # Montar itens da remessa
-    itens = []
+    # Montar itens da remessa na estrutura estrita do Omie
+    produtos_remessa = []
     num_item = 1
+    
+    # Tributação oficial de Baixa de Estoque (CST 41 Não Tributada / Isenta, PIS 07, COFINS 07)
+    icms_baixa = {"cSitTrib": "41", "cOrigem": "0", "nAliq": 0, "nBC": 0, "nValor": 0}
+    pis_baixa = {"cSitTribPIS": "07", "nAliqPIS": 0, "nBCPIS": 0, "nValPIS": 0}
+    cofins_baixa = {"cSitTribCOFINS": "07", "nAliqCOFINS": 0, "nBCCOFINS": 0, "nValCOFINS": 0}
+
     if q_jan > 0:
-        itens.append({
-            "num_item": num_item,
-            "codigo_produto": PRODUTOS_LITURGIA["jan27"]["id_matriz"],
-            "quantidade": q_jan,
-            "valor_unitario": obter_valor_unitario_liturgia("jan27"),
-            "cfop": "5949"
+        produtos_remessa.append({
+            "cCodItInt": f"BX_IT_{num_item:02d}",
+            "nCodProd": PRODUTOS_LITURGIA["jan27"]["id_matriz"],
+            "nQtde": q_jan,
+            "nValUnit": obter_valor_unitario_liturgia("jan27"),
+            "cCFOP": "5.927",
+            "ICMS": icms_baixa,
+            "PIS": pis_baixa,
+            "COFINS": cofins_baixa
         })
         num_item += 1
 
     if q_fev > 0:
-        itens.append({
-            "num_item": num_item,
-            "codigo_produto": PRODUTOS_LITURGIA["fev27"]["id_matriz"],
-            "quantidade": q_fev,
-            "valor_unitario": obter_valor_unitario_liturgia("fev27"),
-            "cfop": "5949"
+        produtos_remessa.append({
+            "cCodItInt": f"BX_IT_{num_item:02d}",
+            "nCodProd": PRODUTOS_LITURGIA["fev27"]["id_matriz"],
+            "nQtde": q_fev,
+            "nValUnit": obter_valor_unitario_liturgia("fev27"),
+            "cCFOP": "5.927",
+            "ICMS": icms_baixa,
+            "PIS": pis_baixa,
+            "COFINS": cofins_baixa
         })
         num_item += 1
 
     if q_mar > 0:
-        itens.append({
-            "num_item": num_item,
-            "codigo_produto": PRODUTOS_LITURGIA["mar27"]["id_matriz"],
-            "quantidade": q_mar,
-            "valor_unitario": obter_valor_unitario_liturgia("mar27"),
-            "cfop": "5949"
+        produtos_remessa.append({
+            "cCodItInt": f"BX_IT_{num_item:02d}",
+            "nCodProd": PRODUTOS_LITURGIA["mar27"]["id_matriz"],
+            "nQtde": q_mar,
+            "nValUnit": obter_valor_unitario_liturgia("mar27"),
+            "cCFOP": "5.927",
+            "ICMS": icms_baixa,
+            "PIS": pis_baixa,
+            "COFINS": cofins_baixa
         })
         num_item += 1
 
+    total_pecas_envio = q_jan + q_fev + q_mar
+    peso_kg_total = round(total_pecas_envio * 0.1, 2)
+    int_cod_rem = f"BX_LIT_{grupo_id[:8].upper()}_{int(time.time())}"
+
     payload_remessa = {
-        "cabecalho": {
-            "codigo_cliente": CLIENTE_EDICOES_SHALOM_ID,
-            "codigo_cenario_impostos": 0, # Cenário Baixa / Simples
-            "data_emissao": datetime.now().strftime("%d/%m/%Y"),
-            "observacoes": observacao
+        "cabec": {
+            "cCodIntRem": int_cod_rem,
+            "nCodCli": CLIENTE_EDICOES_SHALOM_ID,
+            "codigo_cenario_impostos": 1818512707, # Cenário Baixa de Estoque
+            "dPrevisao": datetime.now().strftime("%d/%m/%Y")
         },
-        "itens": itens
+        "frete": {
+            "cTpFrete": "9",
+            "nValFrete": 0,
+            "nValSeguro": 0,
+            "nValOutras": 0,
+            "nQtdVol": 1,
+            "nPesoBruto": peso_kg_total,
+            "nPesoLiq": peso_kg_total
+        },
+        "infAdic": {
+            "cCodCateg": "1.01.01", # Receita Comercial Padrão
+            "cConsFinal": "S",
+            "cContato": "EDICOES SHALOM",
+            "cDadosAdic": observacao
+        },
+        "obs": {
+            "cObs": observacao
+        },
+        "produtos": produtos_remessa
     }
 
     # Chaves da Matriz

@@ -2874,13 +2874,38 @@ async function emitirPedidoObjeto(ped, qtdEtiquetas = 1) {
     };
     const response = await fetch("/.netlify/functions/total-express", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({pedido:payload})});
     const result = await safeFetchJson(response);
-    if (!response.ok || result.erro) throw new Error((result.erros_validacao || [result.erro || "Falha Smart PUDO"]).join("; "));
+    if (!response.ok || result.erro) {
+      let msg = "";
+      if (Array.isArray(result.erros_validacao) && result.erros_validacao.length) {
+        msg = result.erros_validacao.join("; ");
+      } else if (result.mensagem_erro) {
+        msg = result.mensagem_erro;
+      } else if (typeof result.erro === "string") {
+        msg = result.erro;
+      } else if (result.erro && typeof result.erro === "object") {
+        const subErros = (result.erro.retorno || {}).erros || [];
+        if (Array.isArray(subErros) && subErros.length) {
+          msg = subErros.map(e => e.erro || JSON.stringify(e)).join("; ");
+        } else {
+          msg = JSON.stringify(result.erro);
+        }
+      } else if (result.message) {
+        msg = typeof result.message === "string" ? result.message : JSON.stringify(result.message);
+      } else {
+        msg = "Falha Smart PUDO / Total Express desconhecida";
+      }
+      throw new Error(msg);
+    }
     const records = result.retorno?.encomendas || [];
     if (records.length) {
       const awb = records[0].volumes?.[0]?.awb;
       const pdfResponse = await fetch("/.netlify/functions/total-express?action=etiqueta", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({awb: awb, pedido: payload})});
       const pdf = await safeFetchJson(pdfResponse);
-      if (!pdfResponse.ok || !pdf.pdfBase64) throw new Error(pdf.erro || "Etiqueta Total Express indisponível");
+      if (!pdfResponse.ok || !pdf.pdfBase64) {
+        let pdfMsg = pdf?.erro || pdf?.message || "Etiqueta Total Express indisponível";
+        if (typeof pdfMsg === "object") pdfMsg = JSON.stringify(pdfMsg);
+        throw new Error(pdfMsg);
+      }
       const win = window.open("");
       if (!win) throw new Error("Permita pop-ups para visualizar/imprimir a etiqueta.");
       win.document.write(`<iframe style="border:0;width:100%;height:100%" src="data:application/pdf;base64,${pdf.pdfBase64}"></iframe>`);
@@ -3082,7 +3107,7 @@ Disponível na Aba 2 (Etiquetas para Impressão).`);
     await carregarEtiquetasDoTurso();
     if (typeof carregarDashboardStats === "function") carregarDashboardStats();
   } catch (err) {
-    alert(`❌ Falha ao emitir pré-postagem: ${err.message}`);
+    alert(`❌ Falha ao emitir pré-postagem: ${typeof err === 'object' && err.message ? err.message : JSON.stringify(err)}`);
   }
 }
 
@@ -3134,7 +3159,8 @@ async function emitirSelecionados() {
         etiquetasGeradasTotal += gerados.length;
         chk.checked = false;
       } catch (e) {
-        erros.push(`#${ped.numero_pedido || ped.numero_nf}: ${e.message}`);
+        const errText = typeof e === "object" && e.message ? e.message : JSON.stringify(e);
+        erros.push(`#${ped.numero_pedido || ped.numero_nf}: ${errText}`);
       }
     }
 

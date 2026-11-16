@@ -356,7 +356,19 @@ class TotalExpressService:
                     result["parcial"] = True
             elif response.status_code == 400:
                 result["erro"] = data
-                cls.salvar_resultado(pedido, {"pedido": order}, payload, "ERRO_API", data, json.dumps(data, ensure_ascii=False))
+                err_msg = ""
+                if isinstance(data, dict):
+                    ret_errs = (data.get("retorno") or {}).get("erros") or []
+                    if ret_errs and isinstance(ret_errs, list):
+                        msgs = [e.get("erro") for e in ret_errs if isinstance(e, dict) and e.get("erro")]
+                        if msgs:
+                            err_msg = "; ".join(msgs)
+                    if not err_msg and data.get("erro"):
+                        err_msg = data.get("erro") if isinstance(data.get("erro"), str) else json.dumps(data.get("erro"), ensure_ascii=False)
+                if not err_msg:
+                    err_msg = json.dumps(data, ensure_ascii=False)
+                result["mensagem_erro"] = err_msg
+                cls.salvar_resultado(pedido, {"pedido": order}, payload, "ERRO_API", data, err_msg)
             else:
                 result["erro"] = f"HTTP inesperado {response.status_code}"
                 cls.salvar_resultado(pedido, {"pedido": order}, payload, "ERRO_HTTP", data, result["erro"])
