@@ -478,9 +478,9 @@ async function gerarRotuloPadronizadoInternoPdf(item, servicoOverride = null) {
   const blocoFixo = `${destCep}${dComplDest}${origCep}${dComplOrig}${validadorCep}${idv}`;
 
   const sroPadded = sroCode.padEnd(13, " ").substring(0, 13);
-  const servAdic = "25000000";
+  const servAdic = "25000000"; // Adicional 025 (Registro Módico / RM)
   const cartaoPadded = cartaoPost.padStart(10, "0").substring(0, 10);
-  const codServ = servType === "SEDEX" ? "03220" : (servType === "PAC" ? "03298" : (servType === "MINI" ? "04227" : "20133"));
+  const codServ = servType === "SEDEX" ? "03220" : (servType === "PAC" ? "03298" : (servType === "MINI" ? "04227" : "20192"));
   const agrupamento = "00";
 
   let numEndClean = destNum.replace(/\D/g, "");
@@ -546,24 +546,24 @@ async function gerarRotuloPadronizadoInternoPdf(item, servicoOverride = null) {
   // Nome do Serviço (IMPRESSO, PAC, SEDEX, MINI_ENVIOS)
   drawTextTopPt(tituloServico, { x: xTituloServico, yTop: 92.48, size: 10.0, font: fontBold });
 
-  // Rastreio Visível
-  const sroFmt = sroCode.length === 13 ? `${sroCode.substring(0,2)}${sroCode.substring(2,5)}${sroCode.substring(5,8)}${sroCode.substring(8,11)}${sroCode.substring(11,13)}` : sroCode;
-  const xRastreioVisivel = servType === "SEDEX" ? 100.09 : 100.4;
-  drawTextTopPt(sroFmt, { x: xRastreioVisivel, yTop: 105.06, size: 11.0, font: fontBold });
+  // Rastreio Visível (Ex: AE171003285BR colado, idêntico ao modelo Portal Postal da Ana Lúcia)
+  const sroFmt = sroCode;
+  const xRastreioVisivel = servType === "SEDEX" ? 95 : 98;
+  drawTextTopPt(sroFmt, { x: xRastreioVisivel, yTop: 104.5, size: 12.0, font: fontBold });
 
   // RM (se for Módico)
   if (servType === "MODICO") {
     drawTextTopPt("RM", { x: 268.56, yTop: 130.68, size: 8.0, font: fontBold });
   }
 
-  // Barcode Principal GS1-128
+  // Barcode Principal (Code 128 padrão Portal Postal / CWS sem o (91))
   await drawBarcodeTopPt({
-    bcid: 'gs1-128',
-    text: `(91)${sroCode}`,
+    bcid: 'code128',
+    text: sroCode,
     scale: 2,
     height: 15,
     includetext: false
-  }, 40, 122, 220, 52);
+  }, 40, 118, 220, 56);
 
   // Recebedor / Assinatura / Documento
   drawTextTopPt("Recebedor", { x: 34, yTop: 179.53, size: 7.0, font: fontReg });
@@ -1916,7 +1916,7 @@ async function obterPdfRotulo(item, btnElement = null) {
   }
 
   const isSouza = serv.includes("SOUZA") || serv.includes("ENTREGA_PROPRIA") || serv.includes("LOCAL") || serv.includes("TRANSLATINO") || (item.objeto && item.objeto.startsWith("SZ")) || idPre.startsWith("SOUZA_");
-  const isModico = serv.includes("MODICO") || serv.includes("20133") || (item.objeto && item.objeto.startsWith("YD")) || idPre.startsWith("MODICO_");
+  const isModico = serv.includes("MODICO") || serv.includes("20133") || serv.includes("20192") || (item.objeto && item.objeto.startsWith("YD")) || idPre.startsWith("MODICO_");
 
   // Rótulo Dedicado Souza / Entrega Própria (Fortaleza e RMF)
   if (isSouza) {
@@ -1925,8 +1925,11 @@ async function obterPdfRotulo(item, btnElement = null) {
     return pdfB64;
   }
 
-  // 2. Se for Impresso Modico ou idPre local -> usar gerador padronizado interno
-  if (isModico || !idPre || idPre.startsWith("MODICO_") || idPre.startsWith("ID_")) {
+  // 2. Se for SEDEX, PAC ou MINI ENVIOS -> sempre priorizar o gerador padronizado interno fiel ao Portal Postal
+  // Se for Impresso Modico ou idPre local -> usar gerador padronizado interno
+  const isCwsEncomenda = serv.includes("SEDEX") || serv.includes("PAC") || serv.includes("MINI") || (item.objeto && (item.objeto.startsWith("AE") || item.objeto.startsWith("AP") || item.objeto.startsWith("AV")));
+
+  if (isModico || isCwsEncomenda || !idPre || idPre.startsWith("MODICO_") || idPre.startsWith("ID_")) {
     const pdfB64 = await gerarRotuloPadronizadoInternoPdf(item, isModico ? "MODICO" : null);
     item.pdfBase64 = pdfB64;
     return pdfB64;
@@ -1934,19 +1937,48 @@ async function obterPdfRotulo(item, btnElement = null) {
 
   // 3. Se for CWS PAC/SEDEX/MINI com idPrePostagem -> consultar endpoint correios-rotulo
   try {
+    const payloadRot = {
+      tipoRotulo: "P",
+      formatoRotulo: "ET"
+    };
+    if (item.objeto || item.codigo_objeto) {
+      payloadRot.codigosObjeto = [item.objeto || item.codigo_objeto];
+    }
+    if (idPre && !idPre.startsWith("MODICO_") && !idPre.startsWith("ID_")) {
+      payloadRot.idsPrePostagem = [idPre];
+    }
+
     const resRot = await fetch("/.netlify/functions/correios-rotulo", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        idsPrePostagem: [idPre],
-        tipoRotulo: "P",
-        formatoRotulo: "ET"
-      })
+      body: JSON.stringify(payloadRot)
     });
     const dataRot = await safeFetchJson(resRot);
     if (dataRot && dataRot.pdfBase64) {
-      item.pdfBase64 = dataRot.pdfBase64;
-      return dataRot.pdfBase64;
+      // Ajusta para formato térmico (100x150mm) se o CWS retornar em folha A4
+      let finalPdfB64 = dataRot.pdfBase64;
+      try {
+        const { PDFDocument } = PDFLib;
+        const binPdf = window.atob(dataRot.pdfBase64);
+        const u8 = new Uint8Array(binPdf.length);
+        for (let i = 0; i < binPdf.length; i++) u8[i] = binPdf.charCodeAt(i);
+        const cwsDoc = await PDFDocument.load(u8);
+        const pages = cwsDoc.getPages();
+        if (pages.length > 0) {
+          const p0 = pages[0];
+          const mediaBox = p0.getMediaBox();
+          if (mediaBox.width > 400 || mediaBox.height > 600) {
+            // Documento veio em folha A4 (595 x 842 pt). Aplica crop na etiqueta (300 x 453 pt)
+            p0.setCropBox(9.6, 488.0, 290.0, 348.0);
+            p0.setMediaBox(9.6, 488.0, 290.0, 348.0);
+            finalPdfB64 = base64ArrayBuffer(await cwsDoc.save());
+          }
+        }
+      } catch (eCrop) {
+        console.warn("Aviso ao ajustar crop da etiqueta CWS:", eCrop);
+      }
+      item.pdfBase64 = finalPdfB64;
+      return finalPdfB64;
     }
   } catch (errCws) {
     console.warn("Falha ao obter rotulo CWS, usando gerador padronizado interno:", errCws);
@@ -2955,8 +2987,8 @@ async function emitirPedidoObjeto(ped, qtdEtiquetas = 1) {
   }
   const isTranslatino = transpNorm.includes("TRANSLATINO") || servico.includes("TRANSLATINO") || (ped.observacoes || "").toUpperCase().includes("TRANSLATINO");
   const isSouza = transpNorm === "SOUZA" || servico.includes("SOUZA") || servico.includes("ENTREGA_PROPRIA") || servico.includes("ENTREGA LOCAL") || isTranslatino;
-  const isModico = servico.includes("MODICO") || servico.includes("MÓDICO") || servico.includes("20133");
-  const codigoServico = servico.includes("SEDEX") ? "03220" : (servico.includes("MINI") ? "04227" : (isModico ? "20133" : (isSouza ? "SOUZA" : "03298")));
+  const isModico = servico.includes("MODICO") || servico.includes("MÓDICO") || servico.includes("20133") || servico.includes("20192");
+  const codigoServico = servico.includes("SEDEX") ? "03220" : (servico.includes("MINI") ? "04227" : (isModico ? "20192" : (isSouza ? "SOUZA" : "03298")));
 
   const dest = ped.destinatario || {};
   const end = dest.endereco || {};
@@ -4616,7 +4648,7 @@ async function gerarPdfPlpOficial(lista, itens) {
       const it = itens[i];
       const srvRaw = (it.servico || "PAC").toUpperCase();
       let srvDesc = srvRaw;
-      if (srvRaw.includes("MODICO") || srvRaw.includes("MÓDICO") || srvRaw === "20133") srvDesc = "20133 IMPRESSO";
+      if (srvRaw.includes("MODICO") || srvRaw.includes("MÓDICO") || srvRaw === "20133" || srvRaw === "20192") srvDesc = "20192 IMPRESSO MODICO";
       else if (srvRaw.includes("SEDEX")) srvDesc = "3220 SEDEX";
       else if (srvRaw.includes("PAC")) srvDesc = "3298 PAC";
       else if (srvRaw.includes("MINI")) srvDesc = "4227 MINI ENVIOS";

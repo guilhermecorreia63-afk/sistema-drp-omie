@@ -161,7 +161,7 @@ def calcular_dv_sro(num: int) -> int:
 def alocar_codigo_modico() -> Dict[str, str]:
     q_range = execute_turso_query(
         "SELECT id, sigla, num_inicio, num_fim, num_atual, sufixo, codigos_devolvidos_json "
-        "FROM modico_ranges WHERE (servico = '20133' OR servico = 'IMPRESSO_MODICO') AND status = 'ATIVO' LIMIT 1"
+        "FROM modico_ranges WHERE (servico = '20192' OR servico = '20133' OR servico = 'IMPRESSO_MODICO') AND status = 'ATIVO' LIMIT 1"
     )
     rows = (q_range or {}).get("rows") or []
     if not rows:
@@ -207,7 +207,7 @@ def alocar_codigo_modico() -> Dict[str, str]:
 def devolver_codigo_modico(codigo_objeto: str) -> Dict[str, Any]:
     q_range = execute_turso_query(
         "SELECT id, sigla, num_inicio, num_fim, num_atual, sufixo, codigos_devolvidos_json "
-        "FROM modico_ranges WHERE (servico = '20133' OR servico = 'IMPRESSO_MODICO') AND status = 'ATIVO' LIMIT 1"
+        "FROM modico_ranges WHERE (servico = '20192' OR servico = '20133' OR servico = 'IMPRESSO_MODICO') AND status = 'ATIVO' LIMIT 1"
     )
     rows = (q_range or {}).get("rows") or []
     if not rows:
@@ -379,7 +379,7 @@ def classificar_forma_envio_prata(texto_omie: str, cod_transportadora: Any = "",
         return {"grupo": "CORREIOS", "servico": "SEDEX", "log": "Correios SEDEX"}
     if "MINI ENVIOS" in texto_upper or "MINI_ENVIOS" in texto_upper:
         return {"grupo": "CORREIOS", "servico": "MINI ENVIOS", "log": "Correios Mini Envios"}
-    if "MODICO" in texto_upper or "IMPRESSO MODICO" in texto_upper or "IMPRESSO" in texto_upper or "20133" in texto_upper:
+    if "MODICO" in texto_upper or "IMPRESSO MODICO" in texto_upper or "IMPRESSO" in texto_upper or "20133" in texto_upper or "20192" in texto_upper:
         return {"grupo": "CORREIOS", "servico": "IMPRESSO MODICO", "log": "Correios Impresso Modico"}
     if "PAC" in texto_upper:
         return {"grupo": "CORREIOS", "servico": "PAC", "log": "Correios PAC"}
@@ -985,7 +985,7 @@ class CorreiosHubService:
                         return 400, {"error": "Identificador local obrigatorio para retirada."}
                     final_cod = ""
 
-                if servico in ("IMPRESSO_MODICO", "20133") and (not final_cod or final_cod.startswith("OBJ_") or final_cod.startswith("TEMP_")):
+                if servico in ("IMPRESSO_MODICO", "20133", "20192") and (not final_cod or final_cod.startswith("OBJ_") or final_cod.startswith("TEMP_")):
                     allocated = alocar_codigo_modico()
                     final_cod = allocated["codigoObjeto"]
                     final_id_pre = allocated["idPrepostagem"]
@@ -2404,7 +2404,7 @@ class CorreiosHubService:
 
         is_modico = False
         if servico_persistido:
-            if any(k in servico_persistido for k in ("MODICO", "20133", "IMPRESSO")):
+            if any(k in servico_persistido for k in ("MODICO", "20133", "20192", "IMPRESSO")):
                 is_modico = True
         else:
             if "MODICO" in str(target_id_pre) or str(target_obj).startswith("YD"):

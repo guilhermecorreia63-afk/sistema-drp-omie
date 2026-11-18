@@ -253,11 +253,13 @@ def mesclar_pedidos_turso_nas_assinaturas(clientes_processados):
                 continue
 
             # Bloqueio explícito de pedidos já enviados no 1º Lote (ex: Capelania Militar #18217 e Mitra Luziânia #18343)
+            # e pedidos testes não faturados / dispensados (ex: Guilherme Correia #18127)
             status_ass = str(r.get("status_assinatura") or "").upper()
             periodo = str(r.get("periodo_envio") or "").upper()
-            if "CONCLUIDO" in status_ass or num_ped in ["18217", "18343"] or "LOTE_04" in periodo or "ABRIL" in periodo:
+            origem_cad = str(r.get("origem_cadastro") or "").upper()
+            if "CONCLUIDO" in status_ass or num_ped in ["18127", "18217", "18343"] or "LOTE_04" in periodo or "ABRIL" in periodo:
                 continue
-            if any(termo in cli_nome.upper() for termo in ["CAPELANIA MILITAR", "LUZIANA", "LUZIÂNIA", "SAGRADA FAMILIA"]):
+            if any(termo in cli_nome.upper() for termo in ["GUILHERME CORREIA", "CAPELANIA MILITAR", "LUZIANA", "LUZIÂNIA", "SAGRADA FAMILIA"]):
                 continue
 
             # Regra de Elegibilidade do Lote Atual (Jan a Mar/2027):

@@ -414,6 +414,15 @@ class PedidosAssinaturasService:
                     cod_ped = int(cab.get("codigo_pedido") or 0)
                     cod_cli = int(cab.get("codigo_cliente") or 0)
                     etapa = str(cab.get("etapa") or "")
+                    faturado = str(cab.get("faturado") or "").upper()
+                    bloqueado = str(cab.get("bloqueado") or "").upper()
+
+                    # Regra de Segurança: Apenas pedidos EFETIVAMENTE FATURADOS (etapa 50, 60 ou faturado == 'S')
+                    # Não importar pedidos em aberto, orçamentos, testes ou não faturados
+                    if faturado != "S" and etapa not in ("50", "60", "70"):
+                        continue
+                    if bloqueado == "S":
+                        continue
 
                     # Se for varredura geral (sem pedido específico), garantir que não puxa pedidos antes de 23/10/2026
                     if not numero_pedido_especifico:
